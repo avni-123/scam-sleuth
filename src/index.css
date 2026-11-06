@@ -1,0 +1,180 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --font-heading: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-body: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+    --font-typewriter: 'Courier Prime', monospace;
+  }
+
+  body {
+    font-family: var(--font-body);
+    color: #E2E8F0;
+    background-color: #0B132B;
+    background-image: radial-gradient(circle at 50% 0%, #1C2541 0%, #0B132B 75%);
+    min-height: 100vh;
+  }
+
+  h1, h2, h3, h4, .font-heading {
+    font-family: var(--font-heading);
+  }
+
+  code, pre, .font-mono {
+    font-family: var(--font-mono);
+  }
+
+  .font-typewriter {
+    font-family: var(--font-typewriter);
+  }
+}
+
+/* Rubber Stamp Styling for Detective Decisions */
+.detective-stamp {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  font-family: var(--font-typewriter);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  border-width: 2px;
+  border-style: solid;
+  border-radius: 4px;
+  transform: rotate(-3deg);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  mask-image: linear-gradient(135deg, rgba(0,0,0,0.9) 0%, rgba(0,0,0,1) 50%, rgba(0,0,0,0.85) 100%);
+}
+
+.stamp-solved {
+  color: #10B981;
+  border-color: #10B981;
+  background-color: rgba(16, 185, 129, 0.08);
+}
+
+/* Slamming Rubber Stamp Animation */
+@keyframes detectiveStampSlam {
+  0% {
+    opacity: 0;
+    transform: scale(2.6) rotate(16deg) translateY(-24px);
+    filter: blur(2px);
+  }
+  45% {
+    opacity: 0.95;
+    transform: scale(1.12) rotate(3deg) translateY(0);
+    filter: blur(0px);
+  }
+  65% {
+    opacity: 1;
+    transform: scale(0.92) rotate(-5deg);
+  }
+  82% {
+    transform: scale(1.04) rotate(-2deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(-3deg);
+  }
+}
+
+/* Expanding Ink Shockwave */
+@keyframes inkRipple {
+  0% {
+    opacity: 0.85;
+    transform: scale(0.5);
+  }
+  50% {
+    opacity: 0.45;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(2.4);
+  }
+}
+
+/* Card Glow Accent when newly stamped */
+@keyframes cardStampHighlight {
+  0% {
+    border-color: rgba(16, 185, 129, 0.9);
+    box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.4), 0 8px 30px rgba(16, 185, 129, 0.25);
+  }
+  50% {
+    border-color: rgba(16, 185, 129, 0.6);
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2), 0 8px 25px rgba(16, 185, 129, 0.15);
+  }
+  100% {
+    border-color: rgba(58, 80, 107, 0.6);
+    box-shadow: none;
+  }
+}
+
+.animate-stamp-slam {
+  animation: detectiveStampSlam 0.65s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  will-change: transform, opacity;
+  transform-origin: center center;
+}
+
+.animate-ink-ripple {
+  animation: inkRipple 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  pointer-events: none;
+}
+
+.animate-card-highlight {
+  animation: cardStampHighlight 2.8s ease-out forwards;
+}
+
+.stamp-flagged {
+  color: #F59E0B;
+  border-color: #F59E0B;
+  background-color: rgba(245, 158, 11, 0.08);
+}
+
+.stamp-danger {
+  color: #EF4444;
+  border-color: #EF4444;
+  background-color: rgba(239, 68, 68, 0.08);
+}
+
+/* Detective Manila Evidence Card styling */
+.evidence-paper {
+  background-color: #FAF7F0;
+  color: #1E293B;
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(226, 214, 195, 0.8);
+}
+
+/* Clue highlight pulsing border */
+.clue-pulse {
+  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.4);
+}
+
+/* Red thread pin connection */
+.evidence-pin {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #F87171, #DC2626);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+/* Snappy Close-Range Proximity Pop Animation */
+@keyframes promptPop {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) scale(0.72) translateY(8px);
+  }
+  65% {
+    opacity: 1;
+    transform: translateX(-50%) scale(1.05) translateY(-2px);
+  }
+  85% {
+    transform: translateX(-50%) scale(0.98) translateY(1px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(-50%) scale(1) translateY(0);
+  }
+}
+
+.animate-prompt-pop {
+  animation: promptPop 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  will-change: transform, opacity;
+}

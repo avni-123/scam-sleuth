@@ -1,0 +1,2693 @@
+import { ChapterDef, LevelId } from '../types/adventure';
+
+export const CHAPTER_DETAILS_BY_LEVEL: Record<LevelId, [ChapterDef, ChapterDef, ChapterDef]> = {
+  // ===========================================================================
+  // LEVEL 1: THE PARCEL THAT NEVER CAME
+  // ===========================================================================
+  'tutorial-delivery': [
+    {
+      number: 1,
+      phase: 'The Setup',
+      title: 'Chapter 1: A Knock After Dark',
+      summary: 'At home in Sunset Heights, neighbor Alex Rivera receives a text saying a parcel is held for a small fee.',
+      learningGoal: 'Recognize unexpected delivery fee messages and pause before tapping links or acting on artificial urgency.',
+      storySetup: 'You are in your apartment hallway at Sunset Heights (Apt 4B) after dinner. Your neighbor, digital illustrator Alex Rivera, knocks on your door holding a glowing smartphone. Alex is expecting a box of art supplies, and a sudden text claims the parcel will be returned tonight unless a $2.85 address fee is paid immediately.',
+      graphicsDirection: {
+        backgroundArt: 'Warm apartment foyer and hallway with wood wainscoting, framed city sketches, an entry console table, and rain-speckled hallway windows.',
+        characterAppearanceAndPose: 'Alex Rivera (late 20s, natural proportions, denim overshirt over a slate tee, ink-stained fingers) stands by the open doorway, leaning in slightly with a furrowed brow while holding out a smartphone.',
+        keyProps: 'Alex’s smartphone on the desk, a physical SwiftPost courier magnet card on the console table, and an unopened sketchbook parcel.',
+        cameraAngle: 'Medium third-person adventure view behind the player, shifting smoothly to an over-the-shoulder angle as Alex holds up the glowing phone screen.',
+        lighting: 'Warm 2700K wall sconce lighting across the apartment, contrasted with a cool teal glow from Alex’s phone screen and a soft amber highlight around interactive props.',
+        onScreenMessage: '[SMS Alert · +1-555-019-8841]: "SwiftPost Alert: Parcel #SP-4092 held due to incomplete street number. Pay $2.85 re-dispatch fee within 30 mins at [fictional-text-preview: swiftpost-redelivery-fee.example] or item returns to warehouse."',
+        interactiveClueEffects: 'A soft amber pulse outlines Alex’s phone and the entry table; hovering reveals a "Talk to Alex" and "Inspect Message" prompt.',
+        transitionGraphic: 'The camera glides toward the desk lamp as a subtle teal magnifying ring highlights the phone notification banner.',
+      },
+      chapterDialogue: [
+        {
+          speaker: 'Alex Rivera',
+          role: 'Neighbor & Illustrator',
+          line: 'Sorry to knock so late! I’m waiting on a box of illustration pens for a client deadline tomorrow.',
+        },
+        {
+          speaker: 'You (Investigator)',
+          role: 'Lead Investigator',
+          line: 'No problem at all, Alex. Did the courier leave a door tag downstairs?',
+        },
+        {
+          speaker: 'Alex Rivera',
+          role: 'Neighbor & Illustrator',
+          line: 'No tag—just this text message saying my parcel is stuck at a depot unless I pay a $2.85 address fee in the next thirty minutes.',
+        },
+        {
+          speaker: 'You (Investigator)',
+          role: 'Lead Investigator',
+          line: 'Hold on before you tap that screen. Let’s look closely at where that message actually came from.',
+        },
+      ],
+      playerInteraction: 'Walk across the apartment foyer using W/A/S/D, rotate the camera with the mouse, talk to Alex Rivera [E], and approach the smartphone on the desk to begin inspecting the message.',
+      clues: [
+        {
+          id: 'l1-c1-clue1',
+          title: '30-Minute Return Countdown',
+          detail: 'The text threatens to return the package in 30 minutes if the fee is not paid immediately.',
+          hint: 'Look at the time limit in the text message—real couriers hold parcels for days, not minutes.',
+        },
+        {
+          id: 'l1-c1-clue2',
+          title: 'Missing Door Tag',
+          detail: 'Alex never received a physical delivery slip on the lobby door or in the official courier app.',
+          hint: 'Ask Alex whether the courier left any physical notice or app update.',
+        },
+        {
+          id: 'l1-c1-clue3',
+          title: 'Small "$2.85" Bait Fee',
+          detail: 'The fee is intentionally tiny so the recipient enters payment card details without second-guessing.',
+          hint: 'Notice how small the requested fee is compared to the value of payment card credentials.',
+        },
+      ],
+      question: {
+        prompt: 'When you receive an unexpected text saying a parcel is held for a small fee with a 30-minute deadline, what should you do first?',
+        options: [
+          {
+            id: 'A',
+            text: 'Pause and avoid tapping the link in the message so you can check the delivery status calmly.',
+            isCorrect: true,
+            feedback: 'Correct! Pausing breaks the artificial urgency and keeps you from opening a look-alike payment page.',
+          },
+          {
+            id: 'B',
+            text: 'Pay the $2.85 fee right away since the amount is small and the deadline is tight.',
+            isCorrect: false,
+            feedback: 'Even a tiny fee request on a fake page is designed to capture your full payment card details.',
+          },
+          {
+            id: 'C',
+            text: 'Reply "STOP" or text your home address back to the sender number to fix the label.',
+            isCorrect: false,
+            feedback: 'Replying confirms your number is active and shares personal address details with an unknown sender.',
+          },
+          {
+            id: 'D',
+            text: 'Tap the link just to see what the page looks like before deciding.',
+            isCorrect: false,
+            feedback: 'You do not need to open an unknown link from a text message to verify a real package.',
+          },
+        ],
+        correctAnswerExplanation: 'Urgent countdowns and small fee demands are classic pressure tactics. Pausing first lets you inspect the clues without putting your account or card at risk.',
+      },
+      chapterTransition: 'With Alex holding off on tapping the text, you lean over the desk lamp to examine the tiny details inside the message and compare them with the real courier notice.',
+    },
+    {
+      number: 2,
+      phase: 'The Investigation',
+      title: 'Chapter 2: The Tiny Clues',
+      summary: 'Inspect the sender details, urgent wording, payment request, and official courier card.',
+      learningGoal: 'Spot mismatched sender numbers, look-alike web addresses, and unusual payment requests by comparing them against trusted official records.',
+      storySetup: 'At the apartment desk, you place Alex’s smartphone beside the official SwiftPost tracking card magnet from the kitchen counter. By comparing the two side by side, tiny inconsistencies in the sender header, web address, and footer symbol begin to stand out.',
+      graphicsDirection: {
+        backgroundArt: 'Close-up desktop workspace with warm wood grain, a brass study lamp, a physical SwiftPost tracking postcard, and a corkboard.',
+        characterAppearanceAndPose: 'Alex stands beside your right shoulder, pointing at the top of the phone screen while you hold a magnifying lens over the message header.',
+        keyProps: 'Smartphone displaying the SMS details screen, official SwiftPost customer card, and a folded paper invoice showing the real tracking number.',
+        cameraAngle: 'Over-the-shoulder inspection camera angled down at 35 degrees, framing both the phone screen and the printed courier card clearly.',
+        lighting: 'Focused warm pool of light from the brass desk lamp, with crisp teal evidence highlights pulsing around the sender number, URL bar, and footer watermark.',
+        onScreenMessage: '[Inspection View — fictional-text-preview]: Sender: +1 (555) 019-8841 | Link preview: "swiftpost-redelivery-fee.example/pay" | Footer Stamp: [GH-PRISM-01 · Glasshouse Logistics Template].',
+        interactiveClueEffects: 'Three interactive evidence pins glow in teal when inspected, drawing a dotted comparison line between the fake text and the real courier card.',
+        transitionGraphic: 'Three collected clue cards snap into your Case Journal with a soft chime, unlocking the Chapter 3 Decision prompt.',
+      },
+      chapterDialogue: [
+        {
+          speaker: 'You (Investigator)',
+          role: 'Lead Investigator',
+          line: 'Look at the sender at the top of the screen. It’s a random ten-digit mobile number, not SwiftPost’s official notification channel.',
+        },
+        {
+          speaker: 'Alex Rivera',
+          role: 'Neighbor & Illustrator',
+          line: 'And look at the tracking code on my printed receipt from the art store—it doesn’t even match the parcel number in the text!',
+        },
+        {
+          speaker: 'You (Investigator)',
+          role: 'Lead Investigator',
+          line: 'Wait—check the tiny geometric prism stamp in the corner of that payment preview: "GH-PRISM-01." I’m logging that symbol in my case journal.',
+        },
+      ],
+      playerInteraction: 'Inspect the Smartphone on the desk [E] and the Courier Reference Card on the side table [E] to compare the sender number, domain name, and tracking ID.',
+      clues: [
+        {
+          id: 'l1-c2-clue1',
+          title: 'Unverified Mobile Sender Number',
+          detail: 'The alert arrived from a random mobile number (+1-555-019-8841) while the real courier card states SwiftPost never texts payment links from personal numbers.',
+          hint: 'Compare the sender phone number at the top of the SMS with the policy printed on the courier card.',
+        },
+        {
+          id: 'l1-c2-clue2',
+          title: 'Look-Alike Hyphenated Address',
+          detail: 'The message points to "swiftpost-redelivery-fee.example" instead of the official SwiftPost app or known company domain.',
+          hint: 'Examine the extra words and hyphens added after "swiftpost" in the preview text.',
+        },
+        {
+          id: 'l1-c2-clue3',
+          title: 'Glasshouse Prism Symbol [GH-PRISM-01]',
+          detail: 'A faint geometric prism watermark labeled GH-PRISM-01 appears at the bottom of the fake payment form.',
+          hint: 'Inspect the bottom corner of the message preview to spot the recurring campaign symbol.',
+        },
+      ],
+      question: {
+        prompt: 'Which detail on Alex’s phone is the clearest sign that the delivery message is not from the real courier?',
+        options: [
+          {
+            id: 'A',
+            text: 'The message arrived in the evening after 7:00 PM.',
+            isCorrect: false,
+            feedback: 'Real delivery updates can arrive in the evening if a truck is still on its route; timing alone is not the main proof.',
+          },
+          {
+            id: 'B',
+            text: 'It demands payment through a hyphenated look-alike address sent from an random mobile number, and its parcel ID does not match Alex’s real receipt.',
+            isCorrect: true,
+            feedback: 'Correct! Mismatched tracking details, an unverified mobile sender, and an unofficial web address prove the message is fraudulent.',
+          },
+          {
+            id: 'C',
+            text: 'The message uses the word "Parcel" instead of "Box."',
+            isCorrect: false,
+            feedback: 'Many legitimate delivery services use the word "parcel"—focus on the sender, link address, and payment demand.',
+          },
+          {
+            id: 'D',
+            text: 'Alex ordered illustration pens from an art supply shop.',
+            isCorrect: false,
+            feedback: 'Ordering items online is normal; scammers send mass texts hoping to catch anyone waiting on a package.',
+          },
+        ],
+        correctAnswerExplanation: 'Comparing the message against your actual order receipt and looking closely at the sender and web address reveals look-alike delivery traps.',
+      },
+      chapterTransition: 'Now that you and Alex have uncovered the fake sender, mismatched tracking code, and the mysterious Glasshouse prism mark, it is time to choose how to verify the real package safely.',
+    },
+    {
+      number: 3,
+      phase: 'The Decision',
+      title: 'Chapter 3: The Safe Route',
+      summary: 'Choose how to verify the delivery using a contact method found independently.',
+      learningGoal: 'Verify delivery status exclusively through the official courier app or a trusted contact method found independently, and delete or report the suspicious message.',
+      storySetup: 'Alex holds the printed order receipt in one hand and the phone in the other. You need to guide Alex on the safest way to check where the real box of illustration pens is—and record the first Glasshouse clue on your investigation board.',
+      graphicsDirection: {
+        backgroundArt: 'Full apartment living room view with the investigation corkboard on the wall, where a glowing thread connects the first Glasshouse Prism sketch.',
+        characterAppearanceAndPose: 'Alex stands relaxed and attentive beside the console table, waiting for your recommendation with the official courier receipt in hand.',
+        keyProps: 'Official SwiftPost app icon on Alex’s home screen, printed store receipt with real tracking number, and your investigator Case Journal.',
+        cameraAngle: 'Cinematic medium two-shot framing both you and Alex, with the four decision choices presented in a high-contrast overlay.',
+        lighting: 'Warm, reassuring amber room lighting paired with crisp emerald highlights when the safe verification route is chosen.',
+        onScreenMessage: '[Official SwiftPost App — Opened Independently]: "Tracking #SP-992014-REAL: In Transit — Arriving Tomorrow by 2:00 PM. Balance Due: $0.00."',
+        interactiveClueEffects: 'Selecting the safe route highlights the official app verification screen in emerald and pins the [GH-PRISM-01] card onto your Case Journal.',
+        transitionGraphic: 'Case 01 stamped "RESOLVED" in emerald as the Glasshouse Prism icon links toward Case 02 on the city map.',
+      },
+      chapterDialogue: [
+        {
+          speaker: 'Alex Rivera',
+          role: 'Neighbor & Illustrator',
+          line: 'Okay, I’m definitely not tapping that link. How should I check on my real package of pens?',
+        },
+        {
+          speaker: 'You (Investigator)',
+          role: 'Lead Investigator',
+          line: 'Open the official SwiftPost app directly from your home screen—not from the text—and type in the tracking number from your art store receipt.',
+        },
+        {
+          speaker: 'Alex Rivera',
+          role: 'Neighbor & Illustrator',
+          line: 'Look at that! The real app says my pens are on schedule for tomorrow afternoon with zero fees due. And keep a copy of that prism stamp—something tells me you’ll see it again.',
+        },
+      ],
+      playerInteraction: 'Review the collected clues in your Case Journal [J], answer the Chapter 3 safety check, and choose the safest action from the four-option Decision Modal.',
+      clues: [
+        {
+          id: 'l1-c3-clue1',
+          title: 'Real Store Receipt Tracking ID',
+          detail: 'Alex’s original email confirmation from the art store has the real tracking code (#SP-992014-REAL).',
+          hint: 'Use the tracking number from the original purchase confirmation, not the number inside the suspicious SMS.',
+        },
+        {
+          id: 'l1-c3-clue2',
+          title: 'Independent App Lookup',
+          detail: 'Opening the official SwiftPost app directly shows the parcel is on time with $0.00 owed.',
+          hint: 'Always navigate to the courier’s official app or website on your own rather than following a text link.',
+        },
+        {
+          id: 'l1-c3-clue3',
+          title: 'First Glasshouse Trail Marker',
+          detail: 'The GH-PRISM-01 template stamp is saved to your investigator board to compare with future city incidents.',
+          hint: 'Check how the prism watermark is archived in your Case Journal for upcoming cases.',
+        },
+      ],
+      question: {
+        prompt: 'What is the safest way for Alex to confirm the real status of the illustration pens?',
+        options: [
+          {
+            id: 'A',
+            text: 'Ignore the text link, open the official SwiftPost app independently, and enter the tracking number from the original store receipt.',
+            isCorrect: true,
+            feedback: 'Correct! Using an independently opened official app and the original receipt tracking number confirms the delivery safely.',
+          },
+          {
+            id: 'B',
+            text: 'Call the phone number that sent the text message to ask where the depot is located.',
+            isCorrect: false,
+            feedback: 'Calling the number from a suspicious message connects you directly to the person running the scam.',
+          },
+          {
+            id: 'C',
+            text: 'Open the link in a private browser tab and enter a secondary credit card just in case.',
+            isCorrect: false,
+            feedback: 'Private browsing does not protect card details that you type directly into a fraudulent website.',
+          },
+          {
+            id: 'D',
+            text: 'Forward the link to friends so they can test if the website loads on their phones.',
+            isCorrect: false,
+            feedback: 'Sharing a suspicious link puts friends at risk of clicking it by mistake.',
+          },
+        ],
+        correctAnswerExplanation: 'Always verify delivery alerts by going independently to the official courier app or website and using the tracking number from your original order confirmation.',
+      },
+      chapterTransition: 'Case 1 resolved! Alex’s card is safe, the pens arrive tomorrow, and the [GH-PRISM-01] symbol is pinned to your board—just as a late-night message pings in Apartment 4B for Case 2.',
+    },
+  ],
+
+  // ===========================================================================
+  // LEVEL 2: THE ROOMMATE’S EMERGENCY
+  // ===========================================================================
+  'level-02': [
+    {
+      number: 1,
+      phase: 'The Setup',
+      title: 'Chapter 1: The Late-Night Message',
+      summary: 'A friend appears to ask for urgent money late at night from an unfamiliar account.',
+      learningGoal: 'Recognize that urgent money requests claiming a friend has a "broken phone" or "new number" require calm verification before sending funds.',
+      storySetup: 'Later that week in Sunset Heights Apartment 4B, Alex Rivera calls you into the living room. A direct message just arrived from an account using roommate Jordan Lee’s photo and name, claiming Jordan’s phone broke at a downtown station and asking for $180 immediately via instant transfer.',
+      graphicsDirection: {
+        backgroundArt: 'Cozy shared apartment living room at night with a bookshelf, wall calendar, kitchen counter, and city streetlights outside the window.',
+        characterAppearanceAndPose: 'Alex Rivera (wearing a navy zip hoodie over a gray shirt) sits on the edge of the sofa holding a tablet with both hands, looking concerned.',
+        keyProps: 'Tablet on the coffee table showing the urgent message, a magnetic whiteboard calendar on the kitchen wall, and Alex’s cell phone.',
+        cameraAngle: 'Third-person view framing the living room sofa and coffee table, zooming smoothly into an over-the-shoulder view of the tablet screen.',
+        lighting: 'Soft warm floor-lamp glow in the living room, contrasted with cool blue-teal tablet light and subtle amber highlights on the wall calendar.',
+        onScreenMessage: '[DM from @jordan_lee_backup99]: "Hey!! Dropped my phone on the train tracks, borrowing a stranger’s tablet. Stranded at Central Terminal and need $180 right now to pay a towing fee. Please send to @FastCash-Glass02—don’t call my old number!"',
+        interactiveClueEffects: 'A soft teal glow pulses around the tablet on the coffee table and the schedule calendar on the wall.',
+        transitionGraphic: 'The camera pans from the tablet message toward the apartment kitchen calendar as clue markers illuminate.',
+      },
+      chapterDialogue: [
+        {
+          speaker: 'Alex Rivera',
+          role: 'Neighbor & Roommate',
+          line: 'Look at this DM from Jordan! It says Jordan’s phone got crushed at Central Terminal and they need $180 right now to get home.',
+        },
+        {
+          speaker: 'You (Investigator)',
+          role: 'Lead Investigator',
+          line: 'Take a breath, Alex. Notice how the message specifically warns you not to call Jordan’s normal phone number?',
+        },
+        {
+          speaker: 'Alex Rivera',
+          role: 'Neighbor & Roommate',
+          line: 'Yeah, it says "don’t call, just send to @FastCash-Glass02." Wait—"Glass02"? That sounds suspiciously like the tag from last time.',
+        },
+      ],
+      playerInteraction: 'Move to the sofa to speak with Alex [E], then inspect the tablet on the coffee table [E] to read the urgent message.',
+      clues: [
+        {
+          id: 'l2-c1-clue1',
+          title: '"Don’t Call My Old Number" Warning',
+          detail: 'The sender explicitly pressures Alex not to call Jordan’s saved phone number and demands an immediate transfer.',
+          hint: 'Look at how the message tries to block you from making a voice call.',
+        },
+        {
+          id: 'l2-c1-clue2',
+          title: 'Look-Alike Backup Handle (@jordan_lee_backup99)',
+          detail: 'The message comes from a newly created account with extra numbers added to Jordan’s name.',
+          hint: 'Inspect the username at the top of the direct message window.',
+        },
+        {
+          id: 'l2-c1-clue3',
+          title: 'Mismatched Payment Tag (@FastCash-Glass02)',
+          detail: 'The requested payment handle does not match Jordan’s real name and carries the "Glass02" tag.',
+          hint: 'Check the destination handle where the money is supposed to be sent.',
+        },
+      ],
+      question: {
+        prompt: 'Why do impersonation messages often claim "my phone is broken, so don’t call me"?',
+        options: [
+          {
+            id: 'A',
+            text: 'To stop you from calling the real friend on their known number and discovering the emergency is fake.',
+            isCorrect: true,
+            feedback: 'Correct! Scammers invent excuses like a broken phone or lost SIM card to prevent a quick phone call that would immediately expose the impersonation.',
+          },
+          {
+            id: 'B',
+            text: 'Because instant payment apps only work when voice calls are turned off.',
+            isCorrect: false,
+            feedback: 'Payment apps have nothing to do with whether someone can receive a phone call.',
+          },
+          {
+            id: 'C',
+            text: 'Because train stations block all incoming voice calls after 9:00 PM.',
+            isCorrect: false,
+            feedback: 'Train stations do not block normal cell phone calls at night.',
+          },
+          {
+            id: 'D',
+            text: 'To save battery on the recipient’s tablet.',
+            isCorrect: false,
+            feedback: 'The excuse is designed to isolate you from verifying the story with the real person.',
+          },
+        ],
+        correctAnswerExplanation: 'Whenever an urgent money request includes an excuse for why you cannot call or speak to the person, treat it as a major warning sign.',
+      },
+      chapterTransition: 'Before sending a single dollar, you decide to compare the message’s story with what you and Alex already know about Jordan’s evening plans.',
+    },
+    {
+      number: 2,
+      phase: 'The Investigation',
+      title: 'Chapter 2: Something Feels Off',
+      summary: 'Compare the message with what you know and check with a mutual friend.',
+      learningGoal: 'Cross-check an urgent story against real-world facts, shared schedules, and trusted mutual contacts.',
+      storySetup: 'You walk over to the apartment wall calendar and kitchen counter. According to the handwritten schedule on the whiteboard, Jordan doesn’t even own a car to get towed—and is currently two blocks away studying with mutual friend Samira at the late-night campus library.',
+      graphicsDirection: {
+        backgroundArt: 'Apartment kitchen nook featuring a dry-erase schedule board, pinned polaroid photos of roommates Jordan and Samira, and a countertop charging dock.',
+        characterAppearanceAndPose: 'Alex stands beside the whiteboard calendar pointing at Friday night’s entry while you compare the tablet message against the handwritten notes.',
+        keyProps: 'Dry-erase roommate calendar, tablet showing @jordan_lee_backup99 profile details (Created: 22 minutes ago), and Alex’s contacts list.',
+        cameraAngle: 'Split over-the-shoulder angle showing the handwritten wall calendar on the left and the tablet profile inspection panel on the right.',
+        lighting: 'Warm under-cabinet kitchen lighting with teal evidence rings highlighting the calendar entry and the "Account Created: 22 mins ago" badge.',
+        onScreenMessage: '[Profile Inspection — fictional-text-preview]: Account "@jordan_lee_backup99" · Created 22 mins ago · 0 Mutual Friends · Bio copied from public profile · Payment Tag: @FastCash-Glass02.',
+        interactiveClueEffects: 'Inspecting the wall calendar and tablet profile draws a bright amber connection line highlighting the contradiction in the towing story.',
+        transitionGraphic: 'The three contradictions lock into your Case Journal, prompting the Chapter 3 verification choice.',
+      },
+      chapterDialogue: [
+        {
+          speaker: 'You (Investigator)',
+          role: 'Lead Investigator',
+          line: 'Check the whiteboard calendar on the wall: Jordan is at the campus library study room with Samira tonight—and Jordan rides a bicycle, not a car that could get towed.',
+        },
+        {
+          speaker: 'Alex Rivera',
+          role: 'Neighbor & Roommate',
+          line: 'I was so panicked about Jordan being stranded that I completely forgot Jordan doesn’t even drive!',
+        },
+        {
+          speaker: 'You (Investigator)',
+          role: 'Lead Investigator',
+          line: 'And look at the profile info on the tablet: this "@jordan_lee_backup99" account was created twenty-two minutes ago using a public profile photo.',
+        },
+      ],
+      playerInteraction: 'Inspect the Roommate Wall Calendar [E] and the Tablet Profile Details [E] to compare the message’s claims against real-life facts.',
+      clues: [
+        {
+          id: 'l2-c2-clue1',
+          title: 'Contradictory Towing Story',
+          detail: 'The message asks for $180 for a car towing fee, but the apartment calendar confirms Jordan rides a bike and is at the library with Samira.',
+          hint: 'Compare the reason for the money request with Jordan’s actual routine on the calendar.',
+        },
+        {
+          id: 'l2-c2-clue2',
+          title: 'Account Created 22 Minutes Ago',
+          detail: 'The "@jordan_lee_backup99" account has zero mutual friends and was registered just minutes before messaging Alex.',
+          hint: 'Inspect the account creation timestamp and mutual connections on the tablet.',
+        },
+        {
+          id: 'l2-c2-clue3',
+          title: 'Second Glasshouse Tag (@FastCash-Glass02)',
+          detail: 'The payment destination carries the "-Glass02" naming pattern, matching the Glasshouse campaign trail from Level 1.',
+          hint: 'Look at the end of the payment handle to connect it to your Case Journal.',
+        },
+      ],
+      question: {
+        prompt: 'What did comparing the message against the apartment calendar and profile details reveal?',
+        options: [
+          {
+            id: 'A',
+            text: 'The account was created 22 minutes ago with a copied photo, and the car-towing story contradicts the fact that Jordan rides a bike and is at the library.',
+            isCorrect: true,
+            feedback: 'Correct! Checking simple facts you already know—and inspecting when the account was created—quickly exposes an impersonator.',
+          },
+          {
+            id: 'B',
+            text: 'Jordan bought a car earlier that evening without telling anyone.',
+            isCorrect: false,
+            feedback: 'The newly created account and mismatched payment handle show this is an impersonation, not a surprise car purchase.',
+          },
+          {
+            id: 'C',
+            text: 'The message is trustworthy because the profile picture looks like Jordan.',
+            isCorrect: false,
+            feedback: 'Anyone can copy a public profile photo onto a new account in seconds; a photo alone never proves identity.',
+          },
+          {
+            id: 'D',
+            text: 'Alex should send half the money ($90) first to test if the account is real.',
+            isCorrect: false,
+            feedback: 'Never send partial "test" payments to an unverified request—instant transfers are difficult or impossible to reverse.',
+          },
+        ],
+        correctAnswerExplanation: 'Impersonators rely on panic so you overlook obvious factual contradictions and brand-new account profiles.',
+      },
+      chapterTransition: 'With the fake backup profile exposed, you and Alex are ready to confirm Jordan’s safety using a separate, trusted communication channel.',
+    },
+    {
+      number: 3,
+      phase: 'The Decision',
+      title: 'Chapter 3: Call Before You Send',
+      summary: 'Choose a safe way to confirm the request before taking action.',
+      learningGoal: 'Always verify an urgent money request by calling the person on their known, saved phone number or checking through a trusted mutual contact.',
+      storySetup: 'Alex holds up their phone with Jordan’s real, saved contact number—and mutual friend Samira’s number—ready to dial. It is time to make the final call and lock down the second Glasshouse clue.',
+      graphicsDirection: {
+        backgroundArt: 'Living room scene with warm lighting, the Case Journal open on the table, and a split-screen phone call panel showing Jordan answering from the campus library.',
+        characterAppearanceAndPose: 'Alex smiles in relief holding the phone to their ear while Jordan’s verified contact card appears on screen.',
+        keyProps: 'Alex’s phone dialing Jordan’s saved contact number, the tablet with the report-impersonation menu open, and the Glasshouse Case Board.',
+        cameraAngle: 'Medium third-person framing of you and Alex by the sofa, transitioning to the four-choice Decision Modal.',
+        lighting: 'Warm golden-hour interior fill with emerald confirmation accents when the independent voice call succeeds.',
+        onScreenMessage: '[Verified Call — Jordan Lee (Saved Contact)]: "I’m right here in the library with Samira! My phone works fine—do NOT send money to that fake backup account!"',
+        interactiveClueEffects: 'Completing the safe call highlights the verified contact badge in emerald and connects [Glass02] to [GH-PRISM-01] on the Glasshouse board.',
+        transitionGraphic: 'Case 02 stamped "RESOLVED" as the investigation map highlights Oakridge University Campus for Level 3.',
+      },
+      chapterDialogue: [
+        {
+          speaker: 'You (Investigator)',
+          role: 'Lead Investigator',
+          line: 'Dial Jordan’s saved number from your contacts list—not through that DM thread.',
+        },
+        {
+          speaker: 'Alex Rivera',
+          role: 'Neighbor & Roommate',
+          line: 'Jordan picked up on the first ring! Jordan is sitting right next to Samira in the campus library and never sent that message.',
+        },
+        {
+          speaker: 'You (Investigator)',
+          role: 'Lead Investigator',
+          line: 'Let’s report the impersonator profile and log "@FastCash-Glass02" into the Glasshouse file. Tomorrow we’re heading to the campus library.',
+        },
+      ],
+      playerInteraction: 'Answer the Chapter 3 knowledge question and select the safest response in the four-option Decision Modal.',
+      clues: [
+        {
+          id: 'l2-c3-clue1',
+          title: 'Saved Contact Verification Call',
+          detail: 'Calling the phone number already saved in Alex’s contacts reaches the real Jordan immediately.',
+          hint: 'Use a phone number or channel you already trusted before the suspicious message arrived.',
+        },
+        {
+          id: 'l2-c3-clue2',
+          title: 'Mutual Friend Confirmation',
+          detail: 'Samira confirms sitting right across from Jordan at the library study table.',
+          hint: 'A trusted mutual friend in the same location can also confirm the person is safe.',
+        },
+        {
+          id: 'l2-c3-clue3',
+          title: 'Glasshouse Pattern Link #02',
+          detail: 'Both Case 1 and Case 2 used urgent 30-minute pressure and a "Glass/GH" identifier.',
+          hint: 'Check your Case Journal to see how the first two cases connect.',
+        },
+      ],
+      question: {
+        prompt: 'What is the most reliable way to verify an urgent message from a friend asking for money?',
+        options: [
+          {
+            id: 'A',
+            text: 'Call the friend on the phone number you already have saved in your contacts (or verify through a trusted mutual friend) before sending anything.',
+            isCorrect: true,
+            feedback: 'Correct! Contacting the person through a separate, pre-established phone number or in person immediately confirms whether the emergency is real.',
+          },
+          {
+            id: 'B',
+            text: 'Ask the sender inside the suspicious DM chat to promise it is really them.',
+            isCorrect: false,
+            feedback: 'An impersonator will simply reply "Yes, it’s really me!" Staying inside the same chat does not verify identity.',
+          },
+          {
+            id: 'C',
+            text: 'Send the money first so your friend isn’t stuck, then call them tomorrow.',
+            isCorrect: false,
+            feedback: 'Once money is sent via instant transfer to a scammer, it is very hard to recover. Always call first.',
+          },
+          {
+            id: 'D',
+            text: 'Ask the sender to send another photo of Jordan’s public profile picture.',
+            isCorrect: false,
+            feedback: 'Since public photos are easy to copy, sending another public photo proves nothing.',
+          },
+        ],
+        correctAnswerExplanation: 'A 30-second phone call to a number you already have saved—outside the messaging app where the request arrived—stops friend-impersonation scams cold.',
+      },
+      chapterTransition: 'When Jordan mentions that several students at the Oakridge University library received strange login alerts tonight, you head to campus for Level 3.',
+    },
+  ],
+
+  // ===========================================================================
+  // LEVEL 3: THE CAMPUS LOGIN
+  // ===========================================================================
+  'campus-login': [
+    {
+      number: 1,
+      phase: 'The Setup',
+      title: 'Chapter 1: Locked Out',
+      summary: 'A student sees an unexpected account-security warning claiming her campus portal will be locked.',
+      learningGoal: 'Pause when an unexpected security alert threatens immediate account deletion or lockout, and avoid entering credentials through message links.',
+      storySetup: 'The next morning at the Oakridge University Commons, environmental science student Maya Lin waves you over to her study table. She just received an urgent email claiming her university portal and scholarship stipend will be suspended in 15 minutes unless she logs in through a "Verify Now" button.',
+      graphicsDirection: {
+        backgroundArt: 'Sunlit university commons and library atrium with glass skylights, brick archways, study tables, and a campus IT notice board.',
+        characterAppearanceAndPose: 'Maya Lin (early 20s, natural proportions, olive varsity cardigan, backpack beside her chair) sits at a wooden study table gesturing anxiously toward her open laptop.',
+        keyProps: 'Maya’s open laptop on the study table, a campus IT Helpdesk poster on the bulletin board, and her student ID card.',
+        cameraAngle: 'Third-person view across the sunlit campus commons, dollying smoothly into an over-the-shoulder angle behind Maya’s laptop.',
+        lighting: 'Bright natural morning skylight balanced with warm study-lamp accents and a cool teal highlight around the laptop and IT bulletin board.',
+        onScreenMessage: '[Email Alert — Subject: URGENT: Portal Suspension in 15 Mins]: "Dear Student, Unusual sign-in detected. Click [Verify Campus Account] at [fictional-preview: oakridge-edu-portal-auth.example] now or lose access to grades and financial aid."',
+        interactiveClueEffects: 'A soft amber halo highlights Maya’s laptop and the official IT bulletin board nearby.',
+        transitionGraphic: 'The camera zooms toward the laptop browser bar as a teal magnifying lens highlights the sender address and URL.',
+      },
+      chapterDialogue: [
+        {
+          speaker: 'Maya Lin',
+          role: 'University Student',
+          line: 'Thanks for meeting me here! Jordanian told me how you helped Alex last night, and now my laptop just popped up this scary campus security warning.',
+        },
+        {
+          speaker: 'You (Investigator)',
+          role: 'Lead Investigator',
+          line: 'Don’t type your password yet, Maya. What does the email claim will happen?',
+        },
+        {
+          speaker: 'Maya Lin',
+          role: 'University Student',
+          line: 'It says my student portal and scholarship access will be locked in 15 minutes unless I sign in through their link right now.',
+        },
+      ],
+      playerInteraction: 'Walk across the campus commons, speak with Maya Lin [E], and approach her laptop [E] without entering any credentials.',
+      clues: [
+        {
+          id: 'l3-c1-clue1',
+          title: '15-Minute Scholarship Lockout Threat',
+          detail: 'The email uses high-stakes fear—losing grades and financial aid in 15 minutes—to rush Maya into typing her password.',
+          hint: 'Notice how the message threatens immediate loss of scholarship access to prevent careful checking.',
+        },
+        {
+          id: 'l3-c1-clue2',
+          title: 'Generic "Dear Student" Greeting',
+          detail: 'Unlike official university notices that include her student name and department, this alert uses a generic salutation.',
+          hint: 'Check how the email addresses Maya in the opening line.',
+        },
+        {
+          id: 'l3-c1-clue3',
+          title: 'External Login Link Button',
+          detail: 'The email demands signing in through an embedded link rather than directing her to open the regular campus portal bookmark.',
+          hint: 'Look at where the "Verify Campus Account" button wants to send her browser.',
+        },
+      ],
+      question: {
+        prompt: 'Maya receives an unexpected email warning that her student account will be suspended in 15 minutes unless she clicks "Verify Now" and logs in. What should she do first?',
+        options: [
+          {
+            id: 'A',
+            text: 'Do not click the link or type her password; pause to inspect the sender and check her account through her normal official bookmark.',
+            isCorrect: true,
+            feedback: 'Correct! Never enter credentials on a page opened from an unexpected warning email.',
+          },
+          {
+            id: 'B',
+            text: 'Type her username and password quickly before the 15-minute timer runs out.',
+            isCorrect: false,
+            feedback: 'Typing credentials into a look-alike page hands your account login directly to scammers.',
+          },
+          {
+            id: 'C',
+            text: 'Type a slightly wrong password first to see if the website accepts it.',
+            isCorrect: false,
+            feedback: 'Look-alike pages record every keystroke you submit, and interacting with them is unnecessary when you can use the official site directly.',
+          },
+          {
+            id: 'D',
+            text: 'Reply to the email with her student ID number and ask for more time.',
+            isCorrect: false,
+            feedback: 'Replying to a suspicious email reveals your student ID and confirms your address is active.',
+          },
+        ],
+        correctAnswerExplanation: 'Unexpected emails that use 15-minute countdowns to demand your login credentials are phishing traps. Always pause and keep your password off linked pages.',
+      },
+      chapterTransition: 'Keeping Maya’s hands off the keyboard, you inspect the look-alike page and compare it with the official Campus IT bulletin board.',
+    },
+    {
+      number: 2,
+      phase: 'The Investigation',
+      title: 'Chapter 2: The Look-Alike Page',
+      summary: 'Inspect the message and device without entering any real credentials.',
+      learningGoal: 'Identify look-alike login domains by checking the exact domain name before the first slash and comparing it with official organization addresses.',
+      storySetup: 'Without typing any username or password, you inspect the address bar on Maya’s screen and walk over to read the official Oakridge IT security notice pinned to the commons bulletin board.',
+      graphicsDirection: {
+        backgroundArt: 'Close-up of Maya’s laptop screen beside the cork Campus IT Bulletin Board displaying the official "oakridge.edu" domain guide.',
+        characterAppearanceAndPose: 'Maya leans in beside you, comparing the printed IT security flyer in her hand against the browser address bar on her laptop.',
+        keyProps: 'Laptop browser bar showing "oakridge-edu-portal-auth.example", Campus IT Bulletin Board poster, and HTML source footer inspection tag.',
+        cameraAngle: 'Over-the-shoulder inspection framing the laptop address bar and the nearby Campus IT poster.',
+        lighting: 'Crisp daylight supplemented by teal inspection highlights around the hyphenated domain name and page footer.',
+        onScreenMessage: '[Browser Inspection — No Credentials Entered]: URL: "https://oakridge-edu-portal-auth.example/login" vs Official Domain: "portal.oakridge.edu" | Form Tag: [GH-AUTH-03 · Glasshouse Kit].',
+        interactiveClueEffects: 'Hovering over the URL bar splits the address visually to show that ".example" is the real domain, while "oakridge-edu" is just a deceptive prefix.',
+        transitionGraphic: 'The three domain and template clues pin into your Case Journal, unlocking the Chapter 3 Front-Door Decision.',
+      },
+      chapterDialogue: [
+        {
+          speaker: 'You (Investigator)',
+          role: 'Lead Investigator',
+          line: 'Look closely at the address bar, Maya. The real university website always ends in "oakridge.edu." This page is "oakridge-edu-portal-auth.example."',
+        },
+        {
+          speaker: 'Maya Lin',
+          role: 'University Student',
+          line: 'They copied the university crest and colors so well, I almost didn’t notice the hyphens where the dot should be!',
+        },
+        {
+          speaker: 'You (Investigator)',
+          role: 'Lead Investigator',
+          line: 'And look at the page template label in the bottom corner: "GH-AUTH-03." That’s the third Glasshouse footprint this week.',
+        },
+      ],
+      playerInteraction: 'Inspect Maya’s Laptop [E] to examine the URL structure without typing any credentials, then inspect the Campus IT Bulletin Board [E] to verify the real portal domain.',
+      clues: [
+        {
+          id: 'l3-c2-clue1',
+          title: 'Hyphenated Look-Alike Domain',
+          detail: 'The login page is hosted on "oakridge-edu-portal-auth.example" instead of the real university domain "portal.oakridge.edu".',
+          hint: 'Look at the punctuation between "oakridge" and "edu"—a hyphen is not a real ".edu" domain.',
+        },
+        {
+          id: 'l3-c2-clue2',
+          title: 'Campus IT Official Domain Policy',
+          detail: 'The official IT bulletin board confirms that Oakridge University only uses "portal.oakridge.edu" and never emails urgent lockout links.',
+          hint: 'Read the Campus IT poster on the bulletin board to verify the real login address.',
+        },
+        {
+          id: 'l3-c2-clue3',
+          title: 'Glasshouse Login Kit [GH-AUTH-03]',
+          detail: 'The fake login box carries the [GH-AUTH-03] template marker, linking this campus phishing page to the Glasshouse campaign.',
+          hint: 'Inspect the lower corner of the login card to find the recurring Glasshouse tag.',
+        },
+      ],
+      question: {
+        prompt: 'Why is "https://oakridge-edu-portal-auth.example/login" NOT an official "oakridge.edu" website?',
+        options: [
+          {
+            id: 'A',
+            text: 'Because the actual domain name right before the first single slash is "oakridge-edu-portal-auth.example", using hyphens to imitate "oakridge.edu".',
+            isCorrect: true,
+            feedback: 'Correct! Scammers put trusted words and hyphens at the start of a web address to disguise the real domain at the end.',
+          },
+          {
+            id: 'B',
+            text: 'Because it starts with "https://", which only fake websites use.',
+            isCorrect: false,
+            feedback: 'Both real and fake websites can have "https://" and a padlock icon—that only means the connection is encrypted, not that the site owner is trustworthy.',
+          },
+          {
+            id: 'C',
+            text: 'Because it has the word "login" after the slash.',
+            isCorrect: false,
+            feedback: 'Real portals also use "/login" paths; the critical clue is the domain name before the first single slash.',
+          },
+          {
+            id: 'D',
+            text: 'Because university websites only work on desktop computers, not laptops.',
+            isCorrect: false,
+            feedback: 'University portals work on any device; the domain name itself is what proves this page is a look-alike.',
+          },
+        ],
+        correctAnswerExplanation: 'Always read the domain name immediately before the first single slash (`/`). A padlock or copied logo does not make a look-alike domain authentic.',
+      },
+      chapterTransition: 'Now that Maya sees the hyphenated look-alike domain, you guide her on how to reach her real student account safely "back through the front door."',
+    },
+    {
+      number: 3,
+      phase: 'The Decision',
+      title: 'Chapter 3: Back Through the Front Door',
+      summary: 'Choose how to reach the service safely and protect the account.',
+      learningGoal: 'Close suspicious login pages, access accounts only via saved official bookmarks or known URLs ("the front door"), and enable multi-factor authentication.',
+      storySetup: 'Maya closes the suspicious tab without typing a single character. Now she wants to make sure her real scholarship portal is safe and help protect other students on campus.',
+      graphicsDirection: {
+        backgroundArt: 'Oakridge University Commons with warm sunlight streaming across the study table as Maya opens her trusted browser bookmark.',
+        characterAppearanceAndPose: 'Maya sits confidently at her laptop, giving a thumbs-up as her real student dashboard loads with an "Account Secure · 2FA Active" banner.',
+        keyProps: 'Maya’s laptop showing the verified "portal.oakridge.edu" bookmark, Campus IT reporting portal, and your Glasshouse Case Journal.',
+        cameraAngle: 'Medium over-the-shoulder two-shot framing Maya’s verified portal screen and the four-option Decision Modal.',
+        lighting: 'Bright, warm campus light with emerald highlights confirming her account is untouched and protected.',
+        onScreenMessage: '[Official Bookmark — https://portal.oakridge.edu]: "Welcome back, Maya Lin! Account Status: Active & Good Standing. Hardware/App 2FA: Enabled."',
+        interactiveClueEffects: 'Selecting the safe front-door route illuminates the verified ".edu" bookmark in emerald and adds [GH-AUTH-03] to the Glasshouse Case Board.',
+        transitionGraphic: 'Case 03 stamped "RESOLVED" as the city map connects the campus clue to the Midtown Courtyard Café for Level 4.',
+      },
+      chapterDialogue: [
+        {
+          speaker: 'You (Investigator)',
+          role: 'Lead Investigator',
+          line: 'Close that email tab completely, open a fresh window, and use your saved bookmark for "portal.oakridge.edu"—going straight through the front door.',
+        },
+        {
+          speaker: 'Maya Lin',
+          role: 'University Student',
+          line: 'I’m in! My scholarship and classes are completely fine—there was never any suspension. I just turned on app-based two-factor authentication too.',
+        },
+        {
+          speaker: 'You (Investigator)',
+          role: 'Lead Investigator',
+          line: 'And forwarding that phishing email to the Campus IT Helpdesk will help them block the fake domain for every student on campus.',
+        },
+      ],
+      playerInteraction: 'Complete the Chapter 3 knowledge question and select the safe response in the four-option Decision Modal.',
+      clues: [
+        {
+          id: 'l3-c3-clue1',
+          title: 'Trusted Bookmark ("The Front Door")',
+          detail: 'Navigating independently via a saved bookmark or typing "portal.oakridge.edu" bypasses the email trap completely.',
+          hint: 'Use your own saved bookmark or official app instead of clicking links in unexpected security emails.',
+        },
+        {
+          id: 'l3-c3-clue2',
+          title: 'Multi-Factor Authentication (2FA) Shield',
+          detail: 'Enabling authenticator-app 2FA adds a second barrier of protection on Maya’s real student account.',
+          hint: 'Check the security settings inside the real portal to strengthen account protection.',
+        },
+        {
+          id: 'l3-c3-clue3',
+          title: 'Campus IT Phishing Report',
+          detail: 'Reporting the fake email to Campus IT allows them to warn students and block "oakridge-edu-portal-auth.example".',
+          hint: 'Sharing the suspicious email with official IT support protects the wider campus community.',
+        },
+      ],
+      question: {
+        prompt: 'What does going "back through the front door" mean when you receive an unexpected account security alert?',
+        options: [
+          {
+            id: 'A',
+            text: 'Closing the message without clicking its link, then opening your browser or official app independently to go to the service’s known, trusted address.',
+            isCorrect: true,
+            feedback: 'Correct! Going to the service independently via your own bookmark or official app guarantees you land on the real website.',
+          },
+          {
+            id: 'B',
+            text: 'Clicking the link in the email and then clicking the "Home" icon on the fake website.',
+            isCorrect: false,
+            feedback: 'The "Home" button on a look-alike website still keeps you on the scammer’s domain.',
+          },
+          {
+            id: 'C',
+            text: 'Logging in with an older password to see if the alert goes away.',
+            isCorrect: false,
+            feedback: 'Never type current or old passwords into an unverified link.',
+          },
+          {
+            id: 'D',
+            text: 'Restarting your laptop and clicking the same email link again.',
+            isCorrect: false,
+            feedback: 'Restarting your computer does not change where a phishing link leads.',
+          },
+        ],
+        correctAnswerExplanation: 'Whenever an email or text asks you to log in, ignore the link and go "through the front door" by opening the official app or your saved bookmark yourself.',
+      },
+      chapterTransition: 'Just as you wrap up at Oakridge Commons, café owner Marcus Vance texts that he’s about to hand over a vintage espresso grinder to an online buyer at the Midtown Café—leading into Level 4.',
+    },
+  ],
+
+  // ===========================================================================
+  // LEVEL 4: MARKETPLACE MIRAGE
+  // ===========================================================================
+  'marketplace-meetup': [
+    {
+      number: 1,
+      phase: 'The Setup',
+      title: 'Chapter 1: The Perfect Buyer',
+      summary: 'A seller receives a payment confirmation screenshot from a stranger during a meetup.',
+      learningGoal: 'Understand that a screenshot or email image sent by a buyer is never proof that money has actually arrived in your account.',
+      storySetup: 'At the Midtown Courtyard Café, local shop owner Marcus Vance is selling a $450 commercial espresso grinder listed on a neighborhood marketplace. A buyer named "Buyer_K" hasn’t even arrived in person—instead, the buyer sent a courier driver to pick up the heavy box right now and texted Marcus a cropped screenshot claiming the $450 payment is "Paid & Held."',
+      graphicsDirection: {
+        backgroundArt: 'Warm brick-and-timber courtyard café with an espresso bar, pastry counter, chalkboard menu, and a boxed espresso grinder on the pickup table.',
+        characterAppearanceAndPose: 'Marcus Vance (mid-30s, natural proportions, canvas barista apron over a burgundy henley, warm expressive face) stands behind the pickup table holding his phone and looking toward the café entrance.',
+        keyProps: 'Boxed $450 espresso grinder on the table, Marcus’s smartphone showing the buyer’s screenshot, and the café’s sales ledger.',
+        cameraAngle: 'Third-person view across the café counter, moving smoothly to an over-the-shoulder angle of Marcus’s phone and the boxed grinder.',
+        lighting: 'Warm Edison pendant lighting over the café counter with teal inspection highlights around the phone and ledger.',
+        onScreenMessage: '[Buyer Chat — "Buyer_K"]: "My driver is parking outside! Here is the screenshot showing I sent $450 + $50 bonus ($500 total). It says Pending until you hand the grinder to the driver and upload the pickup photo!"',
+        interactiveClueEffects: 'A soft amber glow outlines Marcus’s phone and the café sales ledger on the counter.',
+        transitionGraphic: 'The camera shifts from the buyer’s chat screenshot to Marcus’s actual TrustPay app icon as clue markers appear.',
+      },
+      chapterDialogue: [
+        {
+          speaker: 'Marcus Vance',
+          role: 'Café Owner & Seller',
+          line: 'Glad you’re here! This buyer offered full price plus a $50 bonus for my espresso grinder, and their courier driver is waiting outside right now.',
+        },
+        {
+          speaker: 'You (Investigator)',
+          role: 'Lead Investigator',
+          line: 'Did the $500 show up inside your own payment app, Marcus?',
+        },
+        {
+          speaker: 'Marcus Vance',
+          role: 'Café Owner & Seller',
+          line: 'Well, the buyer texted me this screenshot saying the money is "Pending Release" until I hand over the grinder. Should I give the box to the driver?',
+        },
+        {
+          speaker: 'You (Investigator)',
+          role: 'Lead Investigator',
+          line: 'Hold onto that box! Anyone can edit a screenshot in a minute. Let’s check your actual payment app first.',
+        },
+      ],
+      playerInteraction: 'Walk to the café counter, talk with Marcus Vance [E], and inspect Marcus’s smartphone [E] to examine the buyer’s screenshot.',
+      clues: [
+        {
+          id: 'l4-c1-clue1',
+          title: 'Cropped Payment Screenshot',
+          detail: 'The buyer sent a static image of a payment receipt rather than an actual transfer appearing in Marcus’s account.',
+          hint: 'Notice that the "proof" is just a picture sent inside a chat message.',
+        },
+        {
+          id: 'l4-c1-clue2',
+          title: '"Hold Until Handover" Excuse',
+          detail: 'The screenshot claims funds are held until the seller hands over the item—a rule real peer-to-peer payment apps do not use.',
+          hint: 'Read the claim about why the money hasn’t appeared in Marcus’s balance yet.',
+        },
+        {
+          id: 'l4-c1-clue3',
+          title: '$50 Overpayment & Waiting Driver Pressure',
+          detail: 'Offering an extra $50 and claiming a driver is waiting outside creates urgency so Marcus hands over the grinder before checking.',
+          hint: 'Look at how the bonus offer and waiting driver rush Marcus.',
+        },
+      ],
+      question: {
+        prompt: 'When selling an item online, why is a payment screenshot sent by the buyer NOT reliable proof of payment?',
+        options: [
+          {
+            id: 'A',
+            text: 'Because screenshots can be easily edited or faked; real proof only comes from seeing the funds inside your own trusted payment app or bank account.',
+            isCorrect: true,
+            feedback: 'Correct! A picture in a chat message is not money in your account. Always verify directly in your own payment app.',
+          },
+          {
+            id: 'B',
+            text: 'Because screenshots only count as proof if the buyer sends them in high resolution.',
+            isCorrect: false,
+            feedback: 'Even a crisp, high-resolution image can be completely fabricated in seconds.',
+          },
+          {
+            id: 'C',
+            text: 'Because peer-to-peer payment apps always hold money until you text a photo of the courier driver.',
+            isCorrect: false,
+            feedback: 'Standard peer-to-peer payment apps do not hold payments pending a pickup photo—that is a classic fake-escrow trick.',
+          },
+          {
+            id: 'D',
+            text: 'Because the buyer offered a $50 bonus instead of a $100 bonus.',
+            isCorrect: false,
+            feedback: 'Overpayments of any amount are commonly used to bait sellers into trusting a fake receipt.',
+          },
+        ],
+        correctAnswerExplanation: 'Never rely on a screenshot or email from a buyer to confirm payment. Always open your own payment app independently and check your real balance.',
+      },
+      chapterTransition: 'With the espresso grinder still safely behind the counter, you help Marcus open his real payment app to see if any money actually arrived.',
+    },
+    {
+      number: 2,
+      phase: 'The Investigation',
+      title: 'Chapter 2: Where’s the Payment?',
+      summary: 'Check the trusted payment app and notice mismatched details on the screenshot.',
+      learningGoal: 'Compare a buyer’s claimed receipt against your real payment app balance and spot forged fonts, mismatched usernames, and fake escrow rules.',
+      storySetup: 'You and Marcus open his official TrustPay app directly from his phone’s home screen and compare it side by side with the buyer’s screenshot and the café’s marketplace checklist.',
+      graphicsDirection: {
+        backgroundArt: 'Close-up of the café wood counter with Marcus’s phone showing a split view: the real TrustPay app ($0.00 incoming) beside the buyer’s doctored screenshot.',
+        characterAppearanceAndPose: 'Marcus leans over the counter with a sharp eye, pointing at the mismatched font and misspelled handle on the screenshot.',
+        keyProps: 'Marcus’s phone running the official TrustPay app, the doctored screenshot image, and the Café Marketplace Safety Ledger.',
+        cameraAngle: 'Over-the-shoulder close-up framing the phone screen and the open ledger book on the counter.',
+        lighting: 'Warm café counter lamp with crisp teal highlights around the $0.00 balance and the forged pixel edges on the screenshot.',
+        onScreenMessage: '[Official TrustPay App — Opened Independently]: "Recent Activity: No incoming transfers ($0.00)." | [Screenshot Forgery]: Recipient typed as "@Marcus_Vance_Cafe" in mismatched font · Receipt ID: [GH-ESCROW-04].',
+        interactiveClueEffects: 'Three glowing magnifier pins highlight the $0.00 real balance, the pasted font box on the screenshot, and the [GH-ESCROW-04] tag.',
+        transitionGraphic: 'All three payment clues lock into your Case Journal, opening the Chapter 3 Handover Decision.',
+      },
+      chapterDialogue: [
+        {
+          speaker: 'You (Investigator)',
+          role: 'Lead Investigator',
+          line: 'Look inside your official TrustPay app, Marcus: your incoming activity is $0.00. There is no pending transfer at all.',
+        },
+        {
+          speaker: 'Marcus Vance',
+          role: 'Café Owner & Seller',
+          line: 'And look closely at their screenshot! They typed my name in a different font over an old receipt, and got my TrustPay handle wrong.',
+        },
+        {
+          speaker: 'You (Investigator)',
+          role: 'Lead Investigator',
+          line: 'Plus, check the receipt footer code: "GH-ESCROW-04." That’s the same Glasshouse toolkit we’ve been tracking across the city.',
+        },
+      ],
+      playerInteraction: 'Inspect Marcus’s Phone [E] to compare the real TrustPay balance with the screenshot, and inspect the Café Ledger [E] to check the marketplace verification rules.',
+      clues: [
+        {
+          id: 'l4-c2-clue1',
+          title: '$0.00 Balance in Official TrustPay App',
+          detail: 'Opening the real TrustPay app independently shows zero incoming or pending payments from the buyer.',
+          hint: 'Check the activity feed inside Marcus’s real payment app.',
+        },
+        {
+          id: 'l4-c2-clue2',
+          title: 'Pasted Font & Wrong Recipient Handle',
+          detail: 'The "$500.00" text and "@Marcus_Vance_Cafe" handle on the screenshot are misaligned and use a different font than the real app.',
+          hint: 'Zoom in on the numbers and username inside the buyer’s screenshot.',
+        },
+        {
+          id: 'l4-c2-clue3',
+          title: 'Glasshouse Fake Escrow Stamp [GH-ESCROW-04]',
+          detail: 'The forged receipt template includes the identifier [GH-ESCROW-04], tying the scam to the Glasshouse operation.',
+          hint: 'Inspect the receipt reference number at the bottom of the buyer’s image.',
+        },
+      ],
+      question: {
+        prompt: 'What is the single most important check Marcus did in Chapter 2 to prove the payment was fake?',
+        options: [
+          {
+            id: 'A',
+            text: 'He opened his own trusted payment app independently and saw that his actual incoming balance and activity showed $0.00.',
+            isCorrect: true,
+            feedback: 'Correct! Your own official payment app or bank balance—opened directly by you—is the source of truth for whether you have been paid.',
+          },
+          {
+            id: 'B',
+            text: 'He asked the courier driver outside if the buyer seemed nice.',
+            isCorrect: false,
+            feedback: 'Third-party drivers are often hired via rideshare apps and have no idea the buyer’s payment screenshot is fake.',
+          },
+          {
+            id: 'C',
+            text: 'He checked whether the buyer’s chat message used polite punctuation.',
+            isCorrect: false,
+            feedback: 'Polite wording does not mean money has arrived in your account.',
+          },
+          {
+            id: 'D',
+            text: 'He tapped the "Release Funds" link sent by the buyer in a text message.',
+            isCorrect: false,
+            feedback: 'Never tap "release funds" or "claim payment" links sent by a buyer—real transfers appear directly in your app without needing a link.',
+          },
+        ],
+        correctAnswerExplanation: 'When selling items, only trust the balance and transaction history shown inside your own official payment app or bank account.',
+      },
+      chapterTransition: 'With the forged screenshot and $0.00 balance confirmed, Marcus needs to decide what to do before handing over the $450 espresso grinder.',
+    },
+    {
+      number: 3,
+      phase: 'The Decision',
+      title: 'Chapter 3: Confirm Before Handover',
+      summary: 'Choose what to do before giving away the item.',
+      learningGoal: 'Refuse to hand over any item until payment is confirmed inside your own trusted payment app, and never pay "unlock" or "courier" fees to receive money.',
+      storySetup: 'The buyer sends one last pushy message demanding that Marcus hand the grinder box to the driver immediately or pay a "$25 escrow release fee." Marcus looks to you for the final call.',
+      graphicsDirection: {
+        backgroundArt: 'Midtown Courtyard Café interior with the boxed espresso grinder safely behind the counter and your Case Journal open beside it.',
+        characterAppearanceAndPose: 'Marcus stands firm behind the counter with one hand resting on the espresso grinder box, smiling gratefully as he declines the fake buyer.',
+        keyProps: 'Protected espresso grinder box, Marcus’s phone showing the blocked/reported buyer profile, and the Glasshouse Case Board.',
+        cameraAngle: 'Medium two-shot of you and Marcus behind the espresso bar as the four-option Decision Modal appears.',
+        lighting: 'Warm golden café lighting with emerald accents confirming the item and Marcus’s account remain safe.',
+        onScreenMessage: '[Marketplace Action]: "Sale Declined — Item Retained Until Verified In-App Payment. Buyer_K Reported for Forged Receipt [GH-ESCROW-04]."',
+        interactiveClueEffects: 'Choosing the safe option highlights the protected grinder box in emerald and pins [GH-ESCROW-04] onto your Glasshouse Case Board.',
+        transitionGraphic: 'Case 04 stamped "RESOLVED" as the city map highlights the Downtown Co-Working Loft for Level 5.',
+      },
+      chapterDialogue: [
+        {
+          speaker: 'You (Investigator)',
+          role: 'Lead Investigator',
+          line: 'Keep the grinder right here behind the counter, Marcus. Tell the buyer the sale is off unless verified funds appear directly in your TrustPay balance.',
+        },
+        {
+          speaker: 'Marcus Vance',
+          role: 'Café Owner & Seller',
+          line: 'The moment I said I checked my real app balance, "Buyer_K" vanished and deleted the chat! You just saved my café $450.',
+        },
+        {
+          speaker: 'You (Investigator)',
+          role: 'Lead Investigator',
+          line: 'And we got our fourth Glasshouse marker: "GH-ESCROW-04." Let’s report the profile on the marketplace so no other seller gets tricked.',
+        },
+      ],
+      playerInteraction: 'Answer the Chapter 3 knowledge question and select the safe choice in the four-option Decision Modal.',
+      clues: [
+        {
+          id: 'l4-c3-clue1',
+          title: 'Zero Handover Without In-App Confirmation',
+          detail: 'Keeping possession of the item until funds are confirmed in the seller’s own app prevents physical item loss.',
+          hint: 'Once an item leaves your hands with a courier, you cannot get it back from a fake buyer.',
+        },
+        {
+          id: 'l4-c3-clue2',
+          title: 'No "Escrow Unlock" Fees',
+          detail: 'Real payment apps never ask a seller to pay a fee or buy a gift card to unlock incoming money.',
+          hint: 'If someone asks you to pay money to receive money, it is always a scam.',
+        },
+        {
+          id: 'l4-c3-clue3',
+          title: 'Marketplace Profile Report',
+          detail: 'Reporting the buyer account helps marketplace moderators remove fake-receipt scammers.',
+          hint: 'Use the platform’s built-in report tool to protect other community sellers.',
+        },
+      ],
+      question: {
+        prompt: 'What is the golden rule before handing over an item you are selling to a buyer or courier?',
+        options: [
+          {
+            id: 'A',
+            text: 'Confirm that the payment is completed and visible inside your own trusted payment app or bank account before handing over the item.',
+            isCorrect: true,
+            feedback: 'Correct! Never part with an item based on screenshots, emails, or promises of "pending" funds.',
+          },
+          {
+            id: 'B',
+            text: 'Hand over the item first if the buyer promises the money will unlock once the driver leaves.',
+            isCorrect: false,
+            feedback: 'Once the item leaves with the driver, the scammer has your item and you have $0.',
+          },
+          {
+            id: 'C',
+            text: 'Pay the $25 "escrow release fee" so the $500 payment can clear.',
+            isCorrect: false,
+            feedback: 'Paying a fee to unlock an incoming payment only loses you both the fee and the item.',
+          },
+          {
+            id: 'D',
+            text: 'Accept the screenshot if the buyer has a five-star emoji in their username.',
+            isCorrect: false,
+            feedback: 'Anyone can type star emojis into a display name; always verify inside your own payment app.',
+          },
+        ],
+        correctAnswerExplanation: 'Always confirm payment inside your own trusted app before handing over any item, and never pay a fee to unlock incoming funds.',
+      },
+      chapterTransition: 'While thanking you with a fresh espresso, Marcus mentions his cousin Priya Shah just received a flashy remote job offer with a strange onboarding form—setting up Level 5.',
+    },
+  ],
+
+  // ===========================================================================
+  // LEVEL 5: THE TOO-GOOD JOB
+  // ===========================================================================
+  'toogood-job': [
+    {
+      number: 1,
+      phase: 'The Setup',
+      title: 'Chapter 1: An Offer Arrives',
+      summary: 'A recruiter promises quick earnings and an easy hiring process with no interview.',
+      learningGoal: 'Recognize that unsolicited job offers promising high pay for minimal hours with no real interview are warning signs of a job scam.',
+      storySetup: 'At the Downtown Co-Working Hub, graphic designer Priya Shah invites you to her desk. She received an unexpected chat message offering a "$95/hour Remote Brand Coordinator" role at "Veridian Creative Studios"—hired on the spot with zero portfolio review or video interview, provided she completes onboarding in the next hour.',
+      graphicsDirection: {
+        backgroundArt: 'Modern sunlit co-working loft with glass partition walls, potted monstera plants, wooden desks, and a printed company directory stand.',
+        characterAppearanceAndPose: 'Priya Shah (late 20s, natural proportions, mustard blazer over a white blouse, glasses) sits at her workstation pointing excitedly yet cautiously at her laptop.',
+        keyProps: 'Priya’s laptop showing the instant job offer letter, a printed Official Design Industry Directory on the side table, and her notepad.',
+        cameraAngle: 'Third-person view across the co-working studio, gliding into an over-the-shoulder view of Priya’s laptop screen.',
+        lighting: 'Warm afternoon sunlight through loft windows paired with teal investigation highlights on the laptop and directory.',
+        onScreenMessage: '[Instant Job Offer — From: careers.veridian.hr.desk@freemail-chat.example]: "CONGRATULATIONS PRIYA! You are hired immediately at $95/hr (10 hrs/week, $950/wk guaranteed). No interview required! Complete the attached Onboarding & Equipment Form within 60 minutes."',
+        interactiveClueEffects: 'A soft amber highlight outlines Priya’s laptop and the official industry directory book nearby.',
+        transitionGraphic: 'The camera zooms into the onboarding attachment tab as clue pins appear around the sender email and salary terms.',
+      },
+      chapterDialogue: [
+        {
+          speaker: 'Priya Shah',
+          role: 'Graphic Designer',
+          line: 'Marcus told me to ask for your eyes on this! A recruiter just messaged me offering $95 an hour for flexible remote design work—and said I’m hired immediately without even interviewing!',
+        },
+        {
+          speaker: 'You (Investigator)',
+          role: 'Lead Investigator',
+          line: 'Ninety-five dollars an hour with zero portfolio review or interview? That’s a classic "too-good-to-be-true" hook, Priya.',
+        },
+        {
+          speaker: 'Priya Shah',
+          role: 'Graphic Designer',
+          line: 'They said if I don’t submit their onboarding form and equipment fee in sixty minutes, the spot goes to someone else.',
+        },
+      ],
+      playerInteraction: 'Walk to Priya’s desk in the co-working loft, talk to Priya Shah [E], and inspect her laptop [E] to read the job offer.',
+      clues: [
+        {
+          id: 'l5-c1-clue1',
+          title: 'Hired Immediately With No Interview',
+          detail: 'The recruiter offers $95/hour without conducting a real interview or reviewing Priya’s design portfolio.',
+          hint: 'Legitimate employers evaluate your skills and interview you before extending a high-paying job offer.',
+        },
+        {
+          id: 'l5-c1-clue2',
+          title: 'Free Webmail Recruiter Address',
+          detail: 'The offer comes from "careers.veridian.hr.desk@freemail-chat.example" instead of Veridian’s official corporate domain.',
+          hint: 'Look closely at the email domain after the "@" symbol.',
+        },
+        {
+          id: 'l5-c1-clue3',
+          title: '60-Minute Onboarding Deadline',
+          detail: 'The recruiter pressures Priya to sign and pay within 60 minutes so she doesn’t take time to verify the company.',
+          hint: 'Notice the artificial one-hour countdown attached to the job offer.',
+        },
+      ],
+      question: {
+        prompt: 'Which combination of signs in Priya’s job offer strongly suggests it may be a scam?',
+        options: [
+          {
+            id: 'A',
+            text: 'Unusually high pay ($95/hr) with no interview, sent from a free webmail address with a 60-minute deadline.',
+            isCorrect: true,
+            feedback: 'Correct! High pay for little work, no real interview process, a free webmail address, and intense time pressure are classic job-scam red flags.',
+          },
+          {
+            id: 'B',
+            text: 'The job title includes the word "Coordinator."',
+            isCorrect: false,
+            feedback: 'Many legitimate jobs use the title "Coordinator"—it is the lack of an interview and the unverified sender that raise red flags.',
+          },
+          {
+            id: 'C',
+            text: 'The role allows working remotely from a laptop.',
+            isCorrect: false,
+            feedback: 'Legitimate remote jobs exist, but real remote employers still use official company domains and conduct proper interviews.',
+          },
+          {
+            id: 'D',
+            text: 'The message arrived during normal afternoon business hours.',
+            isCorrect: false,
+            feedback: 'Scam messages can arrive at any hour of the day.',
+          },
+        ],
+        correctAnswerExplanation: 'Real employers do not hire strangers for $95/hour jobs without an interview or send official offers from free public email accounts.',
+      },
+      chapterTransition: 'Next, you open the recruiter’s "Onboarding Form" preview on Priya’s laptop and compare it with the real Veridian Creative Studios listing in the industry directory.',
+    },
+    {
+      number: 2,
+      phase: 'The Investigation',
+      title: 'Chapter 2: The Form That Asks Too Much',
+      summary: 'Examine requests for personal details and upfront equipment payment.',
+      learningGoal: 'Never submit national ID numbers, bank login credentials, or upfront "equipment/training fees" on an unverified job application form.',
+      storySetup: 'Looking closely at the recruiter’s onboarding form on Priya’s laptop, you see it asks for her national tax ID, passport scan, bank online login password, AND a $250 upfront wire transfer to a "preferred vendor" to ship a company laptop.',
+      graphicsDirection: {
+        backgroundArt: 'Close-up of Priya’s desk showing the laptop’s suspicious onboarding form alongside the open Official Design Industry Directory.',
+        characterAppearanceAndPose: 'Priya adjusts her glasses and leans back from the keyboard, pointing at the $250 equipment fee field while you cross-check the directory.',
+        keyProps: 'Laptop displaying the "Pre-Hire Form [GH-HR-05]", Official Design Industry Directory book showing "veridianstudios.example", and your Case Journal.',
+        cameraAngle: 'Over-the-shoulder inspection view framing both the laptop form fields and the printed company directory page.',
+        lighting: 'Warm loft light with bright teal warning highlights outlining the "Bank Password" field and the "$250 Equipment Deposit" box.',
+        onScreenMessage: '[Suspicious Onboarding Form — GH-HR-05]: "Required Before First Call: 1. Full National ID & Passport Scan | 2. Online Banking Username & Password for Direct Deposit | 3. Send $250 Laptop Shipping Deposit to @Vendor-Glass05."',
+        interactiveClueEffects: 'Three interactive evidence pins illuminate the upfront $250 fee, the bank password field, and the real company’s directory notice.',
+        transitionGraphic: 'The three clues lock into your Case Journal, unlocking the Chapter 3 Employer Verification Decision.',
+      },
+      chapterDialogue: [
+        {
+          speaker: 'You (Investigator)',
+          role: 'Lead Investigator',
+          line: 'Look at Field 2 and Field 3 on this form, Priya: they’re asking for your online banking password and a $250 upfront deposit to ship a work laptop!',
+        },
+        {
+          speaker: 'Priya Shah',
+          role: 'Graphic Designer',
+          line: 'Why would an employer ever need my bank password just to pay me? And why would I pay them $250 to work for them?',
+        },
+        {
+          speaker: 'You (Investigator)',
+          role: 'Lead Investigator',
+          line: 'They wouldn’t. And look at the printed Industry Directory here: the real Veridian Studios only posts jobs on "veridianstudios.example/careers" and never charges equipment fees. Plus, check the form code: "GH-HR-05."',
+        },
+      ],
+      playerInteraction: 'Inspect Priya’s Laptop [E] to review the dangerous form fields, and inspect the Official Industry Directory [E] to verify the real company’s hiring policy.',
+      clues: [
+        {
+          id: 'l5-c2-clue1',
+          title: '$250 Upfront Equipment Deposit Demand',
+          detail: 'The form requires Priya to send $250 to "@Vendor-Glass05" before starting work.',
+          hint: 'Real employers pay you; they do not ask new hires to pay upfront fees for company laptops or training.',
+        },
+        {
+          id: 'l5-c2-clue2',
+          title: 'Request for Online Banking Password & ID Before Hiring',
+          detail: 'The form asks for online banking login credentials and sensitive identity scans before any official hiring or verification.',
+          hint: 'Direct deposit never requires giving anyone your online banking username or password.',
+        },
+        {
+          id: 'l5-c2-clue3',
+          title: 'Glasshouse Recruitment Template [GH-HR-05]',
+          detail: 'The form footer carries [GH-HR-05] and "@Vendor-Glass05", linking this fake job portal to the Glasshouse operation.',
+          hint: 'Check the form template ID and vendor payment handle at the bottom of the screen.',
+        },
+      ],
+      question: {
+        prompt: 'Why is the recruiter’s request for a $250 "laptop deposit" and Priya’s online banking password a definitive red flag?',
+        options: [
+          {
+            id: 'A',
+            text: 'Legitimate employers never charge upfront fees for work equipment and never need your online banking password to set up payroll.',
+            isCorrect: true,
+            feedback: 'Correct! Real employers provide necessary equipment without upfront transfers and never ask for your bank login password.',
+          },
+          {
+            id: 'B',
+            text: 'Because a real laptop deposit usually costs $500 instead of $250.',
+            isCorrect: false,
+            feedback: 'Any upfront equipment fee demanded from a job applicant—large or small—is a job scam.',
+          },
+          {
+            id: 'C',
+            text: 'Because she should only send her passport scan first and pay the $250 next week.',
+            isCorrect: false,
+            feedback: 'Never send passport scans or national ID numbers to an unverified recruiter before verifying the job through official channels.',
+          },
+          {
+            id: 'D',
+            text: 'Because graphic designers only use tablets, not laptops.',
+            isCorrect: false,
+            feedback: 'The issue is not the type of computer, but the demand for upfront money and sensitive credentials.',
+          },
+        ],
+        correctAnswerExplanation: 'Never pay upfront fees for equipment, training, or background checks to get a job, and never share bank login passwords on any form.',
+      },
+      chapterTransition: 'With the fake onboarding form exposed, you and Priya decide how to verify the real company independently and protect her personal data.',
+    },
+    {
+      number: 3,
+      phase: 'The Decision',
+      title: 'Chapter 3: Verify the Opportunity',
+      summary: 'Choose how to check the employer and protect sensitive information.',
+      learningGoal: 'Verify job offers by contacting the company through its official website careers page found independently, and refuse to send sensitive IDs or upfront fees.',
+      storySetup: 'Priya closes the fake onboarding form without submitting any personal data or money. Now she wants to check with the real Veridian Creative Studios and warn other designers in the co-working loft.',
+      graphicsDirection: {
+        backgroundArt: 'Downtown Co-Working Hub bathed in warm golden light as Priya checks the official "veridianstudios.example/careers" page on her monitor.',
+        characterAppearanceAndPose: 'Priya smiles in relief at her desk while holding the official company directory, with her personal documents safely stored away.',
+        keyProps: 'Laptop showing the official Veridian Careers notice, Priya’s protected portfolio folder, and your Glasshouse Case Journal.',
+        cameraAngle: 'Medium two-shot of you and Priya at her co-working desk with the four-option Decision Modal.',
+        lighting: 'Warm studio lighting with emerald confirmation highlights around the official careers page.',
+        onScreenMessage: '[Official Website — veridianstudios.example/careers]: "Security Notice: Veridian Creative Studios only contacts applicants from @veridianstudios.example and never requests equipment fees or ID scans via chat."',
+        interactiveClueEffects: 'Selecting the safe option highlights the official careers page in emerald and adds [GH-HR-05] to the Glasshouse Case Board.',
+        transitionGraphic: 'Case 05 stamped "RESOLVED" as the city map connects the co-working loft to the Evening Design Studio for Level 6.',
+      },
+      chapterDialogue: [
+        {
+          speaker: 'You (Investigator)',
+          role: 'Lead Investigator',
+          line: 'Close that form without submitting a thing, Priya, and look up Veridian Creative Studios independently using their official website from the directory.',
+        },
+        {
+          speaker: 'Priya Shah',
+          role: 'Graphic Designer',
+          line: 'Look at the banner on their real careers page! They posted a warning about scammers impersonating their HR team with fake $95/hr offers.',
+        },
+        {
+          speaker: 'You (Investigator)',
+          role: 'Lead Investigator',
+          line: 'Your identity and savings are completely safe—and we just logged our fifth Glasshouse clue: "GH-HR-05."',
+        },
+      ],
+      playerInteraction: 'Answer the Chapter 3 knowledge question and select the safe option in the four-choice Decision Modal.',
+      clues: [
+        {
+          id: 'l5-c3-clue1',
+          title: 'Independent Official Careers Page Check',
+          detail: 'Visiting "veridianstudios.example/careers" directly confirms the chat recruiter is an impersonator.',
+          hint: 'Always check a company’s official website careers page on your own before trusting an unsolicited offer.',
+        },
+        {
+          id: 'l5-c3-clue2',
+          title: 'Zero Sensitive Data Submitted',
+          detail: 'Closing the form without entering national ID numbers, passport scans, or bank details keeps Priya’s identity safe.',
+          hint: 'Keep identity documents private until you have verified the employer through official channels.',
+        },
+        {
+          id: 'l5-c3-clue3',
+          title: 'Glasshouse Marker #05 Archived',
+          detail: 'The [GH-HR-05] form code and "@Vendor-Glass05" handle match the citywide Glasshouse pattern.',
+          hint: 'Review your Case Journal to see how all five cases share the Glasshouse signature.',
+        },
+      ],
+      question: {
+        prompt: 'What is the safest way to verify an unexpected remote job offer before sharing personal information?',
+        options: [
+          {
+            id: 'A',
+            text: 'Look up the company’s official website and careers page independently (not using links or phone numbers from the message) and confirm whether the role and recruiter are real.',
+            isCorrect: true,
+            feedback: 'Correct! Independently checking the company’s official careers page or HR contact verifies whether the offer is genuine.',
+          },
+          {
+            id: 'B',
+            text: 'Pay the $250 equipment fee with a debit card and ask for a receipt.',
+            isCorrect: false,
+            feedback: 'Fake recruiters gladly send fake receipts after taking your money. Never pay upfront fees for a job.',
+          },
+          {
+            id: 'C',
+            text: 'Send your national ID number first, but hold back your passport scan until tomorrow.',
+            isCorrect: false,
+            feedback: 'Your national ID number alone is enough for identity theft; never send it to an unverified recruiter.',
+          },
+          {
+            id: 'D',
+            text: 'Ask the recruiter in the chat app to send a photo of a company badge.',
+            isCorrect: false,
+            feedback: 'Scammers easily forge photos of employee badges using public logos. Always verify via the official company website.',
+          },
+        ],
+        correctAnswerExplanation: 'Always verify job offers independently through the employer’s official website and never pay upfront fees or share sensitive IDs with unverified recruiters.',
+      },
+      chapterTransition: 'The very next evening, Priya calls you back to the studio—someone claiming to be her bank’s fraud department is on the phone asking for a six-digit code on her screen, launching Level 6.',
+    },
+  ],
+
+  // ===========================================================================
+  // LEVEL 6: THE ONE-TIME CODE
+  // ===========================================================================
+  'level-06': [
+    {
+      number: 1,
+      phase: 'The Setup',
+      title: 'Chapter 1: A Helpful Caller',
+      summary: 'A caller claims to be support and offers to fix an urgent account issue.',
+      learningGoal: 'Recognize that incoming callers claiming to be bank or tech support can spoof caller ID and use urgent fraud warnings to pressure you.',
+      storySetup: 'At the Downtown Co-Working Studio after hours, Priya Shah has her smartphone on speakerphone. A polished caller claiming to be from "MetroBank Security Operations" says someone is trying to wire $1,400 from her checking account right now—and offers to "cancel the transfer" if she reads back a six-digit verification code that just popped up on her screen.',
+      graphicsDirection: {
+        backgroundArt: 'Evening co-working studio with warm desk lamps, city twilight visible through tall windows, and a security reference guide on the table.',
+        characterAppearanceAndPose: 'Priya Shah stands beside her desk looking tense, holding one hand over the phone’s mute button while gesturing for you to listen.',
+        keyProps: 'Priya’s smartphone on speakerphone, her physical MetroBank debit card (showing the official number on the back), and a 2FA Security Guide.',
+        cameraAngle: 'Third-person view of the evening studio desk, moving into an over-the-shoulder shot of Priya’s ringing/active smartphone screen.',
+        lighting: 'Warm amber desk lamp light contrasted with a sharp teal glow from the smartphone screen.',
+        onScreenMessage: '[Active Call — Caller ID: "MetroBank Support" (Spoofed)] · Caller Voice: "Ma’am, to block the $1,400 charge, read me the 6-digit code we just texted to your phone right now."',
+        interactiveClueEffects: 'A soft amber pulse highlights the smartphone and the security guide booklet on the desk.',
+        transitionGraphic: 'The camera zooms from the active call screen to the incoming SMS banner at the top of Priya’s phone.',
+      },
+      chapterDialogue: [
+        {
+          speaker: 'Priya Shah',
+          role: 'Graphic Designer',
+          line: 'I muted the mic! The caller ID says "MetroBank Support," and the guy on the line says someone is trying to transfer $1,400 out of my account!',
+        },
+        {
+          speaker: 'You (Investigator)',
+          role: 'Lead Investigator',
+          line: 'Good move muting the phone, Priya. What is the caller asking you to do right now?',
+        },
+        {
+          speaker: 'Priya Shah',
+          role: 'Graphic Designer',
+          line: 'A six-digit text code just popped up on my screen, and he’s telling me to read those six digits out loud so he can "verify my identity and cancel the transfer."',
+        },
+      ],
+      playerInteraction: 'Walk to Priya’s studio desk, speak with Priya [E], and inspect the smartphone on the desk [E] while the caller is muted.',
+      clues: [
+        {
+          id: 'l6-c1-clue1',
+          title: 'Unsolicited Incoming Support Call',
+          detail: 'Priya did not call the bank; the caller contacted her unexpectedly claiming an urgent $1,400 emergency.',
+          hint: 'Remember that caller ID names can be spoofed on incoming phone calls.',
+        },
+        {
+          id: 'l6-c1-clue2',
+          title: 'Demand for a 6-Digit One-Time Code',
+          detail: 'The caller pressures Priya to read back a six-digit authentication code sent to her phone.',
+          hint: 'Listen to what the caller wants Priya to say out loud.',
+        },
+        {
+          id: 'l6-c1-clue3',
+          title: 'High-Pressure Countdown on the Line',
+          detail: 'The caller claims the $1,400 transfer will go through in 60 seconds if she hangs up or hesitates.',
+          hint: 'Notice how the caller tries to keep Priya from hanging up the phone.',
+        },
+      ],
+      question: {
+        prompt: 'Why can’t you trust an incoming phone call just because the caller ID displays your bank’s name?',
+        options: [
+          {
+            id: 'A',
+            text: 'Because scammers can spoof caller ID display names and numbers to make an incoming call look like it is coming from a real bank or company.',
+            isCorrect: true,
+            feedback: 'Correct! Caller ID spoofing allows impersonators to display a trusted bank name on your screen during an incoming call.',
+          },
+          {
+            id: 'B',
+            text: 'Because real banks never have customer support phone numbers.',
+            isCorrect: false,
+            feedback: 'Real banks have customer support lines, but you can only be sure you are speaking to them when you dial the official number yourself.',
+          },
+          {
+            id: 'C',
+            text: 'Because speakerphone changes the caller ID text on smartphones.',
+            isCorrect: false,
+            feedback: 'Speakerphone does not alter caller ID; spoofing happens before the call reaches your phone.',
+          },
+          {
+            id: 'D',
+            text: 'Because banks only call customers on weekends.',
+            isCorrect: false,
+            feedback: 'The day of the week is not the issue—caller ID spoofing and asking for a secret code are the key warning signs.',
+          },
+        ],
+        correctAnswerExplanation: 'Incoming caller ID can be spoofed. Never rely on the name displayed on an incoming call when someone asks for sensitive codes or account access.',
+      },
+      chapterTransition: 'With the caller still on mute, you inspect the exact wording of the six-digit text message on Priya’s screen.',
+    },
+    {
+      number: 2,
+      phase: 'The Investigation',
+      title: 'Chapter 2: The Code on Screen',
+      summary: 'Inspect the request and learn why authentication codes must stay private.',
+      learningGoal: 'Read the full text accompanying a one-time passcode (OTP) to see what action the code actually authorizes, and never share OTPs with anyone.',
+      storySetup: 'You look closely at the SMS notification that arrived on Priya’s phone while the caller was talking. Instead of a "fraud cancellation code," the text from MetroBank clearly states: "Your Password Reset & New Device Login code is 849-201. NEVER share this code—even with MetroBank staff."',
+      graphicsDirection: {
+        backgroundArt: 'Close-up desktop view of Priya’s smartphone screen beside the printed 2FA Security Guide and the back of her MetroBank card.',
+        characterAppearanceAndPose: 'Priya gasps quietly as she reads the explicit warning inside the SMS banner while you point to the caller’s VoIP trace tag.',
+        keyProps: 'Smartphone showing the OTP warning text, printed 2FA Security Guide, and the official phone number printed on the back of Priya’s bank card.',
+        cameraAngle: 'Over-the-shoulder inspection angle framing the SMS message text and the security booklet.',
+        lighting: 'Warm desk lamp light with bright teal highlights around the "NEVER share this code" warning and the [GH-VOICE-06] caller routing tag.',
+        onScreenMessage: '[Official MetroBank SMS]: "SECURITY ALERT: Code 849-201 authorizes a PASSWORD RESET on a new device. MetroBank employees will NEVER ask for this code." | [Caller Relay Tag: GH-VOICE-06].',
+        interactiveClueEffects: 'Three glowing evidence pins highlight the "PASSWORD RESET" purpose, the "NEVER share" warning, and the [GH-VOICE-06] relay stamp.',
+        transitionGraphic: 'The three OTP clues snap into your Case Journal, unlocking the Chapter 3 Decision to end the call and secure the account.',
+      },
+      chapterDialogue: [
+        {
+          speaker: 'You (Investigator)',
+          role: 'Lead Investigator',
+          line: 'Read the actual text message next to the code, Priya: "Code 849-201 authorizes a PASSWORD RESET on a new device. MetroBank employees will NEVER ask for this code."',
+        },
+        {
+          speaker: 'Priya Shah',
+          role: 'Graphic Designer',
+          line: 'He’s not canceling a charge at all—he’s on the bank login page right now trying to reset my password, and my six-digit code is the only thing stopping him!',
+        },
+        {
+          speaker: 'You (Investigator)',
+          role: 'Lead Investigator',
+          line: 'Exactly. And look at the VoIP relay header on the call log: "GH-VOICE-06." The Glasshouse ring is trying to break into accounts after their fake job form failed.',
+        },
+      ],
+      playerInteraction: 'Inspect Priya’s Smartphone [E] to read the OTP text message warning, and inspect the 2FA Security Guide [E] on the desk.',
+      clues: [
+        {
+          id: 'l6-c2-clue1',
+          title: 'Code Actually Authorizes a Password Reset',
+          detail: 'The SMS explicitly states that code 849-201 authorizes a password reset and new device login, not a fraud cancellation.',
+          hint: 'Read the sentence right before the 6-digit number in the text message.',
+        },
+        {
+          id: 'l6-c2-clue2',
+          title: '"Employees Will NEVER Ask for This Code"',
+          detail: 'The bank’s own message warns never to share the one-time code with anyone, including support staff.',
+          hint: 'Look at the bold warning at the end of the SMS notification.',
+        },
+        {
+          id: 'l6-c2-clue3',
+          title: 'Glasshouse VoIP Relay [GH-VOICE-06]',
+          detail: 'The spoofed call routing metadata carries [GH-VOICE-06], connecting the caller to the Glasshouse campaign.',
+          hint: 'Check the call inspection details to log the sixth Glasshouse clue.',
+        },
+      ],
+      question: {
+        prompt: 'Why was the caller so eager for Priya to read the 6-digit code on her screen out loud?',
+        options: [
+          {
+            id: 'A',
+            text: 'Because the caller was trying to log in or reset her password on another device, and that one-time code was the final barrier protecting her account.',
+            isCorrect: true,
+            feedback: 'Correct! One-time passcodes (OTPs) unlock your account or approve actions; reading the code to a caller hands them the key to your account.',
+          },
+          {
+            id: 'B',
+            text: 'Because bank support staff need your one-time code to check your account balance.',
+            isCorrect: false,
+            feedback: 'Real support staff never need you to read back a login or password-reset one-time code.',
+          },
+          {
+            id: 'C',
+            text: 'Because reading the first three digits is safe as long as you hide the last three.',
+            isCorrect: false,
+            feedback: 'Never share any part of a one-time authentication code with an incoming caller.',
+          },
+          {
+            id: 'D',
+            text: 'Because the code expires in 24 hours.',
+            isCorrect: false,
+            feedback: 'One-time codes expire in minutes, which is why the scammer pressures you on the phone to read it immediately.',
+          },
+        ],
+        correctAnswerExplanation: 'A one-time passcode (OTP) is meant only for you when you are actively signing in yourself. Real support staff will never ask you to read a login or reset code to them.',
+      },
+      chapterTransition: 'Now that Priya knows the caller is trying to hijack her password reset, it is time to end the call and verify her account safely.',
+    },
+    {
+      number: 3,
+      phase: 'The Decision',
+      title: 'Chapter 3: End the Call, Find Support',
+      summary: 'Choose a safe way to contact the service and secure the account.',
+      learningGoal: 'Hang up immediately when anyone asks for a one-time code, then call the official number printed on the back of your bank card or inside the official app.',
+      storySetup: 'Priya’s finger hovers over the red "End Call" button, and she holds her physical MetroBank card showing the real 24/7 customer service number printed on the back.',
+      graphicsDirection: {
+        backgroundArt: 'Co-Working Studio desk with the spoofed call disconnected, Priya dialing the official number from the back of her bank card, and the Glasshouse Case Board updated.',
+        characterAppearanceAndPose: 'Priya hangs up on the scammer with a confident smile and checks her official bank app showing zero unauthorized transfers.',
+        keyProps: 'Priya’s phone showing "Call Ended," the back of her physical MetroBank card, and your Case Journal.',
+        cameraAngle: 'Medium two-shot of you and Priya at her desk as the four-option Decision Modal appears.',
+        lighting: 'Warm, reassuring studio light with emerald highlights confirming her bank account is safe.',
+        onScreenMessage: '[Official MetroBank App — Verified]: "No $1,400 transfer exists. Account Balance Secure. Unrequested Password Reset Blocked."',
+        interactiveClueEffects: 'Selecting the safe option highlights the official bank card number in emerald and links [GH-VOICE-06] to the Glasshouse Case Board.',
+        transitionGraphic: 'Case 06 stamped "RESOLVED" as the city map highlights the Midtown Community Center for Level 7.',
+      },
+      chapterDialogue: [
+        {
+          speaker: 'You (Investigator)',
+          role: 'Lead Investigator',
+          line: 'Hang up right now without saying a word, Priya. Then dial the official number printed on the back of your MetroBank card.',
+        },
+        {
+          speaker: 'Priya Shah',
+          role: 'Graphic Designer',
+          line: 'I hung up and called the number on the back of my card. Real MetroBank support confirmed there was never any $1,400 transfer—and we updated my password safely inside the app!',
+        },
+        {
+          speaker: 'You (Investigator)',
+          role: 'Lead Investigator',
+          line: 'That’s six cases stopped—and six Glasshouse markers on our board.',
+        },
+      ],
+      playerInteraction: 'Answer the Chapter 3 knowledge question and select the safe response in the four-option Decision Modal.',
+      clues: [
+        {
+          id: 'l6-c3-clue1',
+          title: 'Hang Up Without Sharing the Code',
+          detail: 'Ending the call immediately prevents the impersonator from completing the password reset.',
+          hint: 'It is always okay to hang up on a caller who pressures you for a security code.',
+        },
+        {
+          id: 'l6-c3-clue2',
+          title: 'Number on the Back of the Physical Card',
+          detail: 'Calling the number printed on the back of Priya’s debit card connects her to real bank support.',
+          hint: 'Use an official contact number from your physical card or official app.',
+        },
+        {
+          id: 'l6-c3-clue3',
+          title: 'Password Updated Directly in Official App',
+          detail: 'Because the attacker knew her username and triggered a reset prompt, updating her password inside the official app secures the account.',
+          hint: 'Change your password directly inside the official app if someone tried to trigger a reset.',
+        },
+      ],
+      question: {
+        prompt: 'If a caller claiming to be from your bank asks you to read a one-time verification code sent to your phone, what should you do?',
+        options: [
+          {
+            id: 'A',
+            text: 'Refuse to share the code, hang up immediately, and contact your bank using the official number on the back of your card or inside the official app.',
+            isCorrect: true,
+            feedback: 'Correct! Hanging up and calling the official number found on the back of your card ensures you speak to real support.',
+          },
+          {
+            id: 'B',
+            text: 'Read the code to the caller so they can cancel the suspicious transaction.',
+            isCorrect: false,
+            feedback: 'Reading the code gives the caller access to your account or approves the very transaction they claim to be stopping.',
+          },
+          {
+            id: 'C',
+            text: 'Text the code back to the number that called you instead of saying it out loud.',
+            isCorrect: false,
+            feedback: 'Sharing the code by text or voice gives the scammer the exact same access to your account.',
+          },
+          {
+            id: 'D',
+            text: 'Stay on the line and give them your PIN number instead of the 6-digit text code.',
+            isCorrect: false,
+            feedback: 'Never share your PIN, password, or one-time code with any caller.',
+          },
+        ],
+        correctAnswerExplanation: 'Never share a one-time authentication code with anyone on the phone or by text. Hang up and contact the organization independently using an official number you trust.',
+      },
+      chapterTransition: 'The next day, café owner Marcus Vance invites you to a neighborhood relief fundraiser at the Midtown Plaza—where a suspicious urgent charity text is circulating for Level 7.',
+    },
+  ],
+
+  // ===========================================================================
+  // LEVEL 7: THE FAKE CHARITY DRIVE
+  // ===========================================================================
+  'level-07': [
+    {
+      number: 1,
+      phase: 'The Setup',
+      title: 'Chapter 1: A Powerful Appeal',
+      summary: 'A community member receives an urgent donation request with emotional pressure.',
+      learningGoal: 'Recognize how fake charity appeals use emotional urgency, countdown matching promises, and unusual payment methods to rush generous donors.',
+      storySetup: 'At the Midtown Community Café & Courtyard, Marcus Vance is helping organize donations for the Harborview Flood Relief Fund. A viral text message just hit neighborhood phones claiming to be the "Harborview Instant Relief Drive," promising a "5x corporate match for the next 20 minutes only" if donors send gift-card PINs or instant wallet transfers right away.',
+      graphicsDirection: {
+        backgroundArt: 'Community café courtyard decorated with a neighborhood relief banner, a community bulletin board, and warm string lights.',
+        characterAppearanceAndPose: 'Marcus Vance (wearing a green community volunteer vest over a flannel shirt) holds up his phone beside the community bulletin board with a concerned expression.',
+        keyProps: 'Marcus’s smartphone showing the viral donation appeal, the official Charity Registry Board on the wall, and printed relief flyers.',
+        cameraAngle: 'Third-person view of the community courtyard, gliding into an over-the-shoulder angle of Marcus’s phone screen.',
+        lighting: 'Warm courtyard string lights balanced with teal inspection accents around the phone and the official charity registry board.',
+        onScreenMessage: '[Viral Text Appeal]: "URGENT HARBORVIEW RELIEF: Families need shelter tonight! Donate in the next 20 MINS for a 500% match! Send gift-card codes or instant transfer to @GiveNow-Glass07 at [fictional-preview: harborview-instant-help-now.example]!"',
+        interactiveClueEffects: 'A soft amber highlight outlines Marcus’s phone and the official Charity Registry Board.',
+        transitionGraphic: 'The camera moves from the emotional text appeal to the official registry board on the café wall.',
+      },
+      chapterDialogue: [
+        {
+          speaker: 'Marcus Vance',
+          role: 'Community Volunteer & Café Owner',
+          line: 'Everyone in the neighborhood wants to help the flood families, and this text just went around promising a 5x match if we donate in the next twenty minutes!',
+        },
+        {
+          speaker: 'You (Investigator)',
+          role: 'Lead Investigator',
+          line: 'Wanting to help is great, Marcus—but look at how that message pressures people with a 20-minute timer and asks for gift-card codes or transfers to "@GiveNow-Glass07."',
+        },
+        {
+          speaker: 'Marcus Vance',
+          role: 'Café Owner',
+          line: 'Wait—"@GiveNow-Glass07"?! That’s the same Glasshouse naming pattern from the marketplace scam!',
+        },
+      ],
+      playerInteraction: 'Walk to the community courtyard counter, talk with Marcus Vance [E], and inspect the viral appeal on his smartphone [E].',
+      clues: [
+        {
+          id: 'l7-c1-clue1',
+          title: '20-Minute "500% Match" Pressure',
+          detail: 'The message invents a 20-minute deadline for a 5x donation match to stop donors from researching the organization.',
+          hint: 'Real charities welcome donations without forcing a 20-minute countdown.',
+        },
+        {
+          id: 'l7-c1-clue2',
+          title: 'Gift-Card Code & Personal Wallet Demand',
+          detail: 'The appeal asks donors to send gift-card PINs or peer-to-peer wallet transfers instead of using a verified charity portal.',
+          hint: 'Check what kind of payment method the text message requests.',
+        },
+        {
+          id: 'l7-c1-clue3',
+          title: 'Look-Alike Name ("Harborview Instant Relief Drive")',
+          detail: 'The sender uses a name that sounds almost identical to the real "Harborview Community Relief Fund."',
+          hint: 'Compare the wording of the charity name in the text with the banner in the courtyard.',
+        },
+      ],
+      question: {
+        prompt: 'Which detail in a charity donation appeal is a strong warning sign that the appeal may be fraudulent?',
+        options: [
+          {
+            id: 'A',
+            text: 'It demands immediate donations via gift-card codes, wire transfers, or unverified personal payment handles before a 20-minute countdown expires.',
+            isCorrect: true,
+            feedback: 'Correct! Legitimate charities never ask for donations via gift-card PINs or pressure you with a 20-minute countdown.',
+          },
+          {
+            id: 'B',
+            text: 'It explains how donations help local families after a storm.',
+            isCorrect: false,
+            feedback: 'Both real and fake appeals mention helping people; the payment method and pressure tactics are what reveal a scam.',
+          },
+          {
+            id: 'C',
+            text: 'It provides an official tax-exempt registration number that matches the public charity registry.',
+            isCorrect: false,
+            feedback: 'A verified registration number that matches an independent public charity registry is a sign of a legitimate organization.',
+          },
+          {
+            id: 'D',
+            text: 'It allows you to take your time and donate through the charity’s official ".org" website.',
+            isCorrect: false,
+            feedback: 'Letting you research and donate calmly on an official registered site is how legitimate charities operate.',
+          },
+        ],
+        correctAnswerExplanation: 'Scammers exploit generosity during emergencies by using look-alike charity names, countdown timers, and irreversible payment methods like gift cards.',
+      },
+      chapterTransition: 'To make sure every dollar from the neighborhood actually reaches families in need, you compare the text appeal against the official Charity Registry Board.',
+    },
+    {
+      number: 2,
+      phase: 'The Investigation',
+      title: 'Chapter 2: Follow the Details',
+      summary: 'Check the organization name, payment destination, and pressure tactics.',
+      learningGoal: 'Cross-check a charity’s exact legal name, registration number, and official website on an independent charity registry before donating.',
+      storySetup: 'You inspect the Midtown Community Charity Registry Board mounted beside the café entrance and compare the registered details for the real "Harborview Community Relief Fund" against the viral text link.',
+      graphicsDirection: {
+        backgroundArt: 'Close-up of the Community Charity Registry Board showing verified nonprofit EIN/registration numbers beside Marcus’s smartphone.',
+        characterAppearanceAndPose: 'Marcus holds a printed charity registry sheet, pointing out the real ".org" address while you highlight the unregistered personal wallet on the phone.',
+        keyProps: 'Official Charity Registry Board, Marcus’s smartphone showing the fake link preview, and your Case Journal.',
+        cameraAngle: 'Over-the-shoulder inspection view framing both the Charity Registry poster and the smartphone details.',
+        lighting: 'Warm ambient courtyard light with crisp teal highlights around the verified registry number and the [GH-DONATE-07] campaign tag.',
+        onScreenMessage: '[Official Charity Registry]: "Harborview Community Relief Fund · Reg #88-402910 · Official Site: harborviewrelief.org (Never accepts gift cards)." | [Fake Link Tag: GH-DONATE-07].',
+        interactiveClueEffects: 'Three glowing evidence pins connect the mismatched charity name, the @GiveNow-Glass07 personal wallet, and the verified registry entry.',
+        transitionGraphic: 'The three charity verification clues lock into your Case Journal, unlocking the Chapter 3 Decision.',
+      },
+      chapterDialogue: [
+        {
+          speaker: 'You (Investigator)',
+          role: 'Lead Investigator',
+          line: 'Look at the official Charity Registry Board here, Marcus: the real registered nonprofit is "Harborview Community Relief Fund" at "harborviewrelief.org" with registration #88-402910.',
+        },
+        {
+          speaker: 'Marcus Vance',
+          role: 'Community Volunteer',
+          line: 'And the text link goes to "harborview-instant-help-now.example" with zero registration number—and routes money straight to "@GiveNow-Glass07"!',
+        },
+        {
+          speaker: 'You (Investigator)',
+          role: 'Lead Investigator',
+          line: 'And there’s our seventh Glasshouse stamp: "GH-DONATE-07." Let’s make sure the whole neighborhood knows how to donate safely.',
+        },
+      ],
+      playerInteraction: 'Inspect the Charity Registry Board [E] and Marcus’s Smartphone [E] to compare the organization name, registration number, and payment destination.',
+      clues: [
+        {
+          id: 'l7-c2-clue1',
+          title: 'Missing Charity Registration Number',
+          detail: 'The real Harborview Community Relief Fund lists verified registration #88-402910, while the text site lists no registration details.',
+          hint: 'Check the official Charity Registry Board for the real organization’s registration number.',
+        },
+        {
+          id: 'l7-c2-clue2',
+          title: 'Unverified Domain vs. Official "harborviewrelief.org"',
+          detail: 'The text uses "harborview-instant-help-now.example" instead of the verified official site "harborviewrelief.org".',
+          hint: 'Compare the web address on the registry board with the link in the text message.',
+        },
+        {
+          id: 'l7-c2-clue3',
+          title: 'Glasshouse Donation Funnel [GH-DONATE-07]',
+          detail: 'The payment destination "@GiveNow-Glass07" and page tag [GH-DONATE-07] link this fake charity drive to the Glasshouse network.',
+          hint: 'Look at the payment handle and footer tag in the inspection panel.',
+        },
+      ],
+      question: {
+        prompt: 'How can you verify that a charity is legitimate before making a donation?',
+        options: [
+          {
+            id: 'A',
+            text: 'Look up the charity independently on a trusted charity registry or its known official website to confirm its exact name, registration number, and payment portal.',
+            isCorrect: true,
+            feedback: 'Correct! Independent verification through an official charity registry and navigating directly to the charity’s real website ensures your donation reaches the cause.',
+          },
+          {
+            id: 'B',
+            text: 'Check if the text message includes heart emojis and photos of the storm.',
+            isCorrect: false,
+            feedback: 'Anyone can copy news photos and emojis into a text message.',
+          },
+          {
+            id: 'C',
+            text: 'Send a $10 gift card first to see if they reply with a thank-you text.',
+            isCorrect: false,
+            feedback: 'Scammers will happily send a thank-you text—and then ask you for even more gift cards.',
+          },
+          {
+            id: 'D',
+            text: 'Trust the link if someone forwarded it in a neighborhood group chat.',
+            isCorrect: false,
+            feedback: 'Well-meaning neighbors can accidentally forward a fake link without realizing it hasn’t been verified.',
+          },
+        ],
+        correctAnswerExplanation: 'Even when a link is shared by a well-meaning neighbor, always verify the organization independently on an official charity registry and donate directly through its verified website.',
+      },
+      chapterTransition: 'With the real registration details in hand, you and Marcus guide the community on how to give with confidence.',
+    },
+    {
+      number: 3,
+      phase: 'The Decision',
+      title: 'Chapter 3: Give with Confidence',
+      summary: 'Choose how to verify the appeal before donating.',
+      learningGoal: 'Donate only by navigating independently to the verified charity’s official website, and share the verified information with your community.',
+      storySetup: 'Neighbors gather around the courtyard counter ready to contribute to the flood relief effort. Marcus asks you for the final call on how to handle the donation drive and stop the fake text.',
+      graphicsDirection: {
+        backgroundArt: 'Midtown Community Courtyard glowing with warm string lights as Marcus posts the verified "harborviewrelief.org" sign on the counter.',
+        characterAppearanceAndPose: 'Marcus stands proudly beside the community board, thanking you as neighbors verify the official charity registration number.',
+        keyProps: 'Verified Charity Registry poster, Marcus’s phone showing the official "harborviewrelief.org" receipt, and your Glasshouse Case Journal.',
+        cameraAngle: 'Medium two-shot of you and Marcus in the courtyard with the four-option Decision Modal.',
+        lighting: 'Warm golden courtyard illumination with emerald highlights confirming the community’s donations are protected.',
+        onScreenMessage: '[Verified Donation — harborviewrelief.org]: "Thank you! Your contribution to Harborview Community Relief Fund (Reg #88-402910) is confirmed."',
+        interactiveClueEffects: 'Selecting the safe option illuminates the verified charity badge in emerald and pins [GH-DONATE-07] onto the Glasshouse Case Board.',
+        transitionGraphic: 'Case 07 stamped "RESOLVED" as the city map highlights the Oakridge Campus Print Lab for Level 8.',
+      },
+      chapterDialogue: [
+        {
+          speaker: 'You (Investigator)',
+          role: 'Lead Investigator',
+          line: 'Delete the text link, Marcus, and have everyone type "harborviewrelief.org" directly into their browser after checking Reg #88-402910 on the registry board.',
+        },
+        {
+          speaker: 'Marcus Vance',
+          role: 'Community Volunteer',
+          line: 'Done! I also posted a heads-up in the neighborhood group chat so nobody falls for the "@GiveNow-Glass07" text. Every dollar is going to the real relief fund now!',
+        },
+        {
+          speaker: 'You (Investigator)',
+          role: 'Lead Investigator',
+          line: 'Seven Glasshouse cases down. Let’s head back toward Oakridge Campus—Maya just spotted a shared computer problem at the print lab.',
+        },
+      ],
+      playerInteraction: 'Answer the Chapter 3 knowledge question and choose the safe action in the four-option Decision Modal.',
+      clues: [
+        {
+          id: 'l7-c3-clue1',
+          title: 'Direct Donation via Verified Website',
+          detail: 'Typing the verified "harborviewrelief.org" address directly guarantees donations go to the registered nonprofit.',
+          hint: 'Navigate to the verified charity website yourself rather than using a text link.',
+        },
+        {
+          id: 'l7-c3-clue2',
+          title: 'Community Warning Posted',
+          detail: 'Sharing the verified registration number and warning neighbors about the gift-card scam protects the whole block.',
+          hint: 'Calmly sharing verified facts helps neighbors avoid the trap too.',
+        },
+        {
+          id: 'l7-c3-clue3',
+          title: 'Seventh Glasshouse Marker Logged',
+          detail: '[GH-DONATE-07] is added to your investigation board as the pattern across the city tightens.',
+          hint: 'Check your Case Journal for the seventh connected clue.',
+        },
+      ],
+      question: {
+        prompt: 'What is the safest way for Marcus and his neighbors to support the flood relief effort?',
+        options: [
+          {
+            id: 'A',
+            text: 'Ignore the text link, verify the charity on an official registry, and donate directly through the organization’s verified website.',
+            isCorrect: true,
+            feedback: 'Correct! Going independently to the verified charity website ensures your generosity actually helps people in need.',
+          },
+          {
+            id: 'B',
+            text: 'Buy gift cards at the grocery store and text the PIN numbers to the sender.',
+            isCorrect: false,
+            feedback: 'Real charities never ask you to text photos or numbers from the back of gift cards.',
+          },
+          {
+            id: 'C',
+            text: 'Click the text link quickly so they don’t miss the 20-minute 500% match.',
+            isCorrect: false,
+            feedback: 'The 20-minute match countdown is a pressure tactic designed to prevent you from checking the registry.',
+          },
+          {
+            id: 'D',
+            text: 'Send cash via peer-to-peer wallet to "@GiveNow-Glass07" and ask for a receipt later.',
+            isCorrect: false,
+            feedback: 'Sending funds to an unverified personal wallet handle hands the donation straight to scammers.',
+          },
+        ],
+        correctAnswerExplanation: 'Always verify charities through an independent registry and donate directly on their official website—never via gift cards or pressured text links.',
+      },
+      chapterTransition: 'Next, Maya Lin calls from the Oakridge Campus 24-Hour Print Kiosk after noticing a classmate walked away from a public laptop with personal accounts still open—starting Level 8.',
+    },
+  ],
+
+  // ===========================================================================
+  // LEVEL 8: THE SHARED LAPTOP
+  // ===========================================================================
+  'level-08': [
+    {
+      number: 1,
+      phase: 'The Setup',
+      title: 'Chapter 1: One Quick Print',
+      summary: 'A character uses a public computer to access personal accounts and walks away after closing only a single tab.',
+      learningGoal: 'Understand why logging into personal accounts on a shared or public computer without using a private/guest session creates a risk of leaving accounts exposed.',
+      storySetup: 'At the Oakridge Campus 24-Hour Print Lab, Maya Lin meets you beside Kiosk Station #3. Her classmate Liam just rushed out to catch his bus after printing a lab report—thinking that simply closing the document tab signed him out of the public laptop.',
+      graphicsDirection: {
+        backgroundArt: 'Bright campus print lab and study commons with rows of shared workstation desks, a laser printer station, and a "Public Kiosk Safety" wall poster.',
+        characterAppearanceAndPose: 'Maya Lin (wearing her olive campus jacket with a notebook tucked under her arm) stands beside Kiosk #3 pointing at the still-glowing laptop screen.',
+        keyProps: 'Public Kiosk Laptop #3 on the central desk, a printed "Shared Device Hygiene" poster on the wall, and the laser printer tray.',
+        cameraAngle: 'Third-person view of the campus print lab, moving smoothly to an over-the-shoulder view of Public Kiosk Laptop #3.',
+        lighting: 'Clean daylight from campus windows combined with warm desk light and a teal highlight around Kiosk Laptop #3.',
+        onScreenMessage: '[Public Kiosk Laptop #3 — Regular Browser Window]: "Active Session: Liam Carter (liam.carter@oakridge.edu) · Inbox (42) · Cloud Drive: Open · Browser Prompt: Password Saved to This Device."',
+        interactiveClueEffects: 'A soft amber glow outlines the public kiosk laptop and the wall safety poster.',
+        transitionGraphic: 'The camera zooms into the open browser window on Kiosk #3 as clue pins highlight the active inbox and autofill popup.',
+      },
+      chapterDialogue: [
+        {
+          speaker: 'Maya Lin',
+          role: 'University Student',
+          line: 'Liam just sprinted out to catch the 4:15 bus! He logged into his email and cloud drive on this public print kiosk, clicked the "X" on one tab, and thought he was signed out.',
+        },
+        {
+          speaker: 'You (Investigator)',
+          role: 'Lead Investigator',
+          line: 'Closing one tab in a normal browser window doesn’t end an active login session—and look at the screen right now.',
+        },
+        {
+          speaker: 'Maya Lin',
+          role: 'University Student',
+          line: 'His whole inbox and cloud drive are still wide open! And worse—the browser says his password was saved to this public computer.',
+        },
+      ],
+      playerInteraction: 'Walk to Kiosk Station #3 in the print lab, speak with Maya Lin [E], and approach the Public Kiosk Laptop [E].',
+      clues: [
+        {
+          id: 'l8-c1-clue1',
+          title: 'Active Session Left Open After Closing One Tab',
+          detail: 'Liam closed the PDF tab, but his email inbox and cloud drive remain actively signed in on the shared browser.',
+          hint: 'Check whether closing a single browser tab actually logs you out of your account.',
+        },
+        {
+          id: 'l8-c1-clue2',
+          title: 'Regular Browser Mode Used on Public Kiosk',
+          detail: 'Liam signed in using the kiosk’s standard profile instead of a Private/Incognito or Guest session.',
+          hint: 'Look at the top corner of the browser window to see if it is a standard or private window.',
+        },
+        {
+          id: 'l8-c1-clue3',
+          title: '"Save Password to This Device" Clicked',
+          detail: 'The browser’s autofill manager saved Liam’s password onto the shared campus computer.',
+          hint: 'Notice the browser autofill notification showing saved credentials.',
+        },
+      ],
+      question: {
+        prompt: 'Why was Liam’s account still accessible on the public print kiosk after he closed the tab with his lab report?',
+        options: [
+          {
+            id: 'A',
+            text: 'Because closing a single tab does not sign you out of an active session, and he also clicked "Save Password" in a normal browser window.',
+            isCorrect: true,
+            feedback: 'Correct! You must explicitly click "Sign Out" and avoid saving passwords on shared computers.',
+          },
+          {
+            id: 'B',
+            text: 'Because laser printers automatically keep email accounts open for 48 hours.',
+            isCorrect: false,
+            feedback: 'The printer itself does not control your browser login session; the browser session and saved password are the issue.',
+          },
+          {
+            id: 'C',
+            text: 'Because he printed his lab report in color instead of black and white.',
+            isCorrect: false,
+            feedback: 'Print settings have no effect on account security.',
+          },
+          {
+            id: 'D',
+            text: 'Because he forgot to turn off the room’s overhead lights.',
+            isCorrect: false,
+            feedback: 'Leaving an active browser session and saved autofill password on a public machine is what exposes the account.',
+          },
+        ],
+        correctAnswerExplanation: 'On any shared or public computer, simply closing a tab or walking away leaves your session cookies and any saved passwords open to the next person who sits down.',
+      },
+      chapterTransition: 'You lean over Kiosk #3 to inspect the browser settings, saved autofill data, and downloads folder to see everything that was left behind.',
+    },
+    {
+      number: 2,
+      phase: 'The Investigation',
+      title: 'Chapter 2: The Forgotten Session',
+      summary: 'Notice saved information, downloaded files, and an account left open.',
+      learningGoal: 'Identify all places where personal data lingers on a shared device: active account sessions, browser password autofill, browsing cookies, and the local Downloads folder.',
+      storySetup: 'Inspecting Kiosk #3 alongside the Campus Print Lab Poster, you discover three separate places where Liam’s data is exposed—plus a suspicious unread phishing email sitting at the top of his inbox bearing a Glasshouse tag.',
+      graphicsDirection: {
+        backgroundArt: 'Close-up of Public Kiosk Laptop #3 showing the open Browser Password Manager and Downloads folder alongside the Campus Kiosk Safety Poster.',
+        characterAppearanceAndPose: 'Maya stands beside you holding a checklist from the wall poster while you inspect the kiosk’s settings panel without reading Liam’s private messages.',
+        keyProps: 'Kiosk Laptop #3 (showing Active Session, Saved Passwords list, and Downloads folder) and the Campus Print Lab Safety Poster.',
+        cameraAngle: 'Over-the-shoulder inspection camera framing the laptop settings screen and the wall poster.',
+        lighting: 'Bright lab daylight with crisp teal highlights around the Saved Passwords entry, the Downloads folder, and the [GH-KIOSK-08] inbox banner.',
+        onScreenMessage: '[Kiosk #3 Audit]: 1. Account Session: Signed In | 2. Autofill Manager: liam.carter@oakridge.edu (Saved) | 3. Local Downloads: "Liam_Financial_Aid_Form.pdf" | [Inbox Subject Tag: GH-KIOSK-08].',
+        interactiveClueEffects: 'Three glowing evidence pins highlight the active account session, the saved password entry, and the local PDF left in the Downloads folder.',
+        transitionGraphic: 'The three shared-device clues snap into your Case Journal, unlocking the Chapter 3 Cleanup Decision.',
+      },
+      chapterDialogue: [
+        {
+          speaker: 'You (Investigator)',
+          role: 'Lead Investigator',
+          line: 'Look at the three things left behind on Kiosk #3: his active account session, his password saved in browser autofill, and "Liam_Financial_Aid_Form.pdf" sitting in the local Downloads folder.',
+        },
+        {
+          speaker: 'Maya Lin',
+          role: 'University Student',
+          line: 'I never thought about the Downloads folder! Even if someone signs out of email, any PDF they downloaded to print is still sitting on the computer’s hard drive.',
+        },
+        {
+          speaker: 'You (Investigator)',
+          role: 'Lead Investigator',
+          line: 'And look at the subject line at the top of his inbox: a harvester alert tagged "GH-KIOSK-08." If a stranger sat down here, they could take over his whole digital life.',
+        },
+      ],
+      playerInteraction: 'Inspect Public Kiosk Laptop #3 [E] and the Print Lab Safety Poster [E] to identify every trace of personal data left on the shared machine.',
+      clues: [
+        {
+          id: 'l8-c2-clue1',
+          title: 'Password Stored in Browser Autofill',
+          detail: 'The public browser’s password manager stored Liam’s login credentials so anyone opening the site would be logged in automatically.',
+          hint: 'Check the browser’s Saved Passwords / Autofill panel on the kiosk.',
+        },
+        {
+          id: 'l8-c2-clue2',
+          title: 'Personal PDF Left in Local Downloads Folder',
+          detail: 'To print his form, Liam downloaded "Liam_Financial_Aid_Form.pdf" to the kiosk’s local Downloads folder and left the file there.',
+          hint: 'Look at the computer’s Downloads folder after printing a document on a public machine.',
+        },
+        {
+          id: 'l8-c2-clue3',
+          title: 'Glasshouse Harvester Alert [GH-KIOSK-08]',
+          detail: 'An automated alert tagged [GH-KIOSK-08] in the open inbox shows the Glasshouse campaign is targeting campus accounts.',
+          hint: 'Notice the [GH-KIOSK-08] tag visible in the top alert banner.',
+        },
+      ],
+      question: {
+        prompt: 'Besides clicking "Sign Out" on your web account, what else should you check before leaving a shared or public computer?',
+        options: [
+          {
+            id: 'A',
+            text: 'Make sure no passwords or autofill data were saved, clear browsing session data/close all browser windows, and delete any personal files from the Downloads folder and Trash.',
+            isCorrect: true,
+            feedback: 'Correct! Signing out, clearing saved autofill/session data, and removing downloaded files leaves no personal data behind.',
+          },
+          {
+            id: 'B',
+            text: 'Just turn down the screen brightness so the next person cannot see the open window right away.',
+            isCorrect: false,
+            feedback: 'Turning down brightness or turning off a monitor leaves the computer completely logged in for the next user.',
+          },
+          {
+            id: 'C',
+            text: 'Minimize the browser window to the taskbar.',
+            isCorrect: false,
+            feedback: 'Minimizing a window hides it for one second—anyone clicking the browser icon will still have full access to the open account.',
+          },
+          {
+            id: 'D',
+            text: 'Change the desktop wallpaper back to the default campus logo.',
+            isCorrect: false,
+            feedback: 'The wallpaper has nothing to do with active browser sessions, saved passwords, or downloaded files.',
+          },
+        ],
+        correctAnswerExplanation: 'When using a public computer, use a Private/Guest window, never save passwords, sign out completely, close all browser windows, and delete any files you downloaded to print.',
+      },
+      chapterTransition: 'Now you and Maya are ready to properly lock down Kiosk #3 and let Liam know how to secure his account from his phone.',
+    },
+    {
+      number: 3,
+      phase: 'The Decision',
+      title: 'Chapter 3: Leave No Account Behind',
+      summary: 'Choose how to sign out and protect the character’s accounts.',
+      learningGoal: 'Properly sign out of open accounts on shared devices, delete saved passwords/cookies and downloaded files, and use "Sign out of all devices" from a personal device.',
+      storySetup: 'Standing at Kiosk #3 with Maya, you are ready to clean up the exposed session ethically and help Liam secure his account remotely.',
+      graphicsDirection: {
+        backgroundArt: 'Oakridge Campus Print Lab with Kiosk #3 displaying a clean "Session Cleared · Guest Mode Ready" screen.',
+        characterAppearanceAndPose: 'Maya texts Liam with a relieved grin while Kiosk #3 shows zero saved passwords and an empty Downloads folder.',
+        keyProps: 'Clean Kiosk Laptop #3 screen, Maya’s phone messaging Liam, and your Glasshouse Case Journal.',
+        cameraAngle: 'Medium two-shot of you and Maya in the print lab with the four-option Decision Modal.',
+        lighting: 'Bright, warm campus light with emerald confirmation highlights on the cleaned kiosk screen.',
+        onScreenMessage: '[Kiosk #3 Status]: "Signed Out of All Accounts · Saved Passwords & Cookies Cleared · Local Downloads Emptied · Guest Profile Reset."',
+        interactiveClueEffects: 'Selecting the safe cleanup option highlights Kiosk #3 in emerald and adds [GH-KIOSK-08] to the Glasshouse Case Board.',
+        transitionGraphic: 'Case 08 stamped "RESOLVED" as the city map highlights the Downtown Design Studio for Level 9.',
+      },
+      chapterDialogue: [
+        {
+          speaker: 'You (Investigator)',
+          role: 'Lead Investigator',
+          line: 'Let’s sign out of Liam’s account, delete the saved password and browsing data, remove his PDF from Downloads and the Trash, and close the browser completely.',
+        },
+        {
+          speaker: 'Maya Lin',
+          role: 'University Student',
+          line: 'Done! And I just called Liam on the bus—he went into his account security settings on his phone and clicked "Sign out of all sessions" and updated his password.',
+        },
+        {
+          speaker: 'You (Investigator)',
+          role: 'Lead Investigator',
+          line: 'Not a single file or session left behind—and we have our eighth Glasshouse clue logged.',
+        },
+      ],
+      playerInteraction: 'Answer the Chapter 3 knowledge question and select the safe action in the four-option Decision Modal.',
+      clues: [
+        {
+          id: 'l8-c3-clue1',
+          title: 'Complete Sign-Out & Autofill Removal',
+          detail: 'Signing out, deleting the saved password from browser settings, and clearing cookies removes access on Kiosk #3.',
+          hint: 'Clear both the active web session and the browser’s saved password entry.',
+        },
+        {
+          id: 'l8-c3-clue2',
+          title: 'Downloads & Trash Emptied',
+          detail: 'Deleting "Liam_Financial_Aid_Form.pdf" from Downloads and emptying the system Trash removes the local document copy.',
+          hint: 'Remember to remove downloaded print files so personal documents aren’t left on the hard drive.',
+        },
+        {
+          id: 'l8-c3-clue3',
+          title: 'Remote "Sign Out of All Devices" Check',
+          detail: 'Liam uses his own phone to revoke all active sessions and rotate his password for complete peace of mind.',
+          hint: 'Most email and cloud accounts let you sign out of all other computers remotely from your phone.',
+        },
+      ],
+      question: {
+        prompt: 'If you ever realize you may have left an account logged in on a shared or public computer after leaving, what can you do from your own phone?',
+        options: [
+          {
+            id: 'A',
+            text: 'Open your account’s security settings on your phone, select "Sign out of all devices/sessions," and change your password.',
+            isCorrect: true,
+            feedback: 'Correct! Revoking active sessions ("Sign out of all devices") and updating your password immediately terminates access on the shared computer.',
+          },
+          {
+            id: 'B',
+            text: 'Nothing—you have to wait 30 days for the public computer to restart on its own.',
+            isCorrect: false,
+            feedback: 'You do not need to wait; modern accounts allow you to remotely sign out of other devices immediately.',
+          },
+          {
+            id: 'C',
+            text: 'Send an email to yourself asking the next person at the kiosk to close the window.',
+            isCorrect: false,
+            feedback: 'Relying on a stranger is risky when you can remotely sign out of all sessions from your own security settings.',
+          },
+          {
+            id: 'D',
+            text: 'Turn your phone onto Airplane Mode for an hour.',
+            isCorrect: false,
+            feedback: 'Airplane Mode on your phone does not affect a session open on a public desktop computer.',
+          },
+        ],
+        correctAnswerExplanation: 'Always sign out, clear saved data, and delete downloaded files before leaving a shared computer—and use "Sign out of all devices" in your security settings if you ever forget.',
+      },
+      chapterTransition: 'Just as you leave the campus print lab, Priya Shah messages you about an urgent voice note that sounds exactly like her studio director—setting up Level 9.',
+    },
+  ],
+
+  // ===========================================================================
+  // LEVEL 9: THE VOICE THAT SOUNDS RIGHT
+  // ===========================================================================
+  'level-09': [
+    {
+      number: 1,
+      phase: 'The Setup',
+      title: 'Chapter 1: An Urgent Voice Note',
+      summary: 'A familiar voice appears to request money or confidential information via an unexpected voice message.',
+      learningGoal: 'Understand that even a familiar-sounding voice note can be synthesized or spliced, so unusual urgent requests for money or confidential data always require verification.',
+      storySetup: 'Back at the Downtown Design Studio, Priya Shah plays a 12-second audio voice note she just received on a messaging app from an unknown number. The voice sounds remarkably like her studio director, Elena Rostova, claiming she is entering a closed-door customs audit and needs Priya to wire $2,200 and email the studio’s confidential client billing list within 10 minutes.',
+      graphicsDirection: {
+        backgroundArt: 'Executive design studio office with glass conference walls, acoustic wall panels, a studio desk, and a printed Studio Financial Protocol binder.',
+        characterAppearanceAndPose: 'Priya Shah stands beside her studio monitor holding her smartphone, looking puzzled as the audio waveform pulses on screen.',
+        keyProps: 'Priya’s smartphone displaying the voice-note waveform, the Studio Financial Protocol & Directory binder on the desk, and the office landline extension.',
+        cameraAngle: 'Third-person view of the design studio office, zooming smoothly to an over-the-shoulder view of the voice-note player on Priya’s phone.',
+        lighting: 'Warm studio track lighting balanced with cool teal highlights around the audio waveform and protocol binder.',
+        onScreenMessage: '[Voice Note — Unknown Number +1-555-014-9920 · 0:12]: "Priya, it’s Elena. My phone is locked in a customs audit room—wire $2,200 to @AuditClear-Glass09 and send the client billing sheet in 10 minutes. Don’t call my office line!"',
+        interactiveClueEffects: 'A soft amber glow highlights Priya’s smartphone and the Studio Financial Protocol binder.',
+        transitionGraphic: 'The camera zooms into the audio waveform and transcript panel as clue markers illuminate.',
+      },
+      chapterDialogue: [
+        {
+          speaker: 'Priya Shah',
+          role: 'Graphic Designer',
+          line: 'Listen to this voice note! It sounds just like our studio director, Elena—same tone, same accent—asking me to wire $2,200 and send the confidential client list in ten minutes!',
+        },
+        {
+          speaker: 'You (Investigator)',
+          role: 'Lead Investigator',
+          line: 'The voice sounds convincing, Priya, but listen to what it’s asking: an urgent wire to "@AuditClear-Glass09," confidential data, and a warning not to call her office line.',
+        },
+        {
+          speaker: 'Priya Shah',
+          role: 'Graphic Designer',
+          line: 'Wait—Elena gave a 30-minute keynote speech on a public podcast last month! Could someone have used her public audio to clone a voice note?',
+        },
+      ],
+      playerInteraction: 'Walk to Priya’s desk in the studio, talk with Priya Shah [E], and inspect the voice note on her smartphone [E].',
+      clues: [
+        {
+          id: 'l9-c1-clue1',
+          title: 'Voice Note Sent from an Unknown Number',
+          detail: 'Although the voice sounds like Elena, the message arrived as a pre-recorded audio clip from an unrecognized phone number.',
+          hint: 'Check the sender phone number at the top of the voice note screen.',
+        },
+        {
+          id: 'l9-c1-clue2',
+          title: 'Urgent Demand for $2,200 & Confidential Client Data',
+          detail: 'The clip demands an immediate wire transfer and sensitive client records outside normal studio procedures.',
+          hint: 'Listen to what the voice note is asking Priya to hand over in 10 minutes.',
+        },
+        {
+          id: 'l9-c1-clue3',
+          title: '"Don’t Call My Office Line" Isolation Tactic',
+          detail: 'Just like text impersonators, the voice note invents a "closed audit room" excuse so Priya won’t call Elena directly.',
+          hint: 'Notice how the voice note tries to prevent a live callback.',
+        },
+      ],
+      question: {
+        prompt: 'Why shouldn’t Priya rely on the sound of the voice alone when a voice note asks for an urgent wire transfer and confidential files?',
+        options: [
+          {
+            id: 'A',
+            text: 'Because short voice clips can be imitated or generated from public audio, so any unusual request for money or sensitive data must be verified through a separate trusted channel.',
+            isCorrect: true,
+            feedback: 'Correct! A familiar-sounding voice clip is not proof of identity when someone makes an urgent, unusual request from an unknown number.',
+          },
+          {
+            id: 'B',
+            text: 'Because voice notes are always 100% authentic if they are longer than 10 seconds.',
+            isCorrect: false,
+            feedback: 'Synthetic or spliced audio clips can be any length; duration does not make an unverified voice note safe.',
+          },
+          {
+            id: 'C',
+            text: 'Because Priya should send the confidential client list first and ask about the $2,200 later.',
+            isCorrect: false,
+            feedback: 'Sending confidential client records to an unverified number causes a serious data breach.',
+          },
+          {
+            id: 'D',
+            text: 'Because studio directors only ask for wire transfers via text messages.',
+            isCorrect: false,
+            feedback: 'Unusual urgent requests by text, email, or voice note all require independent verification.',
+          },
+        ],
+        correctAnswerExplanation: 'Even when a voice note sounds like a boss, colleague, or family member, pause and verify any urgent request for money or confidential data through a separate trusted channel.',
+      },
+      chapterTransition: 'Before responding to the voice note, you and Priya check the story against the studio schedule and financial verification protocol.',
+    },
+    {
+      number: 2,
+      phase: 'The Investigation',
+      title: 'Chapter 2: Check the Story',
+      summary: 'Notice inconsistencies in the story and check another way to verify the request.',
+      learningGoal: 'Spot inconsistencies in cloned/spliced voice messages and use established verification rules (such as internal directory callbacks or a shared verification question).',
+      storySetup: 'You inspect the voice-note metadata on Priya’s phone alongside the Studio Financial Protocol binder on the desk. Not only does the studio require two-person sign-off on all transfers, but Elena’s calendar shows she isn’t at customs at all—she is right down the hall in Conference Room B!',
+      graphicsDirection: {
+        backgroundArt: 'Close-up of the studio desk showing the voice-note file metadata on Priya’s phone beside the open Studio Financial Protocol binder.',
+        characterAppearanceAndPose: 'Priya points at the studio schedule and two-person verification rule in the binder while you highlight the synthetic audio file header on the phone.',
+        keyProps: 'Smartphone showing audio file metadata ("GH-SYNTH-VOICE-09.wav"), Studio Financial Protocol binder, and the internal office directory.',
+        cameraAngle: 'Over-the-shoulder inspection view framing both the smartphone audio details and the open protocol binder.',
+        lighting: 'Warm studio lighting with crisp teal highlights around the audio file name, the internal extension list, and the [GH-VOICE-09] tag.',
+        onScreenMessage: '[Audio File Metadata]: "Attachment: GH-SYNTH-VOICE-09.wav · Cadence Glitches at 0:04 & 0:09 · Payment Tag: @AuditClear-Glass09" | [Studio Schedule: Elena Rostova in Conf Room B (Ext. 402)].',
+        interactiveClueEffects: 'Three glowing evidence pins highlight the synthetic audio file tag, the contradiction with Elena’s in-building schedule, and the studio’s callback rule.',
+        transitionGraphic: 'The three voice-verification clues lock into your Case Journal, unlocking the Chapter 3 Verification Decision.',
+      },
+      chapterDialogue: [
+        {
+          speaker: 'You (Investigator)',
+          role: 'Lead Investigator',
+          line: 'Look at the studio schedule in this binder, Priya: Elena isn’t in a customs audit—she’s right down the hall in Conference Room B at extension 402!',
+        },
+        {
+          speaker: 'Priya Shah',
+          role: 'Graphic Designer',
+          line: 'And when you replay the voice note closely, her phrasing glitches right before the words "two thousand two hundred" and "@AuditClear-Glass09."',
+        },
+        {
+          speaker: 'You (Investigator)',
+          role: 'Lead Investigator',
+          line: 'Check the audio attachment header too: "GH-SYNTH-VOICE-09.wav." That’s our ninth Glasshouse clue—and it gives us the final piece of their pattern.',
+        },
+      ],
+      playerInteraction: 'Inspect Priya’s Smartphone [E] to examine the voice-note metadata and glitches, and inspect the Studio Protocol Binder [E] to review the callback rule and schedule.',
+      clues: [
+        {
+          id: 'l9-c2-clue1',
+          title: 'Story Contradicts Elena’s Real Location',
+          detail: 'The voice note claims Elena is stuck in a customs audit room, but the office schedule shows she is in Conference Room B down the hall.',
+          hint: 'Compare the voice note’s excuse with Elena’s actual schedule in the studio binder.',
+        },
+        {
+          id: 'l9-c2-clue2',
+          title: 'Unnatural Audio Splicing & Violation of Protocol',
+          detail: 'The audio clip has robotic cadence glitches around the dollar amount and violates the studio’s strict two-person callback policy.',
+          hint: 'Check the audio file inspection notes and the Studio Financial Protocol.',
+        },
+        {
+          id: 'l9-c2-clue3',
+          title: 'Glasshouse Synth Tag [GH-SYNTH-VOICE-09]',
+          detail: 'The file metadata "GH-SYNTH-VOICE-09.wav" and handle "@AuditClear-Glass09" link this voice clone to the Glasshouse operation.',
+          hint: 'Inspect the attachment filename and payment handle in the evidence window.',
+        },
+      ],
+      question: {
+        prompt: 'What inconsistencies proved that the voice note from "Elena" was not a real request?',
+        options: [
+          {
+            id: 'A',
+            text: 'It came from an unknown number, contradicted Elena’s real schedule down the hall, showed unnatural audio glitches, and bypassed the studio’s callback protocol.',
+            isCorrect: true,
+            feedback: 'Correct! Checking the story against real schedules, noticing protocol violations, and inspecting the sender details exposed the fake voice note.',
+          },
+          {
+            id: 'B',
+            text: 'The voice note was recorded in ".wav" format instead of ".mp3" format.',
+            isCorrect: false,
+            feedback: 'File extension alone does not prove whether a request is real; the unknown sender, contradicted story, and bypassed callback protocol are the real clues.',
+          },
+          {
+            id: 'C',
+            text: 'Elena used Priya’s first name at the start of the message.',
+            isCorrect: false,
+            feedback: 'Scammers can easily look up names on company websites or LinkedIn to personalize a voice note.',
+          },
+          {
+            id: 'D',
+            text: 'The message arrived in the afternoon.',
+            isCorrect: false,
+            feedback: 'Time of day does not determine authenticity.',
+          },
+        ],
+        correctAnswerExplanation: 'Checking the story against known schedules and following a strict out-of-band callback rule protects you even when an audio clip sounds realistic.',
+      },
+      chapterTransition: 'With the synthetic voice note exposed, you and Priya choose how to confirm with the real Elena through an independent channel.',
+    },
+    {
+      number: 3,
+      phase: 'The Decision',
+      title: 'Chapter 3: Confirm Through Another Channel',
+      summary: 'Choose how to respond without relying on the voice message alone.',
+      learningGoal: 'Always verify urgent voice notes or calls by contacting the person through a separate, known channel (such as an internal office extension, saved contact number, or in person).',
+      storySetup: 'Priya picks up the internal studio desk phone to dial Elena’s verified extension (Ext. 402) down the hall in Conference Room B.',
+      graphicsDirection: {
+        backgroundArt: 'Design Studio office with Elena Rostova stepping out of Conference Room B in person while Priya holds the internal desk phone.',
+        characterAppearanceAndPose: 'Priya smiles in relief as the real Elena waves from the hallway doorway, confirming she never sent any voice note.',
+        keyProps: 'Internal studio desk phone (Ext. 402), protected client billing binder, and your Glasshouse Case Journal.',
+        cameraAngle: 'Medium two-shot of you and Priya in the studio with the four-option Decision Modal.',
+        lighting: 'Warm golden studio light with emerald highlights confirming both the $2,200 and client data are safe.',
+        onScreenMessage: '[Verified Internal Extension 402 — Elena Rostova]: "I’m right here in Conference Room B! That voice note was cloned from my public podcast—thank you for verifying through another channel!"',
+        interactiveClueEffects: 'Selecting the safe option highlights the verified internal channel in emerald and pins [GH-SYNTH-VOICE-09] onto the Glasshouse Case Board.',
+        transitionGraphic: 'Case 09 stamped "RESOLVED" as all nine threads converge on the Glasshouse Command Board for Level 10.',
+      },
+      chapterDialogue: [
+        {
+          speaker: 'You (Investigator)',
+          role: 'Lead Investigator',
+          line: 'Don’t reply to that unknown number, Priya. Call Elena on her verified internal office extension—or walk right down the hall to Conference Room B.',
+        },
+        {
+          speaker: 'Priya Shah',
+          role: 'Graphic Designer',
+          line: 'Elena just walked out of Conference Room B! She confirmed she never sent that voice note and thanked us for protecting the studio’s funds and client list.',
+        },
+        {
+          speaker: 'You (Investigator)',
+          role: 'Lead Investigator',
+          line: 'And look at our Case Journal: nine cases, nine Glasshouse clues. Every single thread connects back to one campaign—and our neighbors are gathering at the headquarters board for Level 10.',
+        },
+      ],
+      playerInteraction: 'Answer the Chapter 3 knowledge question and select the safe option in the four-choice Decision Modal.',
+      clues: [
+        {
+          id: 'l9-c3-clue1',
+          title: 'Out-of-Band Verification (Another Channel)',
+          detail: 'Confirming with Elena via her known office extension and in person proves the voice note was a fake.',
+          hint: 'Always use a separate, trusted channel to verify unusual voice messages.',
+        },
+        {
+          id: 'l9-c3-clue2',
+          title: 'Client Data & Studio Funds Protected',
+          detail: 'Refusing to send the $2,200 wire or the client billing list keeps the studio completely safe.',
+          hint: 'Never release confidential data or funds based on an unverified voice clip.',
+        },
+        {
+          id: 'l9-c3-clue3',
+          title: 'Ninth Glasshouse Clue Connected',
+          detail: '[GH-SYNTH-VOICE-09] completes the pattern of nine phishing, payment, and impersonation templates across the city.',
+          hint: 'Review your Case Journal to see how all 9 cases lead to Level 10: Glasshouse.',
+        },
+      ],
+      question: {
+        prompt: 'What is the safest way to handle an urgent voice note from a boss or family member asking for money or confidential information?',
+        options: [
+          {
+            id: 'A',
+            text: 'Do not rely on the voice message alone; verify the request through another trusted channel—such as calling their known, saved phone number or speaking in person.',
+            isCorrect: true,
+            feedback: 'Correct! Confirming through a separate, trusted channel (or using a pre-agreed family/team verification question) stops voice-cloning traps every time.',
+          },
+          {
+            id: 'B',
+            text: 'Reply to the unknown number with a voice note of your own asking if they are sure.',
+            isCorrect: false,
+            feedback: 'Replying to the same unknown number keeps you talking to the impersonator—and gives them a sample of your voice too.',
+          },
+          {
+            id: 'C',
+            text: 'Play the voice note at double speed to check if it is real.',
+            isCorrect: false,
+            feedback: 'Listening at a different speed is no substitute for verifying through a separate trusted channel.',
+          },
+          {
+            id: 'D',
+            text: 'Send the confidential file first so you don’t miss the 10-minute deadline.',
+            isCorrect: false,
+            feedback: 'Never rush to send confidential data or money under a countdown timer.',
+          },
+        ],
+        correctAnswerExplanation: 'When a voice message makes an urgent or unusual request for money or sensitive information, always confirm through a separate, known communication channel before acting.',
+      },
+      chapterTransition: 'With all nine cases connected, Alex Rivera, Maya Lin, Marcus Vance, and Priya Shah meet you at the Investigation Headquarters for the finale: Level 10 — Glasshouse.',
+    },
+  ],
+
+  // ===========================================================================
+  // LEVEL 10: GLASSHOUSE
+  // ===========================================================================
+  'level-10': [
+    {
+      number: 1,
+      phase: 'The Setup',
+      title: 'Chapter 1: The Case Board Connects',
+      summary: 'Characters from earlier cases return as new coordinated messages appear across the neighborhood.',
+      learningGoal: 'Recognize how multi-stage scam campaigns combine earlier lures (fake alerts, look-alike links, and spoofed support numbers) to target a whole community at once.',
+      storySetup: 'At the Neighborhood Investigation Headquarters, Alex Rivera, Maya Lin, Marcus Vance, and Priya Shah gather around your master corkboard. Suddenly, their phones chime at the same time with a coordinated citywide alert claiming to be the "City Cyber-Safety Refund Portal"—offering a "$350 scam-victim reimbursement" if residents log in and share a verification code!',
+      graphicsDirection: {
+        backgroundArt: 'Cinematic Investigation Headquarters room with a large illuminated Glasshouse Evidence Wall, red/teal connection threads linking Cases 1–9, and warm desk lamps.',
+        characterAppearanceAndPose: 'Alex Rivera (denim overshirt), Maya Lin (olive campus cardigan), Marcus Vance (burgundy henley), and Priya Shah (mustard blazer) stand together around the central evidence table comparing their phones.',
+        keyProps: 'Master Glasshouse Evidence Board on the wall, the central analysis laptop, and the recurring characters’ smartphones.',
+        cameraAngle: 'Wide cinematic third-person shot of the headquarters room and returning characters, moving smoothly to the illuminated Glasshouse Case Board.',
+        lighting: 'Warm amber headquarters lamps contrasted with dramatic teal highlights across the connected evidence threads on the wall.',
+        onScreenMessage: '[Citywide Coordinated Alert]: "CITY SECURITY NOTICE: Affected by recent text alerts? Claim your $350 Glasshouse Settlement Refund now! Sign in at [fictional-preview: city-cyber-refund-glasshouse.example] and read your 6-digit code to our helpline!"',
+        interactiveClueEffects: 'Glowing teal threads connect all nine previous case cards on the Master Case Board toward the central Level 10 node.',
+        transitionGraphic: 'The camera glides across the nine connected case cards on the wall as the final pattern emerges.',
+      },
+      chapterDialogue: [
+        {
+          speaker: 'Alex Rivera',
+          role: 'Neighbor (Case 1 & 2)',
+          line: 'Everyone on our block just got this text at the exact same time! It claims we can get a $350 reimbursement for the recent scam alerts if we log in right now.',
+        },
+        {
+          speaker: 'Maya Lin',
+          role: 'Student (Case 3 & 8)',
+          line: 'Wait—look at the link in that message: "city-cyber-refund-glasshouse.example." It’s using the exact same hyphenated look-alike trick from my campus login case!',
+        },
+        {
+          speaker: 'Marcus Vance',
+          role: 'Café Owner (Case 4 & 7)',
+          line: 'And it’s promising instant money if we act fast—just like the fake charity match and marketplace bonus.',
+        },
+        {
+          speaker: 'Priya Shah',
+          role: 'Designer (Case 5, 6 & 9)',
+          line: 'Plus it asks people to read a 6-digit verification code to a helpline! The Glasshouse campaign combined every single trick we’ve seen into one final wave.',
+        },
+      ],
+      playerInteraction: 'Walk to the headquarters table to talk with Alex and the returning team [E], and approach the Master Glasshouse Evidence Board [E].',
+      clues: [
+        {
+          id: 'l10-c1-clue1',
+          title: 'Layered Lure Combining Multiple Tricks',
+          detail: 'The final message combines an urgent refund promise, a look-alike login domain, and a demand for a 6-digit one-time code.',
+          hint: 'Notice how this message blends the tricks from Levels 1, 3, and 6 into a single trap.',
+        },
+        {
+          id: 'l10-c1-clue2',
+          title: '"Refund / Recovery" Follow-Up Bait',
+          detail: 'After earlier scams failed, the campaign pivots to impersonating a "refund portal" to trick people who are already on alert.',
+          hint: 'Look at how the message pretends to help people who received earlier scam texts.',
+        },
+        {
+          id: 'l10-c1-clue3',
+          title: 'Nine Connected Glasshouse Markers',
+          detail: 'Every incident from [GH-PRISM-01] to [GH-SYNTH-VOICE-09] traces back to the same template kit.',
+          hint: 'Examine the nine case cards pinned to the Master Evidence Board.',
+        },
+      ],
+      question: {
+        prompt: 'Why is an unexpected message offering an instant "$350 scam-victim refund" if you click a link and share a 6-digit code so dangerous?',
+        options: [
+          {
+            id: 'A',
+            text: 'It is a "follow-up / recovery" scam that combines a look-alike login link and a one-time code trap to target people who already saw earlier scam attempts.',
+            isCorrect: true,
+            feedback: 'Correct! Follow-up scams often pretend to be a refund department or security agency to trick people using the exact same phishing and OTP tactics.',
+          },
+          {
+            id: 'B',
+            text: 'Because city governments always send instant $350 cash refunds via random text links.',
+            isCorrect: false,
+            feedback: 'Government agencies and banks do not text random login links asking for your 6-digit one-time passcode to issue refunds.',
+          },
+          {
+            id: 'C',
+            text: 'Because $350 is too small to be worth claiming.',
+            isCorrect: false,
+            feedback: 'The dollar amount is bait; the real danger is entering credentials and sharing a 6-digit code on a fake site.',
+          },
+          {
+            id: 'D',
+            text: 'Because the message arrived while Alex, Maya, Marcus, and Priya were in the same room.',
+            isCorrect: false,
+            feedback: 'Mass scam waves are sent to thousands of numbers simultaneously.',
+          },
+        ],
+        correctAnswerExplanation: 'Scam campaigns often follow up with fake "refund" or "security reimbursement" messages that combine look-alike websites and one-time passcode traps.',
+      },
+      chapterTransition: 'Together with Alex, Maya, Marcus, and Priya, you step up to the Master Evidence Board and analysis laptop to connect all 10 cases.',
+    },
+    {
+      number: 2,
+      phase: 'The Investigation',
+      title: 'Chapter 2: The Pattern Emerges',
+      summary: 'Use clues and habits learned throughout the campaign to investigate the layered scam.',
+      learningGoal: 'Synthesize all core cyber-safety habits—pausing under urgency, inspecting domains, verifying through independent channels, protecting OTPs, and securing shared devices—to dismantle a complex scam.',
+      storySetup: 'Inspecting the Master Glasshouse Evidence Board and the headquarters analysis laptop, you map out the complete anatomy of the Glasshouse campaign so the entire neighborhood can spot every layer of the trick.',
+      graphicsDirection: {
+        backgroundArt: 'Close-up of the Master Glasshouse Evidence Board and headquarters laptop, showing all 10 case nodes linked into a clear visual diagram.',
+        characterAppearanceAndPose: 'You stand at the center of the board while Alex, Maya, Marcus, and Priya each point to the habit that solved their case.',
+        keyProps: 'Master Glasshouse Evidence Board (Cases 1–10), Headquarters Analysis Laptop, and your completed Case Journal.',
+        cameraAngle: 'Over-the-shoulder inspection angle framing the connected evidence board and the laptop summary screen.',
+        lighting: 'Warm headquarters illumination with crisp teal and amber highlights connecting all 10 case nodes.',
+        onScreenMessage: '[Glasshouse Campaign Dossier — Tag: GH-MASTER-10]: "1. Artificial Urgency | 2. Look-Alike Domains | 3. Unverified Payment Screenshots | 4. OTP & Voice Impersonation | Defense: Pause + Verify Independently + Report Officially."',
+        interactiveClueEffects: 'Three master evidence pins illuminate the shared domain kit, the psychological urgency pattern, and the official reporting dossier.',
+        transitionGraphic: 'All 10 case badges illuminate in gold and emerald in your Case Journal, unlocking the final Chapter 3 Community Resolution.',
+      },
+      chapterDialogue: [
+        {
+          speaker: 'You (Investigator)',
+          role: 'Lead Investigator',
+          line: 'Look at the pattern across all ten cases on the board: whether it’s a $2.85 parcel fee, a roommate DM, a campus login, a marketplace screenshot, a fake job, an OTP call, a charity text, or a cloned voice note—every single one relies on rushing us so we don’t verify independently.',
+        },
+        {
+          speaker: 'Maya Lin',
+          role: 'Student',
+          line: 'And every time we paused, went through the front door, or called a known number on another channel, the illusion fell apart immediately.',
+        },
+        {
+          speaker: 'Marcus Vance',
+          role: 'Café Owner',
+          line: 'Now we have all ten Glasshouse markers documented cleanly—without ever interacting with their links or putting our own accounts at risk.',
+        },
+      ],
+      playerInteraction: 'Inspect the Master Glasshouse Evidence Board [E] and the Headquarters Analysis Laptop [E] to connect the final campaign clues.',
+      clues: [
+        {
+          id: 'l10-c2-clue1',
+          title: 'The Universal Pattern: Urgency + Isolation',
+          detail: 'Every Glasshouse lure used a countdown timer (10–60 mins) and an excuse not to verify through a separate trusted channel.',
+          hint: 'Look at how every case tried to stop the victim from pausing and checking independently.',
+        },
+        {
+          id: 'l10-c2-clue2',
+          title: 'Shared Infrastructure [GH-PRISM-01 to GH-MASTER-10]',
+          detail: 'All ten look-alike domains, payment handles, and templates share the same Glasshouse campaign signatures.',
+          hint: 'Inspect the connected thread on the Master Evidence Board.',
+        },
+        {
+          id: 'l10-c2-clue3',
+          title: 'Defensive Habit Checklist Ready for the Community',
+          detail: 'The team’s compiled guide covers independent verification, front-door logins, in-app payment checks, OTP privacy, and shared-device sign-outs.',
+          hint: 'Review the community protection checklist on the headquarters laptop.',
+        },
+      ],
+      question: {
+        prompt: 'Looking back across all 10 cases in the Glasshouse campaign, what single habit defeated every type of scam?',
+        options: [
+          {
+            id: 'A',
+            text: 'Pausing when pressured and verifying independently through a trusted app, website, or phone number that you find yourself.',
+            isCorrect: true,
+            feedback: 'Correct! Pausing and verifying independently—outside the message, link, screenshot, or call that contacted you—defeats every layer of the campaign.',
+          },
+          {
+            id: 'B',
+            text: 'Replying directly to suspicious messages to ask the sender for their employee ID.',
+            isCorrect: false,
+            feedback: 'Engaging with the sender inside the suspicious channel never verifies identity—scammers simply invent fake IDs.',
+          },
+          {
+            id: 'C',
+            text: 'Trying to hack back or confront the scammers in their chat rooms.',
+            isCorrect: false,
+            feedback: 'Confronting or attempting to attack scammers is unsafe and unnecessary; protecting accounts and reporting through official channels is the right response.',
+          },
+          {
+            id: 'D',
+            text: 'Avoiding all technology and never using online banking, email, or delivery tracking again.',
+            isCorrect: false,
+            feedback: 'Cyber safety is about practical confidence and smart verification habits, not fear of everyday technology.',
+          },
+        ],
+        correctAnswerExplanation: 'Practical habits—pausing under urgency, going through the front door, verifying on another channel, keeping OTPs private, and checking your own app balance—let you use everyday technology with confidence.',
+      },
+      chapterTransition: 'With the complete Glasshouse dossier assembled, it is time to make the final campaign decision to protect the community.',
+    },
+    {
+      number: 3,
+      phase: 'The Decision',
+      title: 'Chapter 3: Protect the Community',
+      summary: 'Choose how to warn affected people, report the issue through appropriate channels, and help secure accounts.',
+      learningGoal: 'Respond to a widespread scam wave by warning the community with clear verification habits, submitting documented clues to official cyber-reporting channels, and helping neighbors secure their accounts—without confronting or attacking anyone.',
+      storySetup: 'Alex, Maya, Marcus, and Priya stand beside you at the headquarters table. Together, you are ready to launch the community protection response and resolve the Glasshouse Files.',
+      graphicsDirection: {
+        backgroundArt: 'Neighborhood Investigation Headquarters bathed in warm celebratory golden light as the community safety bulletin goes live across Sunset Heights, Oakridge Campus, and Midtown.',
+        characterAppearanceAndPose: 'Alex, Maya, Marcus, and Priya applaud around the central table as the "GLASSHOUSE FILES: CASE CLOSED — COMMUNITY PROTECTED" banner illuminates.',
+        keyProps: 'Completed Master Evidence Board, Official Cyber-Reporting Portal confirmation screen, Community Safety Guide flyers, and your 10-Badge Case Journal.',
+        cameraAngle: 'Cinematic wide group shot framing you and all four returning friends, with the final four-option Decision Modal.',
+        lighting: 'Warm, triumphant golden-hour light with glowing emerald accents across all 10 resolved case cards.',
+        onScreenMessage: '[Community Resolution]: "Official Report Submitted to Cyber-Safety Authorities & Telecom Carriers · Neighborhood Advisory Published · 2FA & Account Checkups Completed Across All 10 Locations!"',
+        interactiveClueEffects: 'Choosing the safe community response lights up all 10 campaign badges in emerald and gold.',
+        transitionGraphic: 'Grand Finale Badge "Lead Glasshouse Investigator" awarded as all 10 levels and 30 chapters are marked Complete.',
+      },
+      chapterDialogue: [
+        {
+          speaker: 'You (Investigator)',
+          role: 'Lead Investigator',
+          line: 'Let’s submit our documented Glasshouse dossier to the official cyber-reporting portal and telecom carriers, share our plain-language safety bulletin with the neighborhood, and help everyone enable two-factor authentication.',
+        },
+        {
+          speaker: 'Alex Rivera',
+          role: 'Neighbor',
+          line: 'Sunset Heights apartment residents just got our warning bulletin—nobody clicked the fake refund link!',
+        },
+        {
+          speaker: 'Maya Lin & Marcus Vance',
+          role: 'Campus & Midtown Leads',
+          line: 'Campus IT and the Midtown business association pinned the verification checklist too. The fake Glasshouse domains are already being taken down!',
+        },
+        {
+          speaker: 'Priya Shah',
+          role: 'Studio Designer',
+          line: 'Because of your calm investigation across all ten cases, our whole neighborhood knows how to pause, verify independently, and stay safe online!',
+        },
+      ],
+      playerInteraction: 'Answer the final Chapter 3 knowledge question and select the community-focused resolution in the four-option Decision Modal.',
+      clues: [
+        {
+          id: 'l10-c3-clue1',
+          title: 'Official Reporting to Authorities & Platforms',
+          detail: 'Submitting the 10-case dossier to official cyber-safety portals and carriers helps take down the fraudulent domains and numbers legally.',
+          hint: 'Use official reporting channels so carriers and authorities can disable the scam infrastructure.',
+        },
+        {
+          id: 'l10-c3-clue2',
+          title: 'Clear, Calm Community Warning',
+          detail: 'Sharing practical habits—not panic—helps neighbors recognize the fake $350 refund text without fear.',
+          hint: 'Warn affected people clearly so they know what to look for and how to verify.',
+        },
+        {
+          id: 'l10-c3-clue3',
+          title: 'Proactive Account Security (2FA & Password Checkup)',
+          detail: 'Helping neighbors enable multi-factor authentication and review active sessions keeps their accounts resilient.',
+          hint: 'Strong unique passwords and 2FA protect accounts across the community.',
+        },
+      ],
+      question: {
+        prompt: 'What is the most effective and responsible way to respond when you uncover a coordinated scam campaign targeting your community?',
+        options: [
+          {
+            id: 'A',
+            text: 'Warn affected community members clearly, report the suspicious messages and domains through official reporting channels, and help people secure their accounts with 2FA.',
+            isCorrect: true,
+            feedback: 'Correct! Combining clear community warnings, official reporting, and practical account security protects everyone safely and legally.',
+          },
+          {
+            id: 'B',
+            text: 'Try to hack into the scammers’ servers or send angry threats to the phone numbers on the board.',
+            isCorrect: false,
+            feedback: 'Never attempt to hack back or confront scammers; it is unsafe, illegal, and often targets spoofed numbers belonging to innocent people.',
+          },
+          {
+            id: 'C',
+            text: 'Forward the live scam link to everyone without explanation so they can click it and see what it looks like.',
+            isCorrect: false,
+            feedback: 'Never forward live phishing links without context, as people may click them by mistake.',
+          },
+          {
+            id: 'D',
+            text: 'Keep all the clues secret so neighbors have to figure out the scam on their own.',
+            isCorrect: false,
+            feedback: 'Sharing calm, practical warnings helps protect friends, family, and neighbors before anyone loses money or account access.',
+          },
+        ],
+        correctAnswerExplanation: 'Cyber safety is a community effort: warn people calmly, report suspicious activity through official channels, and help neighbors protect their accounts with strong passwords and multi-factor authentication.',
+      },
+      chapterTransition: 'Congratulations, Investigator! You have completed all 10 Levels and all 30 Chapters of Scam Sleuth: The Glasshouse Files—building lasting confidence in practical cyber-safety habits across the entire city!',
+    },
+  ],
+};

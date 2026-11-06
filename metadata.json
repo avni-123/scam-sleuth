@@ -1,0 +1,8 @@
+{
+  "name": "KharchaKatha",
+  "description": "Every payment has a story. Transform crumpled receipts and UPI screenshots into clear spending insights with smart verification and modern ledger aesthetics.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
