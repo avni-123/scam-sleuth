@@ -85,8 +85,30 @@ export default function App() {
     return [];
   });
 
+  // Collected Evidence Clues by Level (levelId -> (clueId -> InspectionData))
+  const [cluesByLevel, setCluesByLevel] = useState<Record<string, Record<string, InspectionData>>>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY_PROGRESS);
+      if (saved) return JSON.parse(saved).cluesByLevel || {};
+    } catch {
+      // Ignore
+    }
+    return {};
+  });
+
   // Collected Evidence Clues in Current Mission (clueId -> InspectionData)
-  const [collectedClues, setCollectedClues] = useState<Record<string, InspectionData>>({});
+  const collectedClues = cluesByLevel[currentLevelId] || {};
+  const setCollectedClues = (
+    updater:
+      | Record<string, InspectionData>
+      | ((prev: Record<string, InspectionData>) => Record<string, InspectionData>)
+  ) => {
+    setCluesByLevel((prev) => {
+      const currentMap = prev[currentLevelId] || {};
+      const nextMap = typeof updater === 'function' ? updater(currentMap) : updater;
+      return { ...prev, [currentLevelId]: nextMap };
+    });
+  };
 
   // Active Modals & Overlays
   const [activeNearby, setActiveNearby] = useState<NearbyTarget | null>(null);
@@ -135,12 +157,13 @@ export default function App() {
         JSON.stringify({
           completedLevels,
           badges: earnedBadges,
+          cluesByLevel,
         })
       );
     } catch {
       // Ignore
     }
-  }, [completedLevels, earnedBadges]);
+  }, [completedLevels, earnedBadges, cluesByLevel]);
 
   // Global Keyboard Shortcuts (Esc = Immediate Settings Popup, Q = Chapter Question, J = Journal, V = Camera)
   useEffect(() => {
@@ -259,12 +282,14 @@ export default function App() {
   };
 
   // Launch a level (optionally starting at Chapter 1, 2, or 3)
-  const startLevel = (levelId: LevelId, initialChapter: 1 | 2 | 3 = 1) => {
+  const startLevel = (levelId: LevelId, initialChapter: 1 | 2 | 3 = 1, resetClues = false) => {
     soundEngine.playGtaMissionStart();
     setCurrentLevelId(levelId);
     setActiveChapterNum(initialChapter);
     setHasSpokenToNpc(initialChapter > 1);
-    setCollectedClues({});
+    if (resetClues) {
+      setCluesByLevel((prev) => ({ ...prev, [levelId]: {} }));
+    }
     setActiveNearby(null);
     setActiveDialogueNpc(null);
     setInspectingObject(null);
@@ -328,7 +353,7 @@ export default function App() {
   const handleRestartFromLevel1 = (enterGameplay = true) => {
     setCompletedLevels([]);
     setEarnedBadges([]);
-    setCollectedClues({});
+    setCluesByLevel({});
     try {
       localStorage.removeItem(STORAGE_KEY_PROGRESS);
       localStorage.removeItem(LEGACY_STORAGE_KEY_PROGRESS);
@@ -336,7 +361,7 @@ export default function App() {
       // Ignore
     }
     if (enterGameplay) {
-      startLevel('tutorial-delivery', 1);
+      startLevel('tutorial-delivery', 1, true);
     } else {
       setCurrentLevelId('tutorial-delivery');
       setActiveChapterNum(1);
@@ -371,6 +396,11 @@ export default function App() {
           onSelectLevel={(id, ch) => startLevel(id, ch || 1)}
           onOpenSettings={() => setSettingsOpen(true)}
           completedLevels={completedLevels}
+          earnedBadges={earnedBadges}
+          cluesByLevel={cluesByLevel}
+          currentLevelId={currentLevelId}
+          activeChapterNum={activeChapterNum}
+          hasSpokenToNpc={hasSpokenToNpc}
           onOpenArtDossier={() => setArtDossierOpen(true)}
           onUnlockAllLevels={handleUnlockAllLevels}
           onRestartFromLevel1={() => handleRestartFromLevel1(false)}

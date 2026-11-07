@@ -2,27 +2,39 @@ import React, { useState } from 'react';
 import {
   Play,
   Settings as SettingsIcon,
-  Sparkles,
-  CheckCircle,
-  Star,
-  MapPin,
+  CheckCircle2,
   Lock,
   Unlock,
   Eye,
   ShieldCheck,
   ChevronRight,
+  Award,
+  BookOpen,
+  Compass,
+  FolderOpen,
+  RotateCcw,
+  FileText,
+  UserCheck,
+  Search,
 } from 'lucide-react';
 import { ADVENTURE_LEVELS } from '../../data/adventureLevels';
-import { LevelId, AdventureLevel } from '../../types/adventure';
+import { LevelId, AdventureLevel, InspectionData } from '../../types/adventure';
 import { soundEngine } from '../../utils/proceduralAudio';
 import { ChapterInvestigationModal } from './ChapterInvestigationModal';
 import { CompleteCampaignScriptView } from './CompleteCampaignScriptView';
+import detectivePortraitImg from '../../assets/images/detective_character_portrait_1794034150867.jpg';
+import caseBoardBackdropImg from '../../assets/images/case_journal_board_backdrop_1794034150256.jpg';
 
 interface TitleScreenProps {
   onStartInvestigation: () => void;
   onSelectLevel: (levelId: LevelId, initialChapter?: 1 | 2 | 3) => void;
   onOpenSettings: () => void;
   completedLevels: string[];
+  earnedBadges?: string[];
+  cluesByLevel?: Record<string, Record<string, InspectionData>>;
+  currentLevelId?: LevelId;
+  activeChapterNum?: 1 | 2 | 3;
+  hasSpokenToNpc?: boolean;
   onOpenArtDossier?: () => void;
   onUnlockAllLevels?: () => void;
   onRestartFromLevel1?: () => void;
@@ -32,20 +44,25 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
   onSelectLevel,
   onOpenSettings,
   completedLevels,
+  earnedBadges = [],
+  cluesByLevel = {},
+  currentLevelId,
+  activeChapterNum = 1,
+  hasSpokenToNpc = false,
   onOpenArtDossier,
   onUnlockAllLevels,
   onRestartFromLevel1,
 }) => {
-  const [activeTab, setActiveTab] = useState<'campaign' | 'script' | 'dossier' | 'controls'>('campaign');
-  const [threatStars, setThreatStars] = useState<number>(5);
+  const [activeTab, setActiveTab] = useState<'journal' | 'board' | 'script' | 'controls'>('journal');
+  const [boardFilter, setBoardFilter] = useState<'all' | 'current' | 'completed' | 'locked'>('all');
   const [previewLevel, setPreviewLevel] = useState<AdventureLevel | null>(null);
   const [previewChapterNum, setPreviewChapterNum] = useState<1 | 2 | 3>(1);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [portraitLoaded, setPortraitLoaded] = useState<boolean>(true);
 
   const totalLevels = ADVENTURE_LEVELS.length; // 10 Levels
   const totalChapters = totalLevels * 3; // 30 Chapters
   const completedCount = completedLevels.length;
-  const completedChaptersCount = completedCount * 3;
 
   // Unlock levels in campaign order: Level 1 is available at start, Level N unlocks when Level N-1 is completed
   const isLevelUnlocked = (idx: number): boolean => {
@@ -57,64 +74,155 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
     );
   };
 
-  // Next active available level in campaign order
-  const nextActiveIndex = (() => {
+  // Determine the current active campaign level
+  const currentActiveIndex = (() => {
+    if (currentLevelId) {
+      const idx = ADVENTURE_LEVELS.findIndex((l) => l.id === currentLevelId);
+      if (idx >= 0 && !completedLevels.includes(currentLevelId) && isLevelUnlocked(idx)) {
+        return idx;
+      }
+    }
     for (let i = 0; i < ADVENTURE_LEVELS.length; i++) {
       if (!completedLevels.includes(ADVENTURE_LEVELS[i].id) && isLevelUnlocked(i)) {
         return i;
       }
     }
-    return 0;
+    return ADVENTURE_LEVELS.length - 1;
   })();
-  const nextActiveLevel = ADVENTURE_LEVELS[nextActiveIndex] || ADVENTURE_LEVELS[0];
 
-  // Clean exact level title without "Level X: " prefix so we can display Level number + exact title cleanly
+  const currentLevel = ADVENTURE_LEVELS[currentActiveIndex] || ADVENTURE_LEVELS[0];
+  const currentLevelCluesMap = cluesByLevel[currentLevel.id] || {};
+  const foundCluesCount = Object.keys(currentLevelCluesMap).length;
+  const totalCluesInCurrent = currentLevel.objects.length;
+  const remainingCluesCount = Math.max(0, totalCluesInCurrent - foundCluesCount);
+
+  // Determine current chapter for display
+  const resolvedChapterNum: 1 | 2 | 3 =
+    currentLevel.id === currentLevelId
+      ? activeChapterNum
+      : foundCluesCount >= totalCluesInCurrent
+      ? 3
+      : foundCluesCount > 0 || hasSpokenToNpc
+      ? 2
+      : 1;
+
+  const currentChapterDef =
+    currentLevel.chapters.find((c) => c.number === resolvedChapterNum) || currentLevel.chapters[0];
+
+  // Compute concise, actionable next step ("Inspect Alex's phone", etc.)
+  const nextObjectiveAction = (() => {
+    const npcName = currentLevel.npcs[0]?.name || 'the witness';
+    const firstUnfoundObj = currentLevel.objects.find(
+      (obj) => !currentLevelCluesMap[obj.inspection.clueId]
+    );
+
+    if (resolvedChapterNum === 1 && !hasSpokenToNpc && foundCluesCount === 0) {
+      if (firstUnfoundObj) {
+        return `Talk to ${npcName} or inspect ${firstUnfoundObj.name}`;
+      }
+      return `Talk to ${npcName} to hear what happened`;
+    }
+    if (firstUnfoundObj) {
+      return `Inspect ${firstUnfoundObj.name}`;
+    }
+    return `Make the safe verification decision with ${npcName}`;
+  })();
+
+  // Clean exact level title without "Level X: " prefix
   const getCleanLevelTitle = (rawTitle: string): string => {
     return rawTitle.replace(/^Level\s+\d+\s*:\s*/i, '').trim();
   };
 
+  // Investigator rank title based on solved cases
+  const investigatorRank =
+    completedCount >= 10
+      ? 'Master Lead Investigator'
+      : completedCount >= 6
+      ? 'Senior Cyber Sleuth'
+      : completedCount >= 3
+      ? 'Field Investigator'
+      : 'Junior Neighborhood Investigator';
+
+  // Last completed case for the Recent Case Recap
+  const lastCompletedLevel = (() => {
+    if (completedLevels.length === 0) return null;
+    for (let i = ADVENTURE_LEVELS.length - 1; i >= 0; i--) {
+      if (completedLevels.includes(ADVENTURE_LEVELS[i].id)) {
+        return ADVENTURE_LEVELS[i];
+      }
+    }
+    return null;
+  })();
+
+  // Filtered levels for the Campaign Case Board
+  const filteredLevels = ADVENTURE_LEVELS.map((lvl, idx) => ({ lvl, idx })).filter(({ lvl, idx }) => {
+    const isCompleted = completedLevels.includes(lvl.id);
+    const isCurrent = idx === currentActiveIndex && !isCompleted;
+    const isLocked = !isLevelUnlocked(idx) && !isCompleted;
+    if (boardFilter === 'completed') return isCompleted;
+    if (boardFilter === 'current') return isCurrent;
+    if (boardFilter === 'locked') return isLocked;
+    return true;
+  });
+
   return (
-    <div className="relative w-full min-h-screen bg-[#060A17] text-white flex flex-col justify-between overflow-x-hidden select-none font-sans">
-      {/* DARK ATMOSPHERIC BACKGROUND */}
-      <div className="fixed inset-0 bg-gradient-to-b from-[#0c122c] via-[#171233] to-[#060814] pointer-events-none" />
-      <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-amber-600/15 via-purple-900/10 to-transparent pointer-events-none" />
+    <div className="relative w-full min-h-screen bg-[#0B101E] text-[#F1F5F9] flex flex-col justify-between overflow-x-hidden select-none font-sans">
+      {/* Subtle Ambient Desk Backdrop */}
+      <div className="fixed inset-0 pointer-events-none opacity-15">
+        <img
+          src={caseBoardBackdropImg}
+          alt=""
+          referrerPolicy="no-referrer"
+          className="w-full h-full object-cover object-center"
+          onError={(e) => {
+            (e.currentTarget as HTMLImageElement).style.display = 'none';
+          }}
+        />
+      </div>
+      <div className="fixed inset-0 bg-gradient-to-b from-[#0B101E]/90 via-[#0B101E]/95 to-[#080C17] pointer-events-none" />
 
-      {/* TOP HEADER BAR */}
-      <header className="sticky top-0 z-30 w-full px-4 sm:px-8 py-3.5 bg-[#060A17]/90 backdrop-blur-md border-b border-white/10 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 via-amber-500 to-amber-700 flex items-center justify-center text-black font-heading font-black shadow-[0_0_20px_rgba(245,158,11,0.4)] border border-amber-300 shrink-0">
-            <span className="text-lg tracking-tighter font-black">SS</span>
-          </div>
-          <div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="font-heading font-black text-xl sm:text-2xl tracking-tight text-white uppercase leading-none">
-                SCAM SLEUTH
-              </h1>
-              <span className="text-amber-400 font-mono text-[10px] font-bold tracking-wider uppercase">
-                · THE GLASSHOUSE FILES
-              </span>
-            </div>
-            <span className="font-mono text-[10px] text-[#94A3B8] uppercase tracking-widest block font-bold mt-0.5">
-              10 LEVELS · 3 CHAPTERS PER LEVEL · 30 CHAPTERS TOTAL
-            </span>
-          </div>
-        </div>
+      {/* =====================================================================
+          TOP NAVIGATION BAR (Strict 3-Zone Contract)
+      ===================================================================== */}
+      <header className="sticky top-0 z-30 w-full px-4 sm:px-8 py-3.5 bg-[#0B101E]/95 backdrop-blur-md border-b border-slate-800/80 flex items-center justify-between gap-4 sm:gap-8">
+        {/* Zone 1: Single-line Brand Wordmark */}
+        <button
+          type="button"
+          onClick={() => setActiveTab('journal')}
+          className="font-heading font-extrabold text-lg sm:text-xl tracking-tight text-amber-400 hover:text-amber-300 transition-colors whitespace-nowrap shrink-0 cursor-pointer text-left"
+        >
+          Scam Sleuth
+        </button>
 
-        {/* Navigation Tabs */}
-        <nav className="flex items-center gap-1 sm:gap-2 bg-black/60 p-1 rounded-2xl border border-white/10 text-xs font-heading font-black tracking-wider uppercase">
+        {/* Zone 2: Concise Single-Line Navigation Links */}
+        <nav className="flex items-center gap-3 sm:gap-6 text-xs sm:text-sm font-medium text-slate-300 overflow-x-auto no-scrollbar">
           <button
             type="button"
             onClick={() => {
               soundEngine.playGtaMenuHover();
-              setActiveTab('campaign');
+              setActiveTab('journal');
             }}
-            className={`px-3 sm:px-4 py-1.5 rounded-xl transition-all cursor-pointer whitespace-nowrap ${
-              activeTab === 'campaign'
-                ? 'bg-amber-400 text-black shadow-[0_0_15px_rgba(245,158,11,0.5)]'
-                : 'text-[#94A3B8] hover:text-white hover:bg-white/5'
+            className={`py-1 border-b-2 transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+              activeTab === 'journal'
+                ? 'border-amber-400 text-white font-semibold'
+                : 'border-transparent text-slate-400 hover:text-white'
             }`}
           >
-            All 10 Levels
+            Case Journal
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              soundEngine.playGtaMenuHover();
+              setActiveTab('board');
+            }}
+            className={`py-1 border-b-2 transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+              activeTab === 'board'
+                ? 'border-amber-400 text-white font-semibold'
+                : 'border-transparent text-slate-400 hover:text-white'
+            }`}
+          >
+            Case Board
           </button>
           <button
             type="button"
@@ -122,27 +230,13 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
               soundEngine.playGtaMenuHover();
               setActiveTab('script');
             }}
-            className={`px-3 sm:px-4 py-1.5 rounded-xl transition-all cursor-pointer whitespace-nowrap ${
+            className={`py-1 border-b-2 transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
               activeTab === 'script'
-                ? 'bg-amber-400 text-black shadow-[0_0_15px_rgba(245,158,11,0.5)]'
-                : 'text-[#94A3B8] hover:text-white hover:bg-white/5'
+                ? 'border-amber-400 text-white font-semibold'
+                : 'border-transparent text-slate-400 hover:text-white'
             }`}
           >
-            30 Chapters & Questions
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              soundEngine.playGtaMenuHover();
-              setActiveTab('dossier');
-            }}
-            className={`px-3 sm:px-4 py-1.5 rounded-xl transition-all cursor-pointer whitespace-nowrap ${
-              activeTab === 'dossier'
-                ? 'bg-amber-400 text-black shadow-[0_0_15px_rgba(245,158,11,0.5)]'
-                : 'text-[#94A3B8] hover:text-white hover:bg-white/5'
-            }`}
-          >
-            Glasshouse Story
+            30 Chapters
           </button>
           <button
             type="button"
@@ -150,99 +244,452 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
               soundEngine.playGtaMenuHover();
               setActiveTab('controls');
             }}
-            className={`px-3 sm:px-4 py-1.5 rounded-xl transition-all cursor-pointer whitespace-nowrap ${
+            className={`py-1 border-b-2 transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
               activeTab === 'controls'
-                ? 'bg-amber-400 text-black shadow-[0_0_15px_rgba(245,158,11,0.5)]'
-                : 'text-[#94A3B8] hover:text-white hover:bg-white/5'
+                ? 'border-amber-400 text-white font-semibold'
+                : 'border-transparent text-slate-400 hover:text-white'
             }`}
           >
-            Controls
+            Field Guide
           </button>
-          {onOpenArtDossier && (
-            <button
-              type="button"
-              onClick={() => {
-                soundEngine.playGtaMenuSelect();
-                onOpenArtDossier();
-              }}
-              className="hidden md:inline-block px-3 py-1.5 rounded-xl text-[#94A3B8] hover:text-white hover:bg-white/5 transition-all cursor-pointer whitespace-nowrap"
-            >
-              Characters
-            </button>
-          )}
-        </nav>
-
-        {/* Right: Rating & Settings */}
-        <div className="flex items-center gap-2.5">
-          <div className="hidden sm:flex items-center gap-1 px-2.5 py-1.5 bg-black/80 rounded-xl border border-amber-400/30">
-            {[1, 2, 3, 4, 5].map((starIdx) => {
-              const isLit = starIdx <= threatStars;
-              return (
-                <Star
-                  key={starIdx}
-                  onClick={() => {
-                    soundEngine.playGtaRadarBlip();
-                    setThreatStars(starIdx);
-                  }}
-                  className={`w-3.5 h-3.5 cursor-pointer transition-transform hover:scale-125 ${
-                    isLit
-                      ? 'fill-amber-400 text-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.9)]'
-                      : 'text-white/20 fill-transparent'
-                  }`}
-                />
-              );
-            })}
-          </div>
-
           <button
             type="button"
             onClick={() => {
               soundEngine.playGtaMenuSelect();
               onOpenSettings();
             }}
-            className="p-2.5 rounded-xl bg-black/60 hover:bg-black/90 border border-white/20 text-[#CBD5E1] hover:text-amber-400 transition-colors cursor-pointer"
-            title="Settings & Accessibility (Esc)"
+            className="py-1 border-b-2 border-transparent text-slate-400 hover:text-white transition-colors whitespace-nowrap shrink-0 cursor-pointer"
           >
-            <SettingsIcon className="w-4 h-4" />
+            Settings
+          </button>
+        </nav>
+
+        {/* Zone 3: 1 Primary Action CTA */}
+        <div className="shrink-0">
+          <button
+            type="button"
+            onClick={() => {
+              soundEngine.playGtaMissionStart();
+              onSelectLevel(currentLevel.id, resolvedChapterNum);
+            }}
+            className="px-4 py-2 rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 font-heading font-bold text-xs sm:text-sm transition-colors flex items-center gap-2 whitespace-nowrap shrink-0 cursor-pointer shadow-sm"
+          >
+            <Play className="w-3.5 h-3.5 fill-current shrink-0" />
+            <span>Continue Investigation</span>
           </button>
         </div>
       </header>
 
-      {/* MAIN CONTENT AREA */}
-      <main className="relative z-10 flex-1 max-w-7xl mx-auto w-full px-4 sm:px-8 pt-6 pb-28 space-y-6">
-        {activeTab === 'campaign' && (
+      {/* =====================================================================
+          MAIN DETECTIVE'S CASE JOURNAL WORKSPACE
+      ===================================================================== */}
+      <main className="relative z-10 flex-1 max-w-7xl mx-auto w-full px-4 sm:px-8 pt-6 pb-20 space-y-10">
+        {statusMessage && (
+          <div className="text-xs font-mono text-amber-200 bg-amber-500/10 border border-amber-400/30 px-4 py-3 rounded-xl flex items-center justify-between">
+            <span>{statusMessage}</span>
+            <button
+              type="button"
+              onClick={() => setStatusMessage(null)}
+              className="text-white hover:underline ml-4 cursor-pointer whitespace-nowrap shrink-0"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
+
+        {activeTab === 'journal' && (
           <>
-            {/* Campaign Hero Banner */}
-            <section className="rounded-3xl bg-gradient-to-r from-[#0B152E] via-[#111C3D] to-[#0A1228] border-2 border-amber-400/60 p-5 sm:p-7 shadow-[0_0_40px_rgba(0,0,0,0.75)] flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
-              <div className="space-y-2 max-w-3xl">
-                <div className="flex flex-wrap items-center gap-2 font-mono text-xs text-amber-300 font-bold tracking-wider">
-                  <MapPin className="w-3.5 h-3.5 shrink-0" />
-                  <span>THE GLASSHOUSE FILES · 10 LEVELS · 30 CHAPTERS</span>
+            {/* ===============================================================
+                PRIORITY 1 & 3 & 4: DETECTIVE PROFILE + CURRENT LEVEL & OBJECTIVE
+                Balanced 12-Column Split with Character Artwork Anchor
+            =============================================================== */}
+            <section
+              aria-label="Investigator Profile and Active Case Assignment"
+              className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch"
+            >
+              {/* Left 5 Columns: Player Profile & Character Portrait Visual Anchor */}
+              <div className="lg:col-span-5 rounded-2xl bg-[#111827] border border-slate-800 overflow-hidden flex flex-col justify-between shadow-lg">
+                <div className="relative h-72 sm:h-80 w-full bg-[#0D1322] overflow-hidden">
+                  {portraitLoaded ? (
+                    <img
+                      src={detectivePortraitImg}
+                      alt="Detective Rowan Vance examining digital evidence at the desk"
+                      referrerPolicy="no-referrer"
+                      onError={() => setPortraitLoaded(false)}
+                      className="w-full h-full object-cover object-top"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-slate-800 to-slate-950 p-6 text-center">
+                      <UserCheck className="w-12 h-12 text-amber-400 mb-2" />
+                      <span className="font-heading font-bold text-base text-white">
+                        Detective Rowan Vance
+                      </span>
+                    </div>
+                  )}
+                  {/* Measured Contrast Scrim for Text Overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#111827] via-[#111827]/35 to-transparent" />
+
+                  <div className="absolute bottom-4 left-5 right-5 space-y-1">
+                    <div className="text-xs font-mono text-amber-300 tracking-wide">
+                      <span>{investigatorRank}</span>
+                      <span aria-hidden="true"> · </span>
+                      <span>Sunset Heights Desk</span>
+                    </div>
+                    <h1 className="font-heading font-extrabold text-2xl sm:text-3xl text-white tracking-tight">
+                      Detective Rowan Vance
+                    </h1>
+                  </div>
                 </div>
-                <h2 className="font-heading font-black text-2xl sm:text-4xl text-white tracking-tight">
-                  Investigate All 10 Cases Across the City
-                </h2>
-                <p className="text-xs sm:text-sm text-[#CBD5E1] leading-relaxed">
-                  Every level is a complete cyber-safety case told across three chapters: <strong className="text-amber-300">Chapter 1 (The Setup)</strong>, <strong className="text-[#00F0FF]">Chapter 2 (The Investigation)</strong>, and <strong className="text-emerald-400">Chapter 3 (The Decision)</strong>. Solve each case to unlock the next level and uncover the <strong className="text-white">Glasshouse</strong> campaign.
-                </p>
+
+                <div className="p-5 sm:p-6 space-y-4 flex-1 flex flex-col justify-between">
+                  <p className="text-sm text-slate-300 leading-relaxed">
+                    Neighborhood cyber-safety investigator documenting the{' '}
+                    <strong className="text-white font-semibold">Glasshouse</strong> campaign. You
+                    verify suspicious delivery notices, urgent payment requests, and look-alike login
+                    pages before residents lose their savings.
+                  </p>
+
+                  {/* Tabular Campaign Standing Summary */}
+                  <div className="pt-4 border-t border-slate-800/90 grid grid-cols-3 gap-4 text-left font-mono tabular-nums">
+                    <div>
+                      <span className="text-xs text-slate-400 block">Cases Solved</span>
+                      <span className="text-lg font-bold text-white">
+                        {completedCount} / {totalLevels}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-xs text-slate-400 block">Badges Earned</span>
+                      <span className="text-lg font-bold text-amber-400">
+                        {earnedBadges.length} / {totalLevels}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-xs text-slate-400 block">Chapters</span>
+                      <span className="text-lg font-bold text-emerald-400">
+                        {completedCount * 3} / {totalChapters}
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto shrink-0">
-                <button
-                  type="button"
-                  onClick={() => {
-                    soundEngine.playGtaMissionStart();
-                    onSelectLevel(nextActiveLevel.id, 1);
-                  }}
-                  className="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:brightness-110 active:scale-[0.99] text-black font-heading font-black text-xs sm:text-sm uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer shadow-[0_0_25px_rgba(245,158,11,0.5)]"
-                >
-                  <Play className="w-4 h-4 fill-current shrink-0" />
-                  <span>
-                    {completedCount === 0
-                      ? 'Start Level 1: The Parcel That Never Came'
-                      : `Continue Level ${nextActiveIndex + 1}: ${getCleanLevelTitle(nextActiveLevel.title)}`}
-                  </span>
-                </button>
+              {/* Right 7 Columns: Active Case Dossier, Current Objective, Clues & Recap */}
+              <div className="lg:col-span-7 rounded-2xl bg-[#111827] border border-amber-400/50 p-6 sm:p-7 flex flex-col justify-between gap-6 shadow-lg">
+                <div className="space-y-5">
+                  {/* Top Kicker & Level Progress */}
+                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-4">
+                    <div className="text-xs font-mono text-amber-400">
+                      <span>Active Case File 0{currentActiveIndex + 1}</span>
+                      <span aria-hidden="true"> · </span>
+                      <span>{currentLevel.locationName}</span>
+                      <span aria-hidden="true"> · </span>
+                      <span>
+                        Chapter {resolvedChapterNum} of 3 ({currentChapterDef.phase})
+                      </span>
+                    </div>
+                    <span className="font-mono text-xs text-slate-400 tabular-nums">
+                      Case {currentActiveIndex + 1} of {totalLevels}
+                    </span>
+                  </div>
+
+                  {/* Level Title & Chapter Subtitle */}
+                  <div className="space-y-1.5">
+                    <h2 className="font-heading font-extrabold text-2xl sm:text-3xl text-white tracking-tight text-balance">
+                      {currentLevel.title}
+                    </h2>
+                    <p className="text-sm font-medium text-slate-300">
+                      {currentChapterDef.title} — {currentChapterDef.summary}
+                    </p>
+                  </div>
+
+                  {/* Current Objective Callout + Case Progress (Clues Found & Remaining) */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+                    {/* Current Objective */}
+                    <div className="p-4 rounded-xl bg-[#0B101E] border border-slate-800/90 space-y-1.5">
+                      <div className="flex items-center gap-2 text-xs font-mono text-amber-400">
+                        <Compass className="w-4 h-4 shrink-0" />
+                        <span>Current Objective</span>
+                      </div>
+                      <p className="font-heading font-bold text-base text-white leading-snug">
+                        {nextObjectiveAction}
+                      </p>
+                      <p className="text-xs text-slate-400">
+                        Witness on scene: {currentLevel.npcs[0]?.name} ({currentLevel.npcs[0]?.role})
+                      </p>
+                    </div>
+
+                    {/* Case Progress: Clues Found & Remaining */}
+                    <div className="p-4 rounded-xl bg-[#0B101E] border border-slate-800/90 space-y-2 font-mono tabular-nums">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-slate-300 flex items-center gap-1.5">
+                          <Search className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                          <span>Case Clues</span>
+                        </span>
+                        <span className="text-white font-bold">
+                          {foundCluesCount} Found · {remainingCluesCount} Remaining
+                        </span>
+                      </div>
+
+                      {/* Progress Bar */}
+                      <div className="w-full h-2 rounded-full bg-slate-800 overflow-hidden">
+                        <div
+                          className="h-full bg-amber-400 transition-all duration-300"
+                          style={{
+                            width: `${Math.max(
+                              12,
+                              Math.round((foundCluesCount / Math.max(1, totalCluesInCurrent)) * 100)
+                            )}%`,
+                          }}
+                        />
+                      </div>
+
+                      {/* Individual Clue Status List */}
+                      <div className="space-y-1 pt-1 text-[11px]">
+                        {currentLevel.objects.map((obj) => {
+                          const isFound = Boolean(currentLevelCluesMap[obj.inspection.clueId]);
+                          return (
+                            <div
+                              key={obj.id}
+                              className="flex items-center justify-between gap-2 text-slate-300"
+                            >
+                              <span className="truncate">{obj.name}</span>
+                              <span
+                                className={
+                                  isFound
+                                    ? 'text-emerald-400 font-semibold shrink-0'
+                                    : 'text-slate-500 shrink-0'
+                                }
+                              >
+                                {isFound ? 'Logged ✓' : 'Uninspected'}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Recent Case Recap (Compact Summary of Last Completed Case or Field Note) */}
+                  <div className="p-4 rounded-xl bg-[#0B101E]/75 border border-slate-800/80 space-y-1">
+                    <div className="flex items-center justify-between text-xs font-mono text-emerald-400">
+                      <span className="flex items-center gap-1.5">
+                        <BookOpen className="w-3.5 h-3.5 shrink-0" />
+                        <span>
+                          {lastCompletedLevel
+                            ? `Recent Case Recap · ${lastCompletedLevel.title}`
+                            : 'Recent Case Recap · Investigator Field Note'}
+                        </span>
+                      </span>
+                      {lastCompletedLevel && (
+                        <span className="text-slate-400">
+                          Badge: {lastCompletedLevel.debrief.badgeName}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-slate-300 leading-relaxed">
+                      {lastCompletedLevel
+                        ? `${lastCompletedLevel.debrief.summary} Habit: ${lastCompletedLevel.debrief.realWorldHabit}`
+                        : 'No cases closed yet. Begin with Case 01 in Sunset Heights Apartment 4B: inspect Alex’s smartphone delivery text and compare it with the building’s official courier policy card.'}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Primary & Secondary Actions */}
+                <div className="pt-4 border-t border-slate-800 flex flex-wrap items-center justify-between gap-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      soundEngine.playGtaMissionStart();
+                      onSelectLevel(currentLevel.id, resolvedChapterNum);
+                    }}
+                    className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-heading font-extrabold text-sm tracking-wide flex items-center justify-center gap-2.5 cursor-pointer transition-colors shadow-md whitespace-nowrap shrink-0"
+                  >
+                    <Play className="w-4 h-4 fill-current shrink-0" />
+                    <span>
+                      Continue Investigation · {getCleanLevelTitle(currentLevel.title)}
+                    </span>
+                    <ChevronRight className="w-4 h-4 stroke-[2.5] shrink-0" />
+                  </button>
+
+                  <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto justify-end">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        soundEngine.playGtaMenuHover();
+                        setPreviewChapterNum(resolvedChapterNum);
+                        setPreviewLevel(currentLevel);
+                      }}
+                      className="px-4 py-2.5 rounded-xl bg-slate-800/90 hover:bg-slate-700 text-slate-200 text-xs font-medium flex items-center gap-1.5 cursor-pointer transition-colors whitespace-nowrap shrink-0"
+                    >
+                      <FileText className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                      <span>Case Notes & Clues</span>
+                    </button>
+
+                    {onOpenArtDossier && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          soundEngine.playGtaMenuSelect();
+                          onOpenArtDossier();
+                        }}
+                        className="px-4 py-2.5 rounded-xl bg-slate-800/90 hover:bg-slate-700 text-slate-200 text-xs font-medium flex items-center gap-1.5 cursor-pointer transition-colors whitespace-nowrap shrink-0"
+                      >
+                        <Eye className="w-3.5 h-3.5 text-slate-300 shrink-0" />
+                        <span>Character Dossier</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* ===============================================================
+                PRIORITY 2: ACHIEVEMENTS & EARNED INVESTIGATOR BADGES
+                Earned badges prominent; upcoming achievements as locked previews
+            =============================================================== */}
+            <section aria-label="Investigator Achievements and Badges" className="space-y-4">
+              <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-slate-800 pb-3">
+                <div>
+                  <h2 className="font-heading font-bold text-xl text-white tracking-tight">
+                    Investigator Achievements & Safety Badges
+                  </h2>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Earned by making verified safe decisions in Chapter 3 of each case.
+                  </p>
+                </div>
+                <span className="font-mono text-xs text-amber-400 tabular-nums">
+                  {earnedBadges.length} of {totalLevels} Badges Earned
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
+                {ADVENTURE_LEVELS.map((lvl, idx) => {
+                  const badgeTitle = lvl.debrief.badgeName;
+                  const isEarned =
+                    earnedBadges.includes(badgeTitle) || completedLevels.includes(lvl.id);
+                  const isNextTarget = idx === currentActiveIndex && !isEarned;
+
+                  return (
+                    <div
+                      key={lvl.id}
+                      onClick={() => {
+                        soundEngine.playGtaMenuHover();
+                        setPreviewChapterNum(3);
+                        setPreviewLevel(lvl);
+                      }}
+                      className={`p-4 rounded-xl border transition-colors cursor-pointer flex flex-col justify-between gap-3 ${
+                        isEarned
+                          ? 'bg-[#111D2B] border-emerald-500/50 hover:border-emerald-400'
+                          : isNextTarget
+                          ? 'bg-[#131B2E] border-amber-400/50 hover:border-amber-400'
+                          : 'bg-[#0E1424]/70 border-slate-800/80 opacity-65 hover:opacity-90'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div
+                          className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
+                            isEarned
+                              ? 'bg-emerald-500/20 text-emerald-300'
+                              : isNextTarget
+                              ? 'bg-amber-400/20 text-amber-300'
+                              : 'bg-slate-800 text-slate-500'
+                          }`}
+                        >
+                          {isEarned ? (
+                            <Award className="w-5 h-5" />
+                          ) : (
+                            <Lock className="w-4 h-4" />
+                          )}
+                        </div>
+                        <span className="font-mono text-[11px] text-slate-400 tabular-nums">
+                          Case 0{idx + 1}
+                        </span>
+                      </div>
+
+                      <div className="space-y-1">
+                        <h3
+                          className={`font-heading font-bold text-sm leading-snug ${
+                            isEarned ? 'text-white' : 'text-slate-300'
+                          }`}
+                        >
+                          {badgeTitle}
+                        </h3>
+                        <p className="text-[11px] text-slate-400 line-clamp-2 leading-relaxed">
+                          {isEarned
+                            ? lvl.debrief.realWorldHabit
+                            : `Complete ${getCleanLevelTitle(lvl.title)} to unlock this habit badge.`}
+                        </p>
+                      </div>
+
+                      <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px] font-mono">
+                        {isEarned ? (
+                          <span className="text-emerald-400 font-semibold flex items-center gap-1">
+                            <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                            <span>Earned</span>
+                          </span>
+                        ) : isNextTarget ? (
+                          <span className="text-amber-300 font-semibold">Active Target</span>
+                        ) : (
+                          <span className="text-slate-500">Locked Preview</span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+          </>
+        )}
+
+        {/* ===============================================================
+            CAMPAIGN INVESTIGATION CASE BOARD (Shown on 'journal' and 'board')
+            All 10 levels arranged as connected case files with Completed,
+            Current, and Locked states.
+        =============================================================== */}
+        {(activeTab === 'journal' || activeTab === 'board') && (
+          <section aria-label="Campaign Investigation Case Board" className="space-y-5">
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-slate-800 pb-4">
+              <div>
+                <div className="text-xs font-mono text-amber-400">
+                  <span>The Glasshouse Files</span>
+                  <span aria-hidden="true"> · </span>
+                  <span>10 Connected Case Files</span>
+                  <span aria-hidden="true"> · </span>
+                  <span>30 Chapters</span>
+                </div>
+                <h2 className="font-heading font-extrabold text-xl sm:text-2xl text-white tracking-tight mt-0.5">
+                  Investigation Case Board
+                </h2>
+              </div>
+
+              {/* Interactive Filter Controls + Secondary Campaign Tools */}
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="flex items-center gap-1 p-1 bg-[#111827] border border-slate-800 rounded-lg">
+                  {(
+                    [
+                      { id: 'all', label: 'All Cases (10)' },
+                      { id: 'current', label: 'Current' },
+                      { id: 'completed', label: `Solved (${completedCount})` },
+                      { id: 'locked', label: 'Locked' },
+                    ] as const
+                  ).map((tab) => (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      onClick={() => {
+                        soundEngine.playGtaMenuHover();
+                        setBoardFilter(tab.id);
+                      }}
+                      className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
+                        boardFilter === tab.id
+                          ? 'bg-amber-400 text-slate-950 font-semibold'
+                          : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
 
                 {onUnlockAllLevels && completedCount < totalLevels && (
                   <button
@@ -250,12 +697,12 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
                     onClick={() => {
                       soundEngine.playGtaMenuSelect();
                       onUnlockAllLevels();
-                      setStatusMessage('All 10 levels are now unlocked!');
+                      setStatusMessage('All 10 Case Files unlocked for inspection.');
                     }}
-                    className="w-full sm:w-auto px-4 py-3.5 rounded-2xl bg-[#131E3A] hover:bg-[#1C2D56] border border-[#00F0FF]/40 text-[#00F0FF] font-mono text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
+                    className="px-3 py-2 rounded-lg bg-[#111827] hover:bg-slate-800 border border-slate-700 text-slate-200 text-xs font-medium flex items-center gap-1.5 cursor-pointer transition-colors whitespace-nowrap shrink-0"
                   >
-                    <Unlock className="w-3.5 h-3.5 shrink-0" />
-                    <span>Unlock All 10 Levels</span>
+                    <Unlock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                    <span>Unlock All Cases</span>
                   </button>
                 )}
 
@@ -265,103 +712,97 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
                     onClick={() => {
                       soundEngine.playGtaMenuSelect();
                       onRestartFromLevel1();
-                      setStatusMessage('Campaign restarted from Level 1: The Parcel That Never Came.');
+                      setStatusMessage('Case Journal reset to Case 01: The Parcel That Never Came.');
                     }}
-                    className="w-full sm:w-auto px-4 py-3.5 rounded-2xl bg-red-500/15 hover:bg-red-500/25 border border-red-400/40 text-red-300 font-mono text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
+                    className="px-3 py-2 rounded-lg bg-[#111827] hover:bg-slate-800 border border-slate-700 text-slate-300 text-xs font-medium flex items-center gap-1.5 cursor-pointer transition-colors whitespace-nowrap shrink-0"
                   >
-                    <span>Restart from Level 1</span>
+                    <RotateCcw className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                    <span>Reset Journal</span>
                   </button>
                 )}
               </div>
-            </section>
+            </div>
 
-            {statusMessage && (
-              <div className="text-xs font-mono text-amber-300 bg-amber-500/15 border border-amber-400/40 px-4 py-2.5 rounded-xl flex items-center justify-between">
-                <span>{statusMessage}</span>
-                <button
-                  type="button"
-                  onClick={() => setStatusMessage(null)}
-                  className="text-white hover:underline ml-4 cursor-pointer"
-                >
-                  Dismiss
-                </button>
-              </div>
-            )}
+            {/* Connected Case Files Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              {filteredLevels.map(({ lvl, idx }) => {
+                const levelNum = idx + 1;
+                const cleanTitle = getCleanLevelTitle(lvl.title);
+                const isCompleted = completedLevels.includes(lvl.id);
+                const isAvailable = isLevelUnlocked(idx);
+                const isCurrent = idx === currentActiveIndex && !isCompleted;
+                const lvlCluesFound = Object.keys(cluesByLevel[lvl.id] || {}).length;
+                const lvlCluesTotal = lvl.objects.length;
 
-            {/* ===============================================================
-                ALL 10 INDIVIDUAL LEVEL CARDS WITH 3 CHAPTERS UNDERNEATH EACH
-            =============================================================== */}
-            <section className="space-y-4">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <h3 className="font-heading font-black text-lg sm:text-xl text-white uppercase tracking-wide">
-                  Campaign Levels (1 – 10)
-                </h3>
-                <span className="font-mono text-xs text-[#94A3B8]">
-                  {completedCount} of {totalLevels} Levels Completed · {completedChaptersCount} of {totalChapters} Chapters
-                </span>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                {ADVENTURE_LEVELS.map((lvl, idx) => {
-                  const levelNum = idx + 1;
-                  const cleanTitle = getCleanLevelTitle(lvl.title);
-                  const isCompleted = completedLevels.includes(lvl.id);
-                  const isAvailable = isLevelUnlocked(idx);
-                  const statusLabel = isCompleted
-                    ? 'Completed'
-                    : isAvailable
-                    ? 'Available'
-                    : 'Locked';
-
-                  return (
-                    <article
-                      key={lvl.id}
-                      className={`rounded-2xl border-2 p-5 sm:p-6 flex flex-col justify-between gap-4 transition-all ${
-                        isCompleted
-                          ? 'bg-[#09182C]/95 border-emerald-500/60 shadow-lg'
-                          : isAvailable
-                          ? 'bg-[#0A1329]/95 border-amber-400/80 shadow-[0_0_25px_rgba(245,158,11,0.15)]'
-                          : 'bg-[#070D1D]/90 border-white/15'
-                      }`}
-                    >
-                      {/* Level Header + Visible Status Badge */}
-                      <div className="space-y-3">
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="space-y-1">
-                            <span className="font-mono text-xs font-bold text-amber-400 uppercase tracking-wider block">
-                              Level {levelNum}
-                            </span>
-                            <h4 className="font-heading font-black text-lg sm:text-xl text-white leading-snug">
-                              {levelNum}. {cleanTitle}
-                            </h4>
-                            <p className="text-xs font-mono text-[#94A3B8]">
-                              {lvl.locationName} · {lvl.npcs[0]?.name}
-                            </p>
+                return (
+                  <article
+                    key={lvl.id}
+                    className={`rounded-2xl border p-5 sm:p-6 flex flex-col justify-between gap-5 transition-all ${
+                      isCurrent
+                        ? 'bg-[#131C31] border-amber-400 shadow-[0_0_30px_rgba(245,158,11,0.12)]'
+                        : isCompleted
+                        ? 'bg-[#0F1928] border-emerald-500/45'
+                        : 'bg-[#0E1422]/75 border-slate-800/80 opacity-75 hover:opacity-95'
+                    }`}
+                  >
+                    <div className="space-y-4">
+                      {/* Case File Header */}
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="space-y-1">
+                          <div className="text-xs font-mono text-slate-400 tabular-nums">
+                            <span>Case File 0{levelNum}</span>
+                            <span aria-hidden="true"> · </span>
+                            <span>{lvl.locationName}</span>
+                            <span aria-hidden="true"> · </span>
+                            <span>{lvl.npcs[0]?.name}</span>
                           </div>
+                          <h3 className="font-heading font-bold text-lg sm:text-xl text-white leading-snug">
+                            {levelNum}. {cleanTitle}
+                          </h3>
+                        </div>
 
-                          {/* Visible Status: Completed, Available, or Locked */}
+                        {/* Clear Semantic State Label with Icon */}
+                        <div className="shrink-0 font-mono text-xs font-semibold flex items-center gap-1.5">
                           {isCompleted ? (
-                            <span className="shrink-0 px-3 py-1 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-mono text-xs font-bold flex items-center gap-1.5">
-                              <CheckCircle className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                              <span>Completed</span>
+                            <span className="text-emerald-400 flex items-center gap-1">
+                              <CheckCircle2 className="w-4 h-4 shrink-0" />
+                              <span>Solved</span>
+                            </span>
+                          ) : isCurrent ? (
+                            <span className="text-amber-300 flex items-center gap-1">
+                              <FolderOpen className="w-4 h-4 shrink-0" />
+                              <span>Active Case</span>
                             </span>
                           ) : isAvailable ? (
-                            <span className="shrink-0 px-3 py-1 rounded-lg bg-amber-400 text-black font-mono text-xs font-black uppercase">
-                              Available
-                            </span>
+                            <span className="text-slate-200">Available</span>
                           ) : (
-                            <span className="shrink-0 px-3 py-1 rounded-lg bg-white/10 text-[#CBD5E1] border border-white/15 font-mono text-xs font-bold flex items-center gap-1.5">
-                              <Lock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                            <span className="text-slate-500 flex items-center gap-1">
+                              <Lock className="w-3.5 h-3.5 shrink-0" />
                               <span>Locked</span>
                             </span>
                           )}
                         </div>
+                      </div>
 
-                        {/* Three Chapter Names Directly Underneath */}
-                        <div className="space-y-2 pt-2 border-t border-white/10">
+                      {/* Objective & Clue Tally Summary */}
+                      <p className="text-xs text-slate-300 leading-relaxed">{lvl.objective}</p>
+
+                      {/* 3 Connected Chapter Step Buttons */}
+                      <div className="space-y-2 pt-2 border-t border-slate-800/80">
+                        <div className="flex items-center justify-between text-[11px] font-mono text-slate-400 tabular-nums">
+                          <span>3 Investigation Chapters</span>
+                          <span>
+                            {isCompleted
+                              ? `${lvlCluesTotal}/${lvlCluesTotal} Clues Verified`
+                              : `${lvlCluesFound}/${lvlCluesTotal} Clues Logged`}
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                           {lvl.chapters.map((ch) => (
-                            <div
+                            <button
                               key={ch.number}
+                              type="button"
                               onClick={() => {
                                 soundEngine.playGtaMenuSelect();
                                 if (isAvailable) {
@@ -371,100 +812,85 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
                                   setPreviewLevel(lvl);
                                 }
                               }}
-                              className={`p-3 rounded-xl border transition-colors flex flex-col gap-2 ${
+                              className={`p-2.5 rounded-xl border text-left transition-colors cursor-pointer flex flex-col justify-between gap-1 ${
                                 isCompleted
-                                  ? 'bg-emerald-950/30 border-emerald-500/30 hover:bg-emerald-950/50 cursor-pointer'
+                                  ? 'bg-emerald-950/20 border-emerald-500/30 hover:border-emerald-400'
+                                  : isCurrent && ch.number === resolvedChapterNum
+                                  ? 'bg-amber-400/15 border-amber-400 text-white'
                                   : isAvailable
-                                  ? 'bg-[#101E42]/90 border-amber-400/30 hover:border-amber-400 cursor-pointer'
-                                  : 'bg-black/40 border-white/10 hover:border-white/25 cursor-pointer'
+                                  ? 'bg-[#0B101E] border-slate-800 hover:border-slate-600'
+                                  : 'bg-[#0B101E]/50 border-slate-800/60 hover:border-slate-700'
                               }`}
                             >
-                              <div className="flex items-start justify-between gap-3">
-                                <div className="space-y-0.5">
-                                  <div className="font-heading font-bold text-xs sm:text-sm text-white leading-snug">
-                                    {ch.title}
-                                  </div>
-                                  <p className="text-[11px] text-[#94A3B8] leading-snug">
-                                    {ch.learningGoal || ch.summary}
-                                  </p>
-                                </div>
-
-                                <div className="flex items-center gap-2 shrink-0">
-                                  <button
-                                    type="button"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      soundEngine.playGtaMenuHover();
-                                      setPreviewChapterNum(ch.number);
-                                      setPreviewLevel(lvl);
-                                    }}
-                                    className="px-2 py-1 rounded-lg bg-white/10 hover:bg-amber-400 hover:text-black text-[10px] font-mono font-semibold text-amber-300 transition-colors cursor-pointer whitespace-nowrap"
-                                  >
-                                    Story, Clues & Question
-                                  </button>
-                                  <span className="font-mono text-[10px] font-bold text-[#00F0FF] uppercase">
-                                    {ch.phase.replace('The ', '')}
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
+                              <span className="font-mono text-[10px] text-amber-300 font-semibold">
+                                Ch {ch.number} · {ch.phase.replace('The ', '')}
+                              </span>
+                              <span className="font-heading font-semibold text-xs text-white line-clamp-1">
+                                {ch.title.replace(/^Chapter\s+\d+\s*:\s*/i, '')}
+                              </span>
+                            </button>
                           ))}
                         </div>
                       </div>
+                    </div>
 
-                      {/* Card Footer: Clear Action to Open, Continue, or Preview Level */}
-                      <div className="pt-3 border-t border-white/10 flex flex-wrap items-center justify-between gap-2">
+                    {/* Case File Footer Actions */}
+                    <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between gap-3">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          soundEngine.playGtaMenuHover();
+                          setPreviewChapterNum(1);
+                          setPreviewLevel(lvl);
+                        }}
+                        className="text-xs font-medium text-slate-300 hover:text-white flex items-center gap-1.5 cursor-pointer transition-colors whitespace-nowrap shrink-0"
+                      >
+                        <Eye className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                        <span>Read Case File</span>
+                      </button>
+
+                      {isAvailable ? (
                         <button
                           type="button"
                           onClick={() => {
-                            soundEngine.playGtaMenuHover();
+                            soundEngine.playGtaMissionStart();
+                            onSelectLevel(lvl.id, isCurrent ? resolvedChapterNum : 1);
+                          }}
+                          className={`px-4 py-2 rounded-lg font-heading font-bold text-xs flex items-center gap-1.5 cursor-pointer transition-colors whitespace-nowrap shrink-0 ${
+                            isCurrent
+                              ? 'bg-amber-400 hover:bg-amber-300 text-slate-950 shadow-sm'
+                              : 'bg-slate-800 hover:bg-slate-700 text-white'
+                          }`}
+                        >
+                          <Play className="w-3.5 h-3.5 fill-current shrink-0" />
+                          <span>
+                            {isCurrent
+                              ? `Continue Case 0${levelNum}`
+                              : isCompleted
+                              ? `Replay Case 0${levelNum}`
+                              : `Start Case 0${levelNum}`}
+                          </span>
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            soundEngine.playGtaMenuSelect();
                             setPreviewChapterNum(1);
                             setPreviewLevel(lvl);
                           }}
-                          className="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/15 border border-white/15 text-xs font-mono font-bold text-[#E2E8F0] flex items-center gap-1.5 cursor-pointer"
+                          className="px-3.5 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-400 hover:text-slate-200 text-xs font-medium flex items-center gap-1.5 cursor-pointer transition-colors whitespace-nowrap shrink-0"
                         >
-                          <Eye className="w-3.5 h-3.5 text-[#00F0FF]" />
-                          <span>Chapters, Clues & Questions</span>
+                          <Lock className="w-3.5 h-3.5 shrink-0" />
+                          <span>Preview Dossier</span>
                         </button>
-
-                        {isAvailable ? (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              soundEngine.playGtaMissionStart();
-                              onSelectLevel(lvl.id, 1);
-                            }}
-                            className="px-4 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-black font-heading font-black text-xs uppercase tracking-wider flex items-center gap-1.5 cursor-pointer shadow-md"
-                          >
-                            <Play className="w-3.5 h-3.5 fill-current" />
-                            <span>
-                              {isCompleted
-                                ? `Replay Level ${levelNum}`
-                                : `Open Level ${levelNum}`}
-                            </span>
-                            <ChevronRight className="w-4 h-4 stroke-[2.5]" />
-                          </button>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              soundEngine.playGtaMenuSelect();
-                              setPreviewChapterNum(1);
-                              setPreviewLevel(lvl);
-                            }}
-                            className="px-4 py-2 rounded-xl bg-[#131E3A] hover:bg-[#1C2C54] border border-amber-400/40 text-amber-300 font-mono text-xs font-bold flex items-center gap-1.5 cursor-pointer"
-                          >
-                            <Eye className="w-3.5 h-3.5" />
-                            <span>Preview Level {levelNum}</span>
-                          </button>
-                        )}
-                      </div>
-                    </article>
-                  );
-                })}
-              </div>
-            </section>
-          </>
+                      )}
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          </section>
         )}
 
         {/* ===================================================================
@@ -479,123 +905,91 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
         )}
 
         {/* ===================================================================
-            THE GLASSHOUSE FILES MYSTERY TAB
+            FIELD GUIDE & CONTROLS TAB (Secondary Panel)
         =================================================================== */}
-        {activeTab === 'dossier' && (
-          <div className="max-w-5xl mx-auto w-full bg-[#070D1E]/95 border-2 border-amber-400/80 rounded-3xl p-6 sm:p-8 shadow-[0_0_50px_rgba(0,0,0,0.9)] space-y-5 text-left">
-            <div className="flex items-center justify-between pb-4 border-b border-white/10">
+        {activeTab === 'controls' && (
+          <section className="max-w-3xl mx-auto w-full bg-[#111827] border border-slate-800 rounded-2xl p-6 sm:p-8 space-y-6">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-800">
               <div>
-                <span className="font-mono text-xs font-bold text-amber-400 uppercase tracking-widest block">
-                  CAMPAIGN PREMISE · THE GLASSHOUSE FILES
+                <span className="font-mono text-xs text-amber-400 block">
+                  Investigator Field Manual
                 </span>
-                <h3 className="font-heading font-black text-2xl text-white uppercase tracking-tight">
-                  HOW ALL 10 CASES & 30 CHAPTERS CONNECT
-                </h3>
+                <h2 className="font-heading font-bold text-xl text-white">
+                  How to Investigate Each 3-Chapter Case
+                </h2>
               </div>
               <button
                 type="button"
-                onClick={() => setActiveTab('campaign')}
-                className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-mono font-bold cursor-pointer"
+                onClick={() => setActiveTab('journal')}
+                className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-medium cursor-pointer whitespace-nowrap shrink-0"
               >
-                Back to All 10 Levels
+                Back to Case Journal
               </button>
             </div>
 
-            <p className="text-xs sm:text-sm text-[#CBD5E1] leading-relaxed">
-              In <strong className="text-white">Scam Sleuth: The Glasshouse Files</strong>, you help neighbors Alex Rivera, Maya Chen, Marcus Vance, and Priya Sharma navigate suspicious messages, account warnings, and payment tricks. Every case reveals another piece of the <strong className="text-amber-300">Glasshouse</strong> campaign.
-            </p>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-              {ADVENTURE_LEVELS.map((lvl, idx) => (
-                <div
-                  key={lvl.id}
-                  className="p-4 rounded-2xl bg-[#091124] border border-white/10 space-y-2"
-                >
-                  <div className="flex items-center justify-between font-mono text-[10px]">
-                    <span className="text-amber-400 font-bold uppercase">Level {idx + 1}</span>
-                    <span className="text-[#00F0FF]">{lvl.locationName}</span>
-                  </div>
-                  <h4 className="font-heading font-bold text-white text-sm">
-                    {idx + 1}. {getCleanLevelTitle(lvl.title)}
-                  </h4>
-                  <ul className="text-[#CBD5E1] space-y-1 font-mono text-[11px]">
-                    {lvl.chapters.map((ch) => (
-                      <li key={ch.number}>{ch.title}</li>
-                    ))}
-                  </ul>
-                  {lvl.glasshouseClue && (
-                    <p className="text-[11px] font-mono text-emerald-300 pt-1.5 border-t border-white/10">
-                      Clue: {lvl.glasshouseClue}
-                    </p>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* TUTORIAL & CONTROLS TAB */}
-        {activeTab === 'controls' && (
-          <div className="max-w-3xl mx-auto w-full bg-[#070D1E]/95 border-2 border-amber-400/80 rounded-3xl p-6 sm:p-8 shadow-[0_0_50px_rgba(0,0,0,0.9)] space-y-5 text-left">
-            <div className="flex items-center justify-between pb-3 border-b border-white/10">
-              <h3 className="font-heading font-black text-xl text-white uppercase">
-                HOW TO PLAY · 3 CHAPTERS PER LEVEL
-              </h3>
-              <button
-                type="button"
-                onClick={() => setActiveTab('campaign')}
-                className="px-3 py-1 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-mono font-bold cursor-pointer"
-              >
-                Back to All 10 Levels
-              </button>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-              <div className="p-3.5 rounded-2xl bg-[#091124] border border-amber-400/40 space-y-1">
-                <span className="font-mono text-[10px] text-amber-400 font-bold uppercase block">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
+              <div className="p-4 rounded-xl bg-[#0B101E] border border-slate-800 space-y-1.5">
+                <span className="font-mono text-amber-400 font-semibold block">
                   Chapter 1 · The Setup
                 </span>
-                <p className="text-[#CBD5E1]">
-                  Explore the 3D location and press <strong className="text-white">E</strong> to talk with the character via subtitled dialogue.
+                <p className="text-slate-300 leading-relaxed">
+                  Enter the 3D scene and press <strong className="text-white">T</strong> (or click
+                  Talk) to speak with the resident and hear what happened.
                 </p>
               </div>
-              <div className="p-3.5 rounded-2xl bg-[#091124] border border-[#00F0FF]/40 space-y-1">
-                <span className="font-mono text-[10px] text-[#00F0FF] font-bold uppercase block">
+              <div className="p-4 rounded-xl bg-[#0B101E] border border-slate-800 space-y-1.5">
+                <span className="font-mono text-amber-400 font-semibold block">
                   Chapter 2 · The Investigation
                 </span>
-                <p className="text-[#CBD5E1]">
-                  Walk up to phones, laptops, and notices and press <strong className="text-white">E</strong> to inspect messages and find clues.
+                <p className="text-slate-300 leading-relaxed">
+                  Walk up to phones, laptops, and notices and press{' '}
+                  <strong className="text-white">E</strong> to inspect digital evidence and log clues.
                 </p>
               </div>
-              <div className="p-3.5 rounded-2xl bg-[#091124] border border-emerald-400/40 space-y-1">
-                <span className="font-mono text-[10px] text-emerald-400 font-bold uppercase block">
+              <div className="p-4 rounded-xl bg-[#0B101E] border border-slate-800 space-y-1.5">
+                <span className="font-mono text-emerald-400 font-semibold block">
                   Chapter 3 · The Decision
                 </span>
-                <p className="text-[#CBD5E1]">
-                  Choose from <strong className="text-white">4 concise options</strong>. Unsafe choices let you <strong className="text-white">Retry this moment</strong> with all clues kept.
+                <p className="text-slate-300 leading-relaxed">
+                  Choose the safest verification route from 4 options. Unsafe choices let you retry
+                  immediately with all clues kept.
                 </p>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
-              <div className="p-3 rounded-2xl bg-black/60 border border-white/10">
-                <span className="font-mono text-lg font-black text-amber-400 block">W / A / S / D</span>
-                <span className="text-xs text-[#94A3B8] font-bold">MOVE AROUND</span>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center font-mono">
+              <div className="p-3.5 rounded-xl bg-[#0B101E] border border-slate-800">
+                <span className="text-base font-bold text-amber-400 block">W / A / S / D</span>
+                <span className="text-xs text-slate-400">Move Investigator</span>
               </div>
-              <div className="p-3 rounded-2xl bg-black/60 border border-white/10">
-                <span className="font-mono text-lg font-black text-[#00F0FF] block">E KEY</span>
-                <span className="text-xs text-[#94A3B8] font-bold">INTERACT / INSPECT</span>
+              <div className="p-3.5 rounded-xl bg-[#0B101E] border border-slate-800">
+                <span className="text-base font-bold text-white block">E / T Keys</span>
+                <span className="text-xs text-slate-400">Inspect / Talk</span>
               </div>
-              <div className="p-3 rounded-2xl bg-black/60 border border-white/10">
-                <span className="font-mono text-lg font-black text-emerald-400 block">J KEY</span>
-                <span className="text-xs text-[#94A3B8] font-bold">CASE JOURNAL</span>
+              <div className="p-3.5 rounded-xl bg-[#0B101E] border border-slate-800">
+                <span className="text-base font-bold text-emerald-400 block">J Key</span>
+                <span className="text-xs text-slate-400">Case Journal</span>
               </div>
-              <div className="p-3 rounded-2xl bg-black/60 border border-white/10">
-                <span className="font-mono text-lg font-black text-purple-400 block">V KEY</span>
-                <span className="text-xs text-[#94A3B8] font-bold">1ST / 3RD PERSON</span>
+              <div className="p-3.5 rounded-xl bg-[#0B101E] border border-slate-800">
+                <span className="text-base font-bold text-slate-200 block">V Key</span>
+                <span className="text-xs text-slate-400">1st / 3rd Person</span>
               </div>
             </div>
-          </div>
+
+            <div className="pt-4 border-t border-slate-800 flex items-center justify-between">
+              <span className="text-xs text-slate-400">
+                Need audio, subtitle, or camera sensitivity adjustments?
+              </span>
+              <button
+                type="button"
+                onClick={onOpenSettings}
+                className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-medium text-white flex items-center gap-1.5 cursor-pointer"
+              >
+                <SettingsIcon className="w-3.5 h-3.5" />
+                <span>Open Settings</span>
+              </button>
+            </div>
+          </section>
         )}
       </main>
 
@@ -617,15 +1011,17 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
         />
       )}
 
-      {/* BOTTOM BAR */}
-      <footer className="relative z-20 w-full px-4 sm:px-8 py-4 bg-black/70 border-t border-white/10 flex flex-wrap items-center justify-between gap-3 text-xs font-mono text-[#94A3B8]">
+      {/* =====================================================================
+          QUIET FOOTER
+      ===================================================================== */}
+      <footer className="relative z-20 w-full px-4 sm:px-8 py-4 bg-[#080C17] border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-400">
         <div className="flex items-center gap-2">
           <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
-          <span>100% Fictional & Safe Educational Simulation</span>
+          <span>Scam Sleuth: The Glasshouse Files · Educational Cyber-Safety Case Journal</span>
         </div>
 
-        <div className="text-[11px] text-amber-400 font-bold tracking-wider uppercase">
-          SCAM SLEUTH: THE GLASSHOUSE FILES · 10 LEVELS · 30 CHAPTERS
+        <div className="font-mono text-xs text-slate-400 tabular-nums">
+          {completedCount} of {totalLevels} Cases Solved · {earnedBadges.length} of {totalLevels} Badges
         </div>
       </footer>
     </div>

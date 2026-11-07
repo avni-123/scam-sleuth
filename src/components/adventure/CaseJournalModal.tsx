@@ -2,13 +2,17 @@ import React from 'react';
 import {
   BookOpen,
   X,
-  Sparkles,
   ShieldCheck,
   CheckCircle2,
   Lock,
+  Award,
+  Compass,
+  Search,
+  UserCheck,
 } from 'lucide-react';
 import { AdventureLevel, InspectionData } from '../../types/adventure';
 import { ADVENTURE_LEVELS } from '../../data/adventureLevels';
+import detectivePortraitImg from '../../assets/images/detective_character_portrait_1794034150867.jpg';
 
 interface CaseJournalModalProps {
   currentLevel: AdventureLevel;
@@ -25,25 +29,56 @@ export const CaseJournalModal: React.FC<CaseJournalModalProps> = ({
   badges,
   onClose,
 }) => {
-  const levelClues = currentLevel.objects.map((obj) => obj.inspection);
+  const levelClues = currentLevel.objects.map((obj) => ({
+    objName: obj.name,
+    inspection: obj.inspection,
+  }));
   const totalLevels = ADVENTURE_LEVELS.length; // 10 Levels
-  const totalChapters = totalLevels * 3; // 30 Chapters
+  const foundCount = Object.keys(collectedClues).length;
+  const remainingCount = Math.max(0, levelClues.length - foundCount);
+
+  const firstUnfound = currentLevel.objects.find(
+    (o) => !collectedClues[o.inspection.clueId]
+  );
+  const currentObjectiveText = firstUnfound
+    ? `Inspect ${firstUnfound.name}`
+    : `Make the safe verification decision with ${currentLevel.npcs[0]?.name || 'the resident'}`;
+
+  const lastCompletedLevel = (() => {
+    if (completedLevels.length === 0) return null;
+    for (let i = ADVENTURE_LEVELS.length - 1; i >= 0; i--) {
+      if (completedLevels.includes(ADVENTURE_LEVELS[i].id)) {
+        return ADVENTURE_LEVELS[i];
+      }
+    }
+    return null;
+  })();
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 animate-fade-in pointer-events-auto cursor-default">
-      <div className="w-full max-w-4xl bg-[#091124] border-2 border-[#00F0FF] rounded-3xl p-6 sm:p-8 shadow-[0_0_40px_rgba(0,240,255,0.3)] relative text-white space-y-6 max-h-[90vh] overflow-y-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between pb-4 border-b border-white/10">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-[#00F0FF]/20 border border-[#00F0FF]/40 flex items-center justify-center text-[#00F0FF]">
-              <BookOpen className="w-5 h-5" />
-            </div>
+      <div className="w-full max-w-4xl bg-[#0E1526] border border-slate-700 rounded-2xl p-6 sm:p-8 shadow-2xl relative text-white space-y-6 max-h-[90vh] overflow-y-auto">
+        {/* Top Header */}
+        <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+          <div className="flex items-center gap-3.5">
+            <img
+              src={detectivePortraitImg}
+              alt="Detective Rowan Vance"
+              referrerPolicy="no-referrer"
+              className="w-12 h-12 rounded-xl object-cover object-top border border-amber-400/50 shrink-0"
+              onError={(e) => {
+                (e.currentTarget as HTMLImageElement).style.display = 'none';
+              }}
+            />
             <div>
-              <span className="font-mono text-xs font-bold text-[#00F0FF] uppercase tracking-wider block">
-                THE GLASSHOUSE FILES · {completedLevels.length}/10 LEVELS · {completedLevels.length * 3}/{totalChapters} CHAPTERS
-              </span>
-              <h2 className="font-heading font-black text-lg sm:text-xl text-white">
-                Investigator Case Journal & Clues
+              <div className="font-mono text-xs text-amber-400">
+                <span>Detective Rowan Vance</span>
+                <span aria-hidden="true"> · </span>
+                <span>
+                  {completedLevels.length}/{totalLevels} Cases Solved
+                </span>
+              </div>
+              <h2 className="font-heading font-bold text-lg sm:text-xl text-white">
+                Investigator’s Case Journal
               </h2>
             </div>
           </div>
@@ -51,84 +86,97 @@ export const CaseJournalModal: React.FC<CaseJournalModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="p-2 rounded-xl text-[#94A3B8] hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+            className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Active Level & 3-Chapter Breakdown */}
-        <div className="p-4 rounded-2xl bg-[#050A18] border border-amber-400/40 space-y-2.5">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <span className="font-mono text-[10px] text-amber-400 uppercase font-bold tracking-wider">
-              Active Case: {currentLevel.title} ({currentLevel.locationName})
-            </span>
-            <span className="font-mono text-[10px] text-[#00F0FF] font-bold">
-              3 Playable Chapters
-            </span>
+        {/* Active Level, Objective & Clue Progress */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="p-4 rounded-xl bg-[#0B101E] border border-slate-800 space-y-1.5">
+            <div className="flex items-center gap-2 text-xs font-mono text-amber-400">
+              <Compass className="w-4 h-4 shrink-0" />
+              <span>Current Objective · {currentLevel.locationName}</span>
+            </div>
+            <div className="font-heading font-bold text-base text-white">
+              {currentObjectiveText}
+            </div>
+            <p className="text-xs text-slate-400">{currentLevel.title}</p>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
-            {currentLevel.chapters.map((ch) => (
+
+          <div className="p-4 rounded-xl bg-[#0B101E] border border-slate-800 space-y-2 font-mono tabular-nums">
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-slate-300 flex items-center gap-1.5">
+                <Search className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                <span>Case Progress</span>
+              </span>
+              <span className="text-white font-bold">
+                {foundCount} Found · {remainingCount} Remaining
+              </span>
+            </div>
+            <div className="w-full h-2 rounded-full bg-slate-800 overflow-hidden">
               <div
-                key={ch.number}
-                className="p-2.5 rounded-xl bg-[#0E1A38] border border-white/10 space-y-0.5"
-              >
-                <span className="font-mono text-[9px] text-amber-300 font-bold uppercase block">
-                  Ch {ch.number} · {ch.phase}
-                </span>
-                <span className="font-heading font-bold text-white block text-[11px]">
-                  {ch.title}
-                </span>
-              </div>
-            ))}
+                className="h-full bg-amber-400 transition-all duration-300"
+                style={{
+                  width: `${Math.max(
+                    12,
+                    Math.round((foundCount / Math.max(1, levelClues.length)) * 100)
+                  )}%`,
+                }}
+              />
+            </div>
+            <span className="text-[11px] text-slate-400 block">
+              Inspect evidence items in the room by pressing E.
+            </span>
           </div>
         </div>
 
-        {/* Discovered Clues in Active Case */}
+        {/* Logged Clues in Current Case */}
         <div className="space-y-3">
-          <h3 className="font-heading font-black text-sm text-white flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-[#00F0FF]" />
-            <span>Clues & Messages in {currentLevel.title}</span>
+          <h3 className="font-heading font-bold text-sm text-white flex items-center gap-2">
+            <BookOpen className="w-4 h-4 text-amber-400" />
+            <span>Evidence & Clues in {currentLevel.title}</span>
           </h3>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            {levelClues.map((clue) => {
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+            {levelClues.map(({ objName, inspection: clue }) => {
               const isFound = Boolean(collectedClues[clue.clueId]);
 
               return (
                 <div
                   key={clue.clueId}
-                  className={`p-3.5 rounded-2xl border-2 transition-all space-y-1.5 ${
+                  className={`p-4 rounded-xl border transition-all space-y-1.5 ${
                     isFound
-                      ? 'bg-[#0E1A38] border-emerald-500/50 shadow-md'
-                      : 'bg-[#060D1E]/60 border-dashed border-white/10 opacity-65'
+                      ? 'bg-[#111D2B] border-emerald-500/50'
+                      : 'bg-[#0B101E]/70 border-slate-800 opacity-75'
                   }`}
                 >
                   <div className="flex items-start justify-between gap-2">
                     <span className="font-heading font-bold text-xs text-white">
-                      {isFound ? clue.title : 'Uninspected Clue'}
+                      {isFound ? clue.title : objName}
                     </span>
                     <span
-                      className={`text-[9px] font-mono font-bold ${
-                        isFound ? 'text-emerald-400' : 'text-[#64748B]'
+                      className={`text-[10px] font-mono font-semibold shrink-0 ${
+                        isFound ? 'text-emerald-400' : 'text-slate-500'
                       }`}
                     >
-                      {isFound ? 'LOGGED ✓' : 'PRESS E IN WORLD'}
+                      {isFound ? 'Logged ✓' : 'Remaining'}
                     </span>
                   </div>
 
                   {isFound ? (
                     <>
-                      <p className="text-[11px] text-[#CBD5E1] leading-snug">
+                      <p className="text-xs text-slate-300 leading-relaxed">
                         {clue.evidenceClue}
                       </p>
-                      <span className="text-[10px] font-mono text-amber-300 block">
+                      <span className="text-[11px] font-mono text-amber-300 block pt-1">
                         Source: {clue.senderOrSource}
                       </span>
                     </>
                   ) : (
-                    <p className="text-[11px] text-[#64748B] italic">
-                      Inspect objects and messages in {currentLevel.locationName} during Chapter 2 (The Investigation).
+                    <p className="text-xs text-slate-400">
+                      Approach {objName} in {currentLevel.locationName} and press E to inspect.
                     </p>
                   )}
                 </div>
@@ -137,88 +185,56 @@ export const CaseJournalModal: React.FC<CaseJournalModalProps> = ({
           </div>
         </div>
 
-        {/* 10-Level Campaign Tracker (30 Chapters Total) */}
-        <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-500/10 via-black/40 to-[#00F0FF]/10 border border-amber-400/30 space-y-3">
+        {/* Recent Case Recap */}
+        {lastCompletedLevel && (
+          <div className="p-4 rounded-xl bg-[#0B101E] border border-slate-800 space-y-1">
+            <div className="flex items-center justify-between text-xs font-mono text-emerald-400">
+              <span>Recent Case Recap · {lastCompletedLevel.title}</span>
+              <span>Badge: {lastCompletedLevel.debrief.badgeName}</span>
+            </div>
+            <p className="text-xs text-slate-300 leading-relaxed">
+              {lastCompletedLevel.debrief.summary} Habit: {lastCompletedLevel.debrief.realWorldHabit}
+            </p>
+          </div>
+        )}
+
+        {/* Achievements: Earned Badges & Locked Previews */}
+        <div className="space-y-3 pt-2 border-t border-slate-800">
           <div className="flex items-center justify-between">
-            <span className="font-mono text-[10px] text-amber-400 uppercase font-bold tracking-widest flex items-center gap-1.5">
-              <ShieldCheck className="w-3.5 h-3.5" />
-              <span>THE GLASSHOUSE FILES · 10 LEVELS × 3 CHAPTERS (30 CHAPTERS)</span>
-            </span>
-            <span className="text-[10px] font-mono text-[#00F0FF] font-bold tabular-nums">
-              {completedLevels.length}/10 Cases Solved
+            <span className="font-heading font-bold text-sm text-white flex items-center gap-2">
+              <Award className="w-4 h-4 text-amber-400" />
+              <span>Investigator Achievements ({badges.length} / {totalLevels})</span>
             </span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 font-mono text-[10px]">
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
             {ADVENTURE_LEVELS.map((lvl, idx) => {
-              const done = completedLevels.includes(lvl.id);
-              const unlocked =
-                idx === 0 ||
-                completedLevels.includes(ADVENTURE_LEVELS[idx - 1].id) ||
-                done;
-              const isCurrent = lvl.id === currentLevel.id;
-
+              const bName = lvl.debrief.badgeName;
+              const isEarned = badges.includes(bName) || completedLevels.includes(lvl.id);
               return (
                 <div
                   key={lvl.id}
-                  className={`p-3 rounded-xl border ${
-                    done
-                      ? 'bg-emerald-500/15 border-emerald-500/40'
-                      : isCurrent
-                      ? 'bg-amber-400/15 border-amber-400'
-                      : 'bg-white/5 border-white/10'
+                  className={`p-3 rounded-xl border text-xs flex flex-col justify-between gap-1.5 ${
+                    isEarned
+                      ? 'bg-[#111D2B] border-emerald-500/40 text-white'
+                      : 'bg-[#0B101E]/60 border-slate-800/80 text-slate-400 opacity-65'
                   }`}
                 >
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="font-bold text-white truncate">{lvl.title}</span>
-                    <span className="text-amber-300 shrink-0">
-                      {done ? '3/3 Ch ✓' : unlocked ? 'Open' : <Lock className="w-3 h-3 inline" />}
-                    </span>
+                  <div className="flex items-center justify-between font-mono text-[10px]">
+                    <span>Case 0{idx + 1}</span>
+                    {isEarned ? (
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                    ) : (
+                      <Lock className="w-3 h-3 text-slate-500 shrink-0" />
+                    )}
                   </div>
-                  <div className="grid grid-cols-3 gap-1 mt-1.5">
-                    {lvl.chapters.map((ch) => (
-                      <div
-                        key={ch.number}
-                        className={`px-1.5 py-1 rounded text-[9px] truncate border ${
-                          done
-                            ? 'bg-emerald-500/25 border-emerald-400/40 text-emerald-200'
-                            : unlocked
-                            ? 'bg-black/40 border-white/15 text-[#CBD5E1]'
-                            : 'bg-black/30 border-white/5 text-[#64748B]'
-                        }`}
-                      >
-                        Ch {ch.number}: {ch.phase.replace('The ', '')}
-                      </div>
-                    ))}
-                  </div>
+                  <span className="font-heading font-semibold text-xs leading-snug truncate">
+                    {bName}
+                  </span>
                 </div>
               );
             })}
           </div>
-        </div>
-
-        {/* Earned Safety Habit Badges */}
-        <div className="space-y-2 pt-2 border-t border-white/10">
-          <span className="font-mono text-[10px] text-[#94A3B8] uppercase font-bold tracking-wider block">
-            Safety Habits Mastered ({badges.length} / {totalLevels})
-          </span>
-          {badges.length === 0 ? (
-            <p className="text-xs text-[#64748B]">
-              Complete Chapter 3 decisions across the 10 cases to log practical safety habits here.
-            </p>
-          ) : (
-            <div className="flex flex-wrap gap-2">
-              {badges.map((b) => (
-                <span
-                  key={b}
-                  className="px-3 py-1 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 font-mono text-[11px] font-bold flex items-center gap-1.5"
-                >
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                  <span>{b}</span>
-                </span>
-              ))}
-            </div>
-          )}
         </div>
       </div>
     </div>
