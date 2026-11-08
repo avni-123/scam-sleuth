@@ -447,6 +447,12 @@ function getCachedContactShadowTexture(): THREE.CanvasTexture {
 const _euler = new THREE.Euler();
 const _quat = new THREE.Quaternion();
 const _targetQuat = new THREE.Quaternion();
+const _rootWorldQuat = new THREE.Quaternion();
+const _handWorldQuat = new THREE.Quaternion();
+const _phoneTargetWorldQuat = new THREE.Quaternion();
+const _phoneLocalToRootEuler = new THREE.Euler();
+const _phoneLocalToRootQuat = new THREE.Quaternion();
+const _phoneWorldPos = new THREE.Vector3();
 
 function preloadHumanModel(): Promise<THREE.Group> {
   if (cachedGltfScene) return Promise.resolve(cachedGltfScene);
@@ -861,11 +867,11 @@ function buildAnatomicalScalpAndBeardGeometries(
 
     const ly = y - 1.6385;
     const angle = Math.atan2(x, z - 0.0076);
-    const crownLift = Math.max(0, (ly - 0.06) * 0.055);
-    const strandWave = Math.sin(angle * 22 + ly * 45) * 0.0022;
-    const offset = 0.0065 + crownLift + strandWave;
+    const crownLift = Math.max(0, (ly - 0.04) * 0.088);
+    const strandWave = Math.sin(angle * 22 + ly * 45) * 0.0024;
+    const offset = 0.0095 + crownLift + strandWave;
 
-    sPos.setXYZ(v, x + nx * offset, y + ny * (offset * 1.25), z + nz * offset);
+    sPos.setXYZ(v, x + nx * offset, y + ny * (offset * 1.35), z + nz * offset);
   }
   sPos.needsUpdate = true;
 
@@ -948,12 +954,12 @@ function attachHeadFeaturesAndHair(
   hairGroup.name = `hairstyle_${profile.hairstyle}`;
 
   if (profile.hairstyle === 'side_part_detective') {
-    // Investigator Rowan Vance: Fuller, stylish dark-brown (#4a3629) layered cut
+    // Investigator Rowan Vance: Neat, fuller dark-brown (#4a3629) side-parted layered cut
     // featuring a softly rounded crown with natural 3D volume, gently tapered sides around ears,
     // and textured front layers swept loosely to one side (forehead and eyes 100% clear and visible).
 
     // Helper to add a smooth curved 3D hair strand tube with generous volume and strand texture
-    const addStrand = (pts: [number, number, number][], radius = 0.0058, tubeSegments = 24) => {
+    const addStrand = (pts: [number, number, number][], radius = 0.0064, tubeSegments = 24) => {
       const vectors = pts.map((p) => new THREE.Vector3(p[0], p[1], p[2]));
       const curve = new THREE.CatmullRomCurve3(vectors);
       const geo = new THREE.TubeGeometry(curve, tubeSegments, radius, 8, false);
@@ -982,7 +988,7 @@ function attachHeadFeaturesAndHair(
       [[-0.030, 0.178, -0.032], [-0.035, 0.147, -0.058], [-0.033, 0.090, -0.064]],
       [[0.030, 0.178, -0.032], [0.035, 0.147, -0.058], [0.033, 0.090, -0.064]],
     ];
-    baseVolumeStrands.forEach((pts) => addStrand(pts, 0.0060));
+    baseVolumeStrands.forEach((pts) => addStrand(pts, 0.0068));
 
     // 2. Defined Side Part (originating cleanly at X = -0.024m) & Loosely Swept Textured Fringe
     // Sweeps gently across upper forehead, keeping forehead, eyebrows (y = 0.109m), and eyes (y = 0.088m) 100% clear
@@ -1002,9 +1008,9 @@ function attachHeadFeaturesAndHair(
       [[-0.017, 0.185, 0.085], [0.018, 0.167, 0.100], [0.048, 0.147, 0.089]],
       [[-0.002, 0.188, 0.087], [0.032, 0.171, 0.099], [0.058, 0.149, 0.083]],
     ];
-    frontSweptStrands.forEach((pts) => addStrand(pts, 0.0056));
+    frontSweptStrands.forEach((pts) => addStrand(pts, 0.0062));
 
-    // 3. Stylish Rounded Crown Volume (convex top dome peaking at Y = 0.208..0.216m following natural head silhouette)
+    // 3. Stylish Rounded Crown Volume (convex top dome peaking at Y = 0.210..0.218m following natural head silhouette)
     const crownStrands: [number, number, number][][] = [
       // Left crown layers
       [[-0.024, 0.186, -0.015], [-0.050, 0.208, 0.010], [-0.076, 0.170, 0.040]],
@@ -1018,14 +1024,14 @@ function attachHeadFeaturesAndHair(
       [[-0.012, 0.190, 0.030], [0.032, 0.208, 0.038], [0.074, 0.176, 0.052]],
 
       // Top peak volume dome layers
-      [[-0.005, 0.192, -0.010], [0.000, 0.216, 0.012], [0.048, 0.192, 0.042]],
-      [[-0.015, 0.190, -0.020], [-0.010, 0.214, 0.000], [0.038, 0.190, 0.035]],
+      [[-0.005, 0.192, -0.010], [0.000, 0.218, 0.012], [0.048, 0.194, 0.042]],
+      [[-0.015, 0.190, -0.020], [-0.010, 0.216, 0.000], [0.038, 0.192, 0.035]],
 
       // Upper right side transition layers
-      [[0.005, 0.188, -0.020], [0.038, 0.206, 0.010], [0.076, 0.170, 0.040]],
-      [[0.014, 0.186, -0.008], [0.046, 0.204, 0.018], [0.080, 0.166, 0.046]],
+      [[0.005, 0.188, -0.020], [0.038, 0.208, 0.010], [0.076, 0.172, 0.040]],
+      [[0.014, 0.186, -0.008], [0.046, 0.206, 0.018], [0.080, 0.168, 0.046]],
     ];
-    crownStrands.forEach((pts) => addStrand(pts, 0.0058));
+    crownStrands.forEach((pts) => addStrand(pts, 0.0065));
 
     // 4. Gently Tapered Side Layers (fitted neatly close to temples and upper ears)
     const sideStrands: [number, number, number][][] = [
@@ -1039,7 +1045,7 @@ function attachHeadFeaturesAndHair(
       [[0.054, 0.172, 0.016], [0.082, 0.136, 0.010], [0.086, 0.091, 0.006]],
       [[0.060, 0.168, -0.010], [0.084, 0.132, -0.014], [0.088, 0.088, -0.016]],
     ];
-    sideStrands.forEach((pts) => addStrand(pts, 0.0054));
+    sideStrands.forEach((pts) => addStrand(pts, 0.0060));
 
     // 5. Soft Nape & Rear Taper Strands
     const rearStrands: [number, number, number][][] = [
@@ -1047,7 +1053,7 @@ function attachHeadFeaturesAndHair(
       [[-0.022, 0.178, -0.035], [-0.025, 0.138, -0.064], [-0.022, 0.086, -0.068]],
       [[0.022, 0.178, -0.035], [0.025, 0.138, -0.064], [0.022, 0.086, -0.068]],
     ];
-    rearStrands.forEach((pts) => addStrand(pts, 0.0054));
+    rearStrands.forEach((pts) => addStrand(pts, 0.0060));
 
   } else if (profile.hairstyle === 'tousled_wavy_crop') {
     // Alex Rivera: Warm chestnut tousled creative waves across the crown and forehead
@@ -1653,10 +1659,17 @@ function createHandHeldPhoneProp(): {
   screenGlowLight.position.set(0, 0.02, -0.05);
   phoneGroup.add(screenGlowLight);
 
-  // 4. One-Handed Grip Transform in RightHand Local Space:
-  // Positioned in portrait orientation centered in right palm (Y = 0.078m), top edge angled slightly toward floor, back facing camera (+Z)
-  phoneGroup.position.set(0.012, 0.078, 0.024);
-  phoneGroup.rotation.set(-1.86, -0.16, -1.52);
+  // Ensure no frustum culling on phone prop sub-meshes so phone is always visible
+  phoneGroup.traverse((child) => {
+    if ((child as THREE.Mesh).isMesh) {
+      const m = child as THREE.Mesh;
+      m.frustumCulled = false;
+    }
+  });
+
+  // Positioned inside palmGripAnchor with clean local origin
+  phoneGroup.position.set(0, 0, 0);
+  phoneGroup.rotation.set(0, 0, 0);
 
   return { phoneGroup, screenGlowLight };
 }
@@ -2132,11 +2145,22 @@ export function createHumanCharacter(
       rightBrowMesh = rightBrow;
     }
 
-    // Attach 3D smartphone to RightHand bone (character's anatomical right hand, on left side of image when facing camera)
+    // Attach 3D smartphone prop to explicit rightPalmGripAnchor attached to RightHand bone
     if (bones.rightHand) {
+      const palmGripAnchor = new THREE.Group();
+      palmGripAnchor.name = 'rightPalmGripAnchor';
+      // Anchor position: Centered directly in the palm cup (X = 0.002m, Y = 0.058m down from wrist, Z = +0.022m flush on palm face)
+      palmGripAnchor.position.set(0.002, 0.058, 0.022);
+      // Anchor rotation: Map +Z phone face (broad back panel & camera island) to hand palm normal (+Z_hand / +Z_world); map +Y phone (cameras at top) pointing UP (-Y_hand / +Y_world)
+      palmGripAnchor.rotation.set(0, 0, Math.PI);
+      bones.rightHand.add(palmGripAnchor);
+
       const { phoneGroup, screenGlowLight } = createHandHeldPhoneProp();
       phoneGroup.visible = !config.isNpc;
-      bones.rightHand.add(phoneGroup);
+      phoneGroup.position.set(0, 0, 0);
+      phoneGroup.rotation.set(0, 0, 0);
+      palmGripAnchor.add(phoneGroup);
+
       heldPhoneGroup = phoneGroup;
       heldPhoneLight = screenGlowLight;
     }
@@ -2510,15 +2534,16 @@ export function createHumanCharacter(
       // RIGHT-HANDED SMARTPHONE HOLD: Character's anatomical right hand holds phone vertically beside right thigh/hip
       // (appears on the left side of the image when facing camera). Both arms hang naturally and straight at his sides.
 
-      // Right hand: Fingers wrapped around outer edge of phone centered in palm, thumb gripping inner edge, wrist clear below:
-      rightGripFingers.forEach(({ j1, j2, j3 }) => {
-        slerpBoneOffset(j1, 0.32, 0.04, 0, blendAlpha);
-        slerpBoneOffset(j2, 0.38, 0, 0, blendAlpha);
-        slerpBoneOffset(j3, 0.22, 0, 0, blendAlpha);
+      // Right hand: Four fingers wrapped along outer long edge and thumb on inner edge, with palm supporting back:
+      rightGripFingers.forEach(({ j1, j2, j3 }, idx) => {
+        const spread = (idx - 1.5) * 0.025;
+        slerpBoneOffset(j1, 0.38, spread, 0.06, blendAlpha);
+        slerpBoneOffset(j2, 0.44, 0.0, 0.03, blendAlpha);
+        slerpBoneOffset(j3, 0.25, 0.0, 0.01, blendAlpha);
       });
-      slerpBoneOffset(rightThumbBones.t1, 0.28, 0.10, -0.04, blendAlpha);
-      slerpBoneOffset(rightThumbBones.t2, 0.18, 0.03, 0.01, blendAlpha);
-      slerpBoneOffset(rightThumbBones.t3, 0.10, 0, 0.01, blendAlpha);
+      slerpBoneOffset(rightThumbBones.t1, 0.46, -0.62, -0.40, blendAlpha);
+      slerpBoneOffset(rightThumbBones.t2, 0.38, -0.22, -0.12, blendAlpha);
+      slerpBoneOffset(rightThumbBones.t3, 0.28, 0.0, 0.0, blendAlpha);
 
       // Left hand: Completely relaxed, hanging straight down alongside left hip/thigh (empty hand, no props):
       leftGripFingers.forEach(({ j1, j2, j3 }) => {
@@ -2545,8 +2570,8 @@ export function createHumanCharacter(
           -0.06 + rightArmSwingZ,
           blendAlpha
         );
-        slerpBoneOffset(bones.rightForeArm, 0.06, 0, 0, blendAlpha);
-        slerpBoneOffset(bones.rightHand, -0.04, -0.12, 0.08, blendAlpha);
+        slerpBoneOffset(bones.rightForeArm, 0.06, 0.02, 0, blendAlpha);
+        slerpBoneOffset(bones.rightHand, -1.68, 1.13, 1.80, blendAlpha);
 
         // Left arm natural walk swing
         slerpBoneOffset(
@@ -2560,7 +2585,7 @@ export function createHumanCharacter(
         slerpBoneOffset(bones.leftHand, 0, 0, 0, blendAlpha);
       } else {
         // Standing pose: BOTH arms hang naturally and straight at his sides
-        // Right arm relaxed straight down alongside right thigh, holding phone in palm with top edge angled toward floor:
+        // Right arm relaxed straight down alongside right thigh, holding phone upright in portrait orientation with back panel facing camera:
         slerpBoneOffset(
           bones.rightArm,
           0.36 + syncBreath,
@@ -2568,8 +2593,8 @@ export function createHumanCharacter(
           -0.06 - slowSway * 0.008,
           blendAlpha
         );
-        slerpBoneOffset(bones.rightForeArm, 0.06, 0, 0, blendAlpha);
-        slerpBoneOffset(bones.rightHand, -0.06, -0.14, 0.06, blendAlpha);
+        slerpBoneOffset(bones.rightForeArm, 0.06, 0.02, 0.0, blendAlpha);
+        slerpBoneOffset(bones.rightHand, -1.68, 1.13, 1.80, blendAlpha);
 
         // Left arm relaxed straight down alongside left hip (empty hand):
         slerpBoneOffset(
