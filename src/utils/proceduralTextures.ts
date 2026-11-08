@@ -1426,13 +1426,193 @@ export class ProceduralTextureGenerator {
     return texture;
   }
 
-  // In-Hand Smartphone AMOLED Display showing the realistic Home Screen (512x1024)
+  /**
+   * High-contrast illuminated smartphone display showing the fictional suspicious
+   * delivery message relevant to the current investigation case (512x1024).
+   */
+  static createCaseDeliveryMessageScreenTexture(
+    msgSender = '+1 (555) 019-3382',
+    msgBody = 'CityPost: $2.85 fee required to release parcel [GH-PRISM-01]. Verify now: citypost-track-id.net'
+  ): THREE.CanvasTexture {
+    const w = 512;
+    const h = 1024;
+    const canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext('2d')!;
+
+    const drawRoundRect = (x: number, y: number, rw: number, rh: number, r: number) => {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.arcTo(x + rw, y, x + rw, y + rh, r);
+      ctx.arcTo(x + rw, y + rh, x, y + rh, r);
+      ctx.arcTo(x, y + rh, x, y, r);
+      ctx.arcTo(x, y, x + rw, y, r);
+      ctx.closePath();
+    };
+
+    // 1. Illuminated Slate-Navy AMOLED Messaging Background
+    const bgGrad = ctx.createLinearGradient(0, 0, 0, h);
+    bgGrad.addColorStop(0, '#0f172a');
+    bgGrad.addColorStop(0.5, '#111c35');
+    bgGrad.addColorStop(1, '#091020');
+    ctx.fillStyle = bgGrad;
+    ctx.fillRect(0, 0, w, h);
+
+    // 2. Top Status Bar (Time, 5G, Battery)
+    ctx.fillStyle = '#f8fafc';
+    ctx.font = 'bold 24px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('20:42', 36, 48);
+
+    ctx.textAlign = 'right';
+    ctx.font = 'bold 20px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+    ctx.fillStyle = '#38bdf8';
+    ctx.fillText('5G', w - 92, 46);
+    ctx.strokeStyle = '#f8fafc';
+    ctx.lineWidth = 2.5;
+    drawRoundRect(w - 76, 28, 42, 20, 4);
+    ctx.stroke();
+    ctx.fillStyle = '#22c55e';
+    ctx.fillRect(w - 72, 32, 30, 12);
+
+    // 3. Messaging Header Bar (Sender Number & Unverified Warning)
+    ctx.fillStyle = '#1e293b';
+    ctx.fillRect(0, 68, w, 108);
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.28)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(0, 176);
+    ctx.lineTo(w, 176);
+    ctx.stroke();
+
+    // Avatar Circle
+    ctx.fillStyle = '#f59e0b';
+    ctx.beginPath();
+    ctx.arc(64, 122, 30, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#0f172a';
+    ctx.font = '900 26px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('!', 64, 132);
+
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 26px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+    ctx.fillText(msgSender, 112, 115);
+
+    ctx.fillStyle = '#fbbf24';
+    ctx.font = 'bold 18px monospace';
+    ctx.fillText('UNVERIFIED CARRIER · SMS', 112, 146);
+
+    // 4. High-Contrast Suspicious Delivery Alert Banner
+    ctx.fillStyle = 'rgba(245, 158, 11, 0.22)';
+    drawRoundRect(24, 200, w - 48, 68, 16);
+    ctx.fill();
+    ctx.strokeStyle = '#f59e0b';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+
+    ctx.fillStyle = '#fde68a';
+    ctx.font = 'bold 21px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('⚠ CASE EVIDENCE: DELIVERY FEE SCAM', w / 2, 242);
+
+    // 5. Primary Incoming Delivery Scam SMS Bubble (Bright, Legible at a Glance)
+    ctx.fillStyle = '#1e293b';
+    drawRoundRect(24, 296, w - 48, 390, 28);
+    ctx.fill();
+    ctx.strokeStyle = '#38bdf8';
+    ctx.lineWidth = 3.5;
+    ctx.stroke();
+
+    // Tag inside bubble
+    ctx.fillStyle = '#0284c7';
+    drawRoundRect(48, 322, 230, 38, 10);
+    ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 19px monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText('CITYPOST PARCEL ALERT', 62, 347);
+
+    // Wrapped Message Text
+    ctx.fillStyle = '#f8fafc';
+    ctx.font = 'bold 31px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+    const lines = [
+      'CityPost: $2.85 customs',
+      'fee required to release',
+      'parcel [GH-PRISM-01].',
+    ];
+    lines.forEach((line, idx) => {
+      ctx.fillText(line, 48, 412 + idx * 44);
+    });
+
+    // Highlighted Suspicious URL Pill inside SMS Bubble
+    ctx.fillStyle = 'rgba(239, 68, 68, 0.25)';
+    drawRoundRect(44, 536, w - 88, 74, 16);
+    ctx.fill();
+    ctx.strokeStyle = '#f87171';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+
+    ctx.fillStyle = '#fca5a5';
+    ctx.font = 'bold 17px monospace';
+    ctx.fillText('SUSPICIOUS TRACKING LINK:', 64, 564);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 24px monospace';
+    ctx.fillText('citypost-track-id.net/pay', 64, 596);
+
+    // Urgency footer inside bubble
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '600 20px sans-serif';
+    ctx.fillText('Reply Y or tap link within 2 hrs', 48, 654);
+
+    // 6. Forensic Clue Analysis Card Below Message
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.95)';
+    drawRoundRect(24, 718, w - 48, 185, 22);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(56, 189, 248, 0.55)';
+    ctx.lineWidth = 2.5;
+    ctx.stroke();
+
+    ctx.fillStyle = '#38bdf8';
+    ctx.font = 'bold 20px monospace';
+    ctx.fillText('SLEUTH FORENSIC NOTES:', 48, 758);
+
+    ctx.fillStyle = '#e2e8f0';
+    ctx.font = 'bold 22px sans-serif';
+    ctx.fillText('• Lookalike domain (.net)', 48, 800);
+    ctx.fillText('• Unsolicited $2.85 fee trap', 48, 836);
+    ctx.fillText('• Artificial 2-hour urgency', 48, 872);
+
+    // 7. Subtle Diagonal Glass Reflection Streak
+    const reflGrad = ctx.createLinearGradient(0, 0, w, h * 0.65);
+    reflGrad.addColorStop(0, 'rgba(255, 255, 255, 0.16)');
+    reflGrad.addColorStop(0.35, 'rgba(255, 255, 255, 0.05)');
+    reflGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0.0)');
+    ctx.fillStyle = reflGrad;
+    ctx.fillRect(0, 0, w, h);
+
+    // 8. Bottom Home Bar
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+    drawRoundRect(176, 976, 160, 8, 4);
+    ctx.fill();
+
+    // Suppress unused parameter lint while keeping signature flexible
+    void msgBody;
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    return texture;
+  }
+
+  // In-Hand Smartphone AMOLED Display showing the suspicious delivery message (512x1024)
   static createInHandScannerScreenTexture(
-    _msgSender = '+1 (555) 019-3382',
-    _msgBody = '',
+    msgSender = '+1 (555) 019-3382',
+    msgBody = '',
     _highlightClues = false
   ): THREE.CanvasTexture {
-    return ProceduralTextureGenerator.createPhoneHomeScreenTexture();
+    return ProceduralTextureGenerator.createCaseDeliveryMessageScreenTexture(msgSender, msgBody);
   }
 
   // Realistic Human Skin PBR Textures (Diffuse + Roughness) with Pore Detail & Subsurface Warmth
@@ -1530,10 +1710,17 @@ export class ProceduralTextureGenerator {
     ctx.fillStyle = '#f8f4f0';
     ctx.fillRect(0, 0, size, size);
 
+    // Parse base color for tone gradients
+    const baseCol = new THREE.Color(irisHex);
+    const innerHighlight = baseCol.clone().lerp(new THREE.Color('#ffffff'), 0.38).getStyle();
+    const deepTone = baseCol.clone().multiplyScalar(0.45).getStyle();
+    const outerRing = baseCol.clone().multiplyScalar(0.22).getStyle();
+    const collaretteTone = baseCol.clone().lerp(new THREE.Color('#7dd3fc'), 0.4).getStyle();
+
     // Dark Limbal Ring (Outer perimeter)
     const limbalGrad = ctx.createRadialGradient(cx, cy, r * 0.82, cx, cy, r);
     limbalGrad.addColorStop(0, irisHex);
-    limbalGrad.addColorStop(0.7, '#140c06');
+    limbalGrad.addColorStop(0.7, outerRing);
     limbalGrad.addColorStop(1, '#080503');
     ctx.fillStyle = limbalGrad;
     ctx.beginPath();
@@ -1542,9 +1729,9 @@ export class ProceduralTextureGenerator {
 
     // Iris Base Color
     const baseGrad = ctx.createRadialGradient(cx, cy, r * 0.35, cx, cy, r * 0.85);
-    baseGrad.addColorStop(0, '#7c4d29');
+    baseGrad.addColorStop(0, innerHighlight);
     baseGrad.addColorStop(0.5, irisHex);
-    baseGrad.addColorStop(1, '#2c180d');
+    baseGrad.addColorStop(1, deepTone);
     ctx.fillStyle = baseGrad;
     ctx.beginPath();
     ctx.arc(cx, cy, r * 0.88, 0, Math.PI * 2);
@@ -1555,17 +1742,21 @@ export class ProceduralTextureGenerator {
       const rad = (a * Math.PI) / 180;
       const length = r * (0.35 + Math.random() * 0.52);
       const alpha = 0.15 + Math.random() * 0.35;
-      ctx.strokeStyle = Math.random() > 0.4 ? `rgba(215, 160, 95, ${alpha})` : `rgba(40, 20, 10, ${alpha})`;
+      ctx.strokeStyle = Math.random() > 0.4
+        ? baseCol.clone().lerp(new THREE.Color('#ffffff'), 0.5).getStyle()
+        : baseCol.clone().multiplyScalar(0.3).getStyle();
+      ctx.globalAlpha = alpha;
       ctx.lineWidth = 0.8 + Math.random() * 1.2;
       ctx.beginPath();
       ctx.moveTo(cx + Math.cos(rad) * (r * 0.32), cy + Math.sin(rad) * (r * 0.32));
       ctx.lineTo(cx + Math.cos(rad) * length, cy + Math.sin(rad) * length);
       ctx.stroke();
     }
+    ctx.globalAlpha = 1.0;
 
-    // Inner Collarette Ring (Amber / honey pigment ring)
-    ctx.strokeStyle = 'rgba(215, 145, 60, 0.45)';
-    ctx.lineWidth = 4;
+    // Inner Collarette Ring (Contrasting subtle pigment ring)
+    ctx.strokeStyle = collaretteTone;
+    ctx.lineWidth = 3.5;
     ctx.beginPath();
     ctx.arc(cx, cy, r * 0.45, 0, Math.PI * 2);
     ctx.stroke();
@@ -1651,17 +1842,38 @@ export class ProceduralTextureGenerator {
     ctx.fillStyle = baseHex;
     ctx.fillRect(0, 0, size, size);
 
-    // Hair fiber lines
-    for (let i = 0; i < 400; i++) {
+    // Hair fiber lines with warm golden/wheat highlights for lighter hair tones
+    const baseColor = new THREE.Color(baseHex);
+    const isLighterHair = (baseColor.r + baseColor.g + baseColor.b) / 3 > 0.3;
+
+    for (let i = 0; i < 450; i++) {
       const x = Math.random() * size;
       const length = 60 + Math.random() * 120;
       const y = Math.random() * (size - length);
       const alpha = 0.08 + Math.random() * 0.16;
-      ctx.strokeStyle = Math.random() > 0.5 ? `rgba(255, 255, 255, ${alpha})` : `rgba(0, 0, 0, ${alpha * 1.4})`;
-      ctx.lineWidth = 0.8 + Math.random() * 1.2;
+
+      const rand = Math.random();
+      if (rand < 0.42) {
+        ctx.strokeStyle = isLighterHair
+          ? `rgba(255, 230, 175, ${alpha * 1.3})`
+          : `rgba(255, 255, 255, ${alpha})`;
+      } else if (rand < 0.68 && isLighterHair) {
+        ctx.strokeStyle = `rgba(220, 185, 130, ${alpha * 1.2})`;
+      } else {
+        ctx.strokeStyle = `rgba(0, 0, 0, ${alpha * 1.3})`;
+      }
+
+      ctx.lineWidth = 0.7 + Math.random() * 1.1;
       ctx.beginPath();
       ctx.moveTo(x, y);
-      ctx.bezierCurveTo(x + (Math.random() - 0.5) * 8, y + length * 0.5, x + (Math.random() - 0.5) * 12, y + length * 0.8, x + (Math.random() - 0.5) * 6, y + length);
+      ctx.bezierCurveTo(
+        x + (Math.random() - 0.5) * 8,
+        y + length * 0.5,
+        x + (Math.random() - 0.5) * 12,
+        y + length * 0.8,
+        x + (Math.random() - 0.5) * 6,
+        y + length
+      );
       ctx.stroke();
     }
 

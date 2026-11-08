@@ -5,6 +5,7 @@ import { AdventureLevel, WorldObjectDef, NpcDef, GameSettings } from '../../type
 import { ProceduralTextureGenerator } from '../../utils/proceduralTextures';
 import { soundEngine } from '../../utils/proceduralAudio';
 import { createHumanCharacter, HumanCharacterInstance } from './HumanCharacterBuilder';
+import { CutsceneCameraShot } from '../../data/levelIntroCutscenes';
 
 export interface NearbyTarget {
   type: 'npc' | 'object';
@@ -51,6 +52,8 @@ interface AdventureWorldProps {
   isMobileJogging?: boolean;
   isModalOpen?: boolean;
   activeDialogueNpcId?: string | null;
+  introCameraShot?: CutsceneCameraShot | null;
+  isIntroNpcSpeaking?: boolean;
 }
 
 export const AdventureWorld: React.FC<AdventureWorldProps> = ({
@@ -65,6 +68,8 @@ export const AdventureWorld: React.FC<AdventureWorldProps> = ({
   isMobileJogging,
   isModalOpen = false,
   activeDialogueNpcId = null,
+  introCameraShot = null,
+  isIntroNpcSpeaking = false,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const nearbyRef = useRef<NearbyTarget | null>(null);
@@ -83,6 +88,9 @@ export const AdventureWorld: React.FC<AdventureWorldProps> = ({
   const settingsRef = useRef<GameSettings>(settings);
   const collectedClueIdsRef = useRef<string[]>(collectedClueIds);
   const activeDialogueNpcIdRef = useRef<string | null>(activeDialogueNpcId);
+  const introCameraShotRef = useRef<CutsceneCameraShot | null>(introCameraShot);
+  const isIntroNpcSpeakingRef = useRef<boolean>(isIntroNpcSpeaking);
+  const cutsceneLookTargetRef = useRef<THREE.Vector3>(new THREE.Vector3(0, 1.4, 0));
 
   useEffect(() => {
     onInteractRef.current = onInteract;
@@ -99,6 +107,14 @@ export const AdventureWorld: React.FC<AdventureWorldProps> = ({
   useEffect(() => {
     activeDialogueNpcIdRef.current = activeDialogueNpcId;
   }, [activeDialogueNpcId]);
+
+  useEffect(() => {
+    introCameraShotRef.current = introCameraShot;
+  }, [introCameraShot]);
+
+  useEffect(() => {
+    isIntroNpcSpeakingRef.current = isIntroNpcSpeaking;
+  }, [isIntroNpcSpeaking]);
 
   // References for render loop state
   const sceneRef = useRef<THREE.Scene | null>(null);
@@ -153,7 +169,7 @@ export const AdventureWorld: React.FC<AdventureWorldProps> = ({
 
   // Trigger brief camera focus on target, then open dialogue/inspection card
   const triggerFocusedInteraction = (target: NearbyTarget) => {
-    if (document.pointerLockElement) {
+    if (target.type === 'object' && document.pointerLockElement) {
       intentionalUnlockRef.current = true;
       document.exitPointerLock?.();
     }
@@ -191,17 +207,27 @@ export const AdventureWorld: React.FC<AdventureWorldProps> = ({
     }
   };
 
-  // Helper to request pointer lock safely and resume automatic mouse-look
+  // Helper to request pointer lock safely and resume automatic mouse-look + keyboard focus without needing a click
   const requestGameplayLookLock = () => {
     hasMouseOrigin.current = false;
     mouseEdgeNormalized.current = { x: 0, y: 0 };
-    const container = containerRef.current;
-    if (container && container.requestPointerLock && !document.pointerLockElement && !isModalOpenRef.current) {
+    try {
+      window.focus();
+      if (document.activeElement instanceof HTMLElement && document.activeElement !== containerRef.current) {
+        document.activeElement.blur();
+      }
+      containerRef.current?.focus({ preventScroll: true });
+    } catch {
+      // Ignore focus errors
+    }
+
+    const lockTarget = containerRef.current || document.body;
+    if (lockTarget && lockTarget.requestPointerLock && !document.pointerLockElement && !isModalOpenRef.current) {
       try {
-        const lockPromise = container.requestPointerLock() as unknown as Promise<void> | undefined;
+        const lockPromise = lockTarget.requestPointerLock() as unknown as Promise<void> | undefined;
         if (lockPromise && typeof lockPromise.catch === 'function') {
           lockPromise.catch(() => {
-            // Free-mouse look + cursor-none is already active even if browser defers pointer lock
+            // Free-mouse look + cursor-none CSS is already active even if browser defers pointer lock
           });
         }
       } catch {
@@ -225,7 +251,14 @@ export const AdventureWorld: React.FC<AdventureWorldProps> = ({
     }
   }, [isModalOpen]);
 
-  // Listen for synchronous resume-look event fired inside modal close click/key handlers
+  // Also immediately focus & activate look when introCameraShot ends (story line finishes)
+  useEffect(() => {
+    if (!introCameraShot && !isModalOpenRef.current) {
+      requestGameplayLookLock();
+    }
+  }, [introCameraShot]);
+
+  // Listen for synchronous resume-look event fired inside modal/cutscene close handlers
   useEffect(() => {
     const handleResumeLook = () => {
       isModalOpenRef.current = false;
@@ -262,6 +295,10 @@ export const AdventureWorld: React.FC<AdventureWorldProps> = ({
       if (isModalOpenRef.current) return;
       keysPressed.current[e.code] = true;
       keysPressed.current[e.key.toLowerCase()] = true;
+
+      if (!document.pointerLockElement && !introCameraShotRef.current) {
+        requestGameplayLookLock();
+      }
 
       // 'E' exclusively for interacting with objects/clues
       if (e.code === 'KeyE' && nearbyRef.current?.type === 'object' && !focusAnimRef.current) {
@@ -451,7 +488,7 @@ export const AdventureWorld: React.FC<AdventureWorldProps> = ({
     humanPlayerInstanceRef.current = playerInstance;
 
     // -----------------------------------------------------------------------
-    // BUILD NPC 3D CHARACTERS
+    // BUILD NPC 3D CHARACTERS (Including Recurring Cast in Finale Coalition)
     // -----------------------------------------------------------------------
     npcGroupsRef.current.clear();
     humanNpcInstancesRef.current.clear();
@@ -463,6 +500,53 @@ export const AdventureWorld: React.FC<AdventureWorldProps> = ({
       scene.add(npcGroup);
       npcGroupsRef.current.set(npc.id, npcGroup);
       humanNpcInstancesRef.current.set(npc.id, npcInstance);
+
+      // In Level 10 ("Community Safety Coalition"), also place recurring cast members in the scene
+      if (npc.id === 'npc-alex-l10' || level.id === 'finale-coalition') {
+        const coalitionCompanions: Array<{
+          id: string;
+          name: string;
+          role: string;
+          pos: [number, number, number];
+          rotY: number;
+        }> = [
+          {
+            id: 'npc-maya-coalition',
+            name: 'Maya Chen',
+            role: 'University Student & Digital Safety Peer',
+            pos: [-2.15, 0, -1.55],
+            rotY: 0.42,
+          },
+          {
+            id: 'npc-marcus-coalition',
+            name: 'Marcus Vance',
+            role: 'Local Cafe Owner & Seller',
+            pos: [2.15, 0, -1.55],
+            rotY: -0.42,
+          },
+          {
+            id: 'npc-priya-coalition',
+            name: 'Priya Sharma',
+            role: 'Senior Systems Engineer',
+            pos: [1.35, 0, -2.15],
+            rotY: -0.24,
+          },
+        ];
+
+        coalitionCompanions.forEach((comp) => {
+          const compInstance = createHumanCharacter({
+            id: comp.id,
+            name: comp.name,
+            role: comp.role,
+            isNpc: true,
+          });
+          compInstance.group.position.set(...comp.pos);
+          compInstance.group.rotation.y = comp.rotY;
+          scene.add(compInstance.group);
+          npcGroupsRef.current.set(comp.id, compInstance.group);
+          humanNpcInstancesRef.current.set(comp.id, compInstance);
+        });
+      }
     });
 
     // -----------------------------------------------------------------------
@@ -521,13 +605,13 @@ export const AdventureWorld: React.FC<AdventureWorldProps> = ({
     };
 
     const handlePointerMove = (e: MouseEvent | TouchEvent) => {
-      if (isModalOpenRef.current) {
+      if (isModalOpenRef.current || introCameraShotRef.current) {
         hasMouseOrigin.current = false;
         mouseEdgeNormalized.current = { x: 0, y: 0 };
         return;
       }
 
-      const isLocked = document.pointerLockElement === container;
+      const isLocked = Boolean(document.pointerLockElement);
       let dx = 0;
       let dy = 0;
 
@@ -693,24 +777,30 @@ export const AdventureWorld: React.FC<AdventureWorldProps> = ({
         isMobileJogging;
 
       const speed = isJogging ? 4.8 : 2.5;
-      const isMoving = moveVec.lengthSq() > 0.001;
+      const isMoving =
+        !introCameraShotRef.current &&
+        !activeDialogueNpcIdRef.current &&
+        !isModalOpenRef.current &&
+        moveVec.lengthSq() > 0.001;
+
+      const prevFacing = playerFacing.current;
 
       if (isMoving && playerGroup) {
         moveVec.normalize();
         const nextPos = playerPos.current.clone().add(moveVec.clone().multiplyScalar(speed * delta));
 
-        // Soft room boundary collision clamp (-4.3 to 4.3 in x and z)
-        nextPos.x = Math.max(-4.3, Math.min(4.3, nextPos.x));
-        nextPos.z = Math.max(-4.3, Math.min(4.3, nextPos.z));
+        // Soft room boundary collision clamp (-3.9 to 3.9 in x and z so camera never clips walls)
+        nextPos.x = Math.max(-3.9, Math.min(3.9, nextPos.x));
+        nextPos.z = Math.max(-3.9, Math.min(3.9, nextPos.z));
         playerPos.current.copy(nextPos);
         playerGroup.position.copy(playerPos.current);
 
-        // Smoothly face movement direction (for 3rd person)
-        const targetRotation = Math.atan2(moveVec.x, moveVec.z) + Math.PI;
+        // Smoothly face movement direction (model front is +Z, so atan2(dx, dz) faces movement vector)
+        const targetRotation = Math.atan2(moveVec.x, moveVec.z);
         let diff = targetRotation - playerFacing.current;
         while (diff < -Math.PI) diff += Math.PI * 2;
         while (diff > Math.PI) diff -= Math.PI * 2;
-        playerFacing.current += diff * 12 * delta;
+        playerFacing.current += diff * Math.min(1, 10 * delta);
         playerGroup.rotation.y = playerFacing.current;
 
         // Footstep audio trigger
@@ -719,33 +809,219 @@ export const AdventureWorld: React.FC<AdventureWorldProps> = ({
           soundEngine.playFootstep();
           lastFootstepTime.current = currentTime;
         }
+      } else if (playerGroup) {
+        // When standing still: face speaking NPC during dialogue, or smoothly align with camera gaze
+        let desiredIdleYaw = cameraAngles.current.yaw;
+        if (activeDialogueNpcIdRef.current) {
+          const speakingNpc =
+            level.npcs.find((n) => n.id === activeDialogueNpcIdRef.current) || level.npcs[0];
+          if (speakingNpc) {
+            desiredIdleYaw = Math.atan2(
+              speakingNpc.position[0] - playerPos.current.x,
+              speakingNpc.position[2] - playerPos.current.z
+            );
+          }
+        } else if (introCameraShotRef.current === 'investigator_arrival' && level.npcs[0]) {
+          desiredIdleYaw = Math.atan2(
+            level.npcs[0].position[0] - playerPos.current.x,
+            level.npcs[0].position[2] - playerPos.current.z
+          );
+        }
+
+        let diff = desiredIdleYaw - playerFacing.current;
+        while (diff < -Math.PI) diff += Math.PI * 2;
+        while (diff > Math.PI) diff -= Math.PI * 2;
+        if (Math.abs(diff) > 0.01) {
+          playerFacing.current += diff * Math.min(1, 7.5 * delta);
+          playerGroup.rotation.y = playerFacing.current;
+        }
       }
+
+      let turnDelta = playerFacing.current - prevFacing;
+      while (turnDelta < -Math.PI) turnDelta += Math.PI * 2;
+      while (turnDelta > Math.PI) turnDelta -= Math.PI * 2;
+      const turnVelocity = turnDelta / Math.max(0.001, delta);
 
       // ---------------------------------------------------------------------
       // UPDATE 3D HUMAN CHARACTERS (ANATOMICAL HUMANOID SKELETON ANIMATIONS)
       // ---------------------------------------------------------------------
+      const activeIntroShot = introCameraShotRef.current;
+      const isNpcCurrentlySpeaking =
+        Boolean(isIntroNpcSpeakingRef.current) ||
+        Boolean(activeDialogueNpcIdRef.current && Math.sin(animTime.current * 0.9) <= 0.25);
+      const isPlayerSpeaking =
+        (activeIntroShot === 'investigator_arrival' && !isIntroNpcSpeakingRef.current) ||
+        Boolean(activeDialogueNpcIdRef.current && Math.sin(animTime.current * 0.9) > 0.25);
+      const isPlayerListening =
+        !isPlayerSpeaking &&
+        (Boolean(activeDialogueNpcIdRef.current) || Boolean(isIntroNpcSpeakingRef.current));
+
+      const isPlayerInspectingPhone =
+        curSettings.showPhoneInHand !== false &&
+        !isMoving &&
+        !activeDialogueNpcIdRef.current &&
+        (!activeIntroShot || activeIntroShot === 'investigator_arrival');
+
       if (humanPlayerInstanceRef.current) {
         humanPlayerInstanceRef.current.update(delta, currentTime, {
           isWalking: isMoving,
           isJogging,
+          isInspectingPhone: isPlayerInspectingPhone,
+          showPhoneInHand: curSettings.showPhoneInHand !== false,
+          cameraFacingMode: activeIntroShot === 'investigator_arrival' ? 'front' : 'behind',
+          isSpeaking: isPlayerSpeaking,
+          isListening: isPlayerListening && isNpcCurrentlySpeaking,
+          turnVelocity,
           speed,
+          expression: activeDialogueNpcIdRef.current ? 'thinking' : 'attentive',
         });
       }
 
       humanNpcInstancesRef.current.forEach((npcInstance, npcId) => {
-        const isSpeaking = activeDialogueNpcIdRef.current === npcId;
+        const isPrimaryDialogueNpc = activeDialogueNpcIdRef.current === npcId;
+        const isSpeaking =
+          (isPrimaryDialogueNpc && !isPlayerSpeaking) ||
+          (Boolean(isIntroNpcSpeakingRef.current) && npcId === level.npcs[0]?.id);
+        const npcGroupObj = npcGroupsRef.current.get(npcId);
+        const distToPlayer = npcGroupObj
+          ? Math.hypot(
+              npcGroupObj.position.x - playerPos.current.x,
+              npcGroupObj.position.z - playerPos.current.z
+            )
+          : 99;
+        const isListening =
+          !isSpeaking &&
+          (isPrimaryDialogueNpc ||
+            Boolean(activeDialogueNpcIdRef.current) ||
+            activeIntroShot === 'investigator_arrival' ||
+            distToPlayer < 2.2);
+
         npcInstance.update(delta, currentTime, {
           playerPos: playerPos.current,
           isSpeaking,
+          isListening,
+          expression: isSpeaking ? 'concerned' : isListening ? 'attentive' : 'thinking',
         });
       });
 
-      // Update Camera Position: Character POV (First-Person) or Over-the-Shoulder
-      if (curSettings.isFirstPerson) {
-        // CHARACTER POV: Player character body is completely hidden
+      // ---------------------------------------------------------------------
+      // PRE-INVESTIGATION OPENING STORY, DIALOGUE & GAMEPLAY CAMERA CHOREOGRAPHY
+      // ---------------------------------------------------------------------
+      if (activeIntroShot) {
+        // Show the 3D Investigator in the scene during Beat 4 ('investigator_arrival')
+        if (playerGroup) {
+          playerGroup.visible = activeIntroShot === 'investigator_arrival';
+        }
+
+        const npc = level.npcs[0];
+        const npcX = npc ? npc.position[0] : 0;
+        const npcY = npc ? npc.position[1] : 0;
+        const npcZ = npc ? npc.position[2] : -2.2;
+
+        const obj0 = level.objects[0];
+        const obj1 = level.objects[1] || obj0;
+        const obj0X = obj0 ? obj0.position[0] : 0.8;
+        const obj0Y = obj0 ? obj0.position[1] : 0.9;
+        const obj0Z = obj0 ? obj0.position[2] : -2.0;
+
+        const obj1X = obj1 ? obj1.position[0] : -1.2;
+        const obj1Y = obj1 ? obj1.position[1] : 0.9;
+        const obj1Z = obj1 ? obj1.position[2] : -2.0;
+
+        const driftX = curSettings.reducedMotion ? 0 : Math.sin(animTime.current * 0.55) * 0.14;
+        const driftY = curSettings.reducedMotion ? 0 : Math.cos(animTime.current * 0.45) * 0.03;
+
+        const desiredCamPos = new THREE.Vector3();
+        const desiredLookAt = new THREE.Vector3();
+        let desiredFov = 58;
+
+        if (activeIntroShot === 'character_medium') {
+          desiredCamPos.set(npcX * 0.45 + driftX, npcY + 1.54 + driftY, npcZ + 1.65);
+          desiredLookAt.set(npcX, npcY + 1.44, npcZ);
+          desiredFov = 54;
+        } else if (activeIntroShot === 'device_closeup') {
+          desiredCamPos.set(
+            obj0X * 0.55 + driftX * 0.6,
+            Math.max(1.22, obj0Y + 0.52) + driftY,
+            obj0Z + 1.25
+          );
+          desiredLookAt.set(obj0X * 0.68 + npcX * 0.32, Math.max(0.95, obj0Y + 0.22), obj0Z);
+          desiredFov = 48;
+        } else if (activeIntroShot === 'character_and_clue') {
+          desiredCamPos.set(driftX * 1.1, 1.66 + driftY, 1.95);
+          desiredLookAt.set((npcX + obj1X) * 0.42, Math.max(1.18, obj1Y + 0.35), (npcZ + obj1Z) * 0.45);
+          desiredFov = 58;
+        } else {
+          // 'investigator_arrival' — frames the 3D Investigator arriving in the scene looking toward the witness
+          desiredCamPos.set(
+            playerPos.current.x + 0.42 + driftX * 0.4,
+            playerPos.current.y + 1.56,
+            Math.min(4.2, playerPos.current.z + 1.55)
+          );
+          desiredLookAt.set(
+            playerPos.current.x * 0.55 + npcX * 0.45,
+            playerPos.current.y + 1.36,
+            playerPos.current.z * 0.4 + npcZ * 0.6
+          );
+          desiredFov = 58;
+        }
+
+        // Strict room clamping so camera never clips into walls
+        desiredCamPos.x = THREE.MathUtils.clamp(desiredCamPos.x, -4.1, 4.1);
+        desiredCamPos.z = THREE.MathUtils.clamp(desiredCamPos.z, -4.1, 4.2);
+        desiredCamPos.y = THREE.MathUtils.clamp(desiredCamPos.y, 0.85, 2.8);
+
+        if (curSettings.reducedMotion) {
+          camera.position.copy(desiredCamPos);
+          cutsceneLookTargetRef.current.copy(desiredLookAt);
+          camera.fov = desiredFov;
+        } else {
+          const lerpSpeed = activeIntroShot === 'investigator_arrival' ? 4.2 : 2.6;
+          camera.position.lerp(desiredCamPos, Math.min(1, delta * lerpSpeed));
+          cutsceneLookTargetRef.current.lerp(desiredLookAt, Math.min(1, delta * (lerpSpeed + 0.8)));
+          camera.fov = THREE.MathUtils.lerp(camera.fov, desiredFov, Math.min(1, delta * 3.5));
+        }
+        camera.updateProjectionMatrix();
+        camera.lookAt(cutsceneLookTargetRef.current);
+
+        // Keep player cameraAngles synced with cutscene look direction so gameplay handoff is seamless
+        const handoffDir = cutsceneLookTargetRef.current.clone().sub(camera.position).normalize();
+        cameraAngles.current.yaw = Math.atan2(handoffDir.x, handoffDir.z);
+        cameraAngles.current.pitch = THREE.MathUtils.clamp(Math.asin(handoffDir.y), -0.35, 0.35);
+      } else if (activeDialogueNpcIdRef.current) {
+        // DIALOGUE TWO-SHOT / OVER-THE-SHOULDER FRAMING: Both the 3D Investigator and 3D NPC remain visibly present
+        if (playerGroup) playerGroup.visible = true;
+        const dialogueNpc =
+          level.npcs.find((n) => n.id === activeDialogueNpcIdRef.current) || level.npcs[0];
+        const npcWorldPos = dialogueNpc
+          ? new THREE.Vector3(dialogueNpc.position[0], dialogueNpc.position[1], dialogueNpc.position[2])
+          : new THREE.Vector3(0, 0, -2.0);
+
+        const toNpc = npcWorldPos.clone().sub(playerPos.current);
+        toNpc.y = 0;
+        if (toNpc.lengthSq() < 0.01) toNpc.set(0, 0, -1);
+        toNpc.normalize();
+        const rightOfLine = new THREE.Vector3(-toNpc.z, 0, toNpc.x);
+
+        const desiredDialogueCam = playerPos.current
+          .clone()
+          .sub(toNpc.clone().multiplyScalar(1.35))
+          .add(rightOfLine.clone().multiplyScalar(0.58));
+        desiredDialogueCam.y = playerPos.current.y + 1.54;
+        desiredDialogueCam.x = THREE.MathUtils.clamp(desiredDialogueCam.x, -4.2, 4.2);
+        desiredDialogueCam.z = THREE.MathUtils.clamp(desiredDialogueCam.z, -4.2, 4.2);
+
+        const dialogueLookTarget = playerPos.current
+          .clone()
+          .lerp(npcWorldPos, 0.65)
+          .add(new THREE.Vector3(0, 1.44, 0));
+
+        camera.position.lerp(desiredDialogueCam, Math.min(1, 8 * delta));
+        camera.lookAt(dialogueLookTarget);
+      } else if (curSettings.isFirstPerson) {
+        // Optional First-Person POV (Toggled via V key)
         if (playerGroup) playerGroup.visible = false;
 
-        // Subtle realistic head-bobbing while walking or jogging
         const bobFrequency = isJogging ? 13 : 8.5;
         const bobIntensityY = isJogging ? 0.038 : 0.022;
         const bobIntensityX = isJogging ? 0.018 : 0.01;
@@ -761,7 +1037,7 @@ export const AdventureWorld: React.FC<AdventureWorldProps> = ({
         const clampedCamZ = THREE.MathUtils.clamp(playerPos.current.z, -4.3, 4.3);
         camera.position.set(
           clampedCamX,
-          playerPos.current.y + 1.62 + headBobY, // Realistic human eye height
+          playerPos.current.y + 1.62 + headBobY,
           clampedCamZ
         );
 
@@ -773,10 +1049,11 @@ export const AdventureWorld: React.FC<AdventureWorldProps> = ({
 
         camera.lookAt(camera.position.clone().add(lookDir));
       } else {
-        // Third Person Over-the-Shoulder (Alternative)
+        // DEFAULT GROUNDED THIRD-PERSON INVESTIGATOR VIEW:
+        // Shows the fully modeled 3D human investigator in the active playable scene
         if (playerGroup) playerGroup.visible = true;
-        const camDist = 2.2; // Tighter interior camera distance
-        const shoulderOffset = 0.32;
+        const camDist = 1.65;
+        const shoulderOffset = 0.38;
         const camHeight = 1.48;
 
         const forwardCam = new THREE.Vector3(
@@ -790,27 +1067,39 @@ export const AdventureWorld: React.FC<AdventureWorldProps> = ({
           Math.sin(cameraAngles.current.yaw)
         );
 
-        const targetLookAt = playerPos.current.clone().add(new THREE.Vector3(0, camHeight, 0));
-        targetLookAt.add(rightCam.clone().multiplyScalar(shoulderOffset * 0.5));
+        const lookAheadPoint = playerPos.current
+          .clone()
+          .add(forwardCam.clone().multiplyScalar(1.35))
+          .add(rightCam.clone().multiplyScalar(shoulderOffset * 0.35))
+          .add(new THREE.Vector3(0, camHeight + Math.sin(cameraAngles.current.pitch) * 1.1, 0));
 
-        const camPos = targetLookAt.clone()
+        const camPos = playerPos.current
+          .clone()
           .sub(forwardCam.clone().multiplyScalar(camDist * Math.cos(cameraAngles.current.pitch)))
           .add(rightCam.clone().multiplyScalar(shoulderOffset));
-        camPos.y += Math.sin(cameraAngles.current.pitch) * camDist + 0.25;
+        camPos.y = playerPos.current.y + camHeight - Math.sin(cameraAngles.current.pitch) * 0.75 + 0.12;
 
-        // Strict room boundary clamping: keep third person camera strictly inside the room
-        camPos.x = THREE.MathUtils.clamp(camPos.x, -4.3, 4.3);
-        camPos.z = THREE.MathUtils.clamp(camPos.z, -4.3, 4.3);
-        camPos.y = THREE.MathUtils.clamp(camPos.y, 0.4, 3.2);
+        // Room boundary clamping with minimum clearance from player mesh so it never clips the character
+        camPos.x = THREE.MathUtils.clamp(camPos.x, -4.35, 4.35);
+        camPos.z = THREE.MathUtils.clamp(camPos.z, -4.35, 4.35);
+        camPos.y = THREE.MathUtils.clamp(camPos.y, 0.75, 3.1);
 
-        camera.position.lerp(camPos, 12 * delta);
-        camera.lookAt(targetLookAt);
+        const planarCamDist = Math.hypot(
+          camPos.x - playerPos.current.x,
+          camPos.z - playerPos.current.z
+        );
+        if (planarCamDist < 0.75) {
+          camPos.addScaledVector(rightCam, 0.75 - planarCamDist);
+        }
+
+        camera.position.lerp(camPos, Math.min(1, 14 * delta));
+        camera.lookAt(lookAheadPoint);
       }
 
       // ---------------------------------------------------------------------
       // BRIEF CAMERA FOCUS ANIMATION WHEN PRESSING 'E'
       // ---------------------------------------------------------------------
-      if (focusAnimRef.current) {
+      if (!activeIntroShot && focusAnimRef.current) {
         const anim = focusAnimRef.current;
         const elapsed = currentTime - anim.startTime;
         const toFocus = anim.focusWorldPos.clone().sub(camera.position);
@@ -836,7 +1125,7 @@ export const AdventureWorld: React.FC<AdventureWorldProps> = ({
           focusAnimRef.current = null;
           onInteractRef.current(completedTarget);
         }
-      } else if (!isModalOpenRef.current && Math.abs(camera.fov - 65) > 0.1) {
+      } else if (!activeIntroShot && !isModalOpenRef.current && Math.abs(camera.fov - 65) > 0.1) {
         camera.fov = THREE.MathUtils.lerp(camera.fov, 65, Math.min(1, 10 * delta));
         camera.updateProjectionMatrix();
       }
@@ -947,37 +1236,28 @@ export const AdventureWorld: React.FC<AdventureWorldProps> = ({
       });
 
       // ---------------------------------------------------------------------
-      // IN-HAND EVIDENCE PHONE VIEWMODEL UPDATE (Toggle with P Key)
+      // IN-HAND EVIDENCE PHONE VIEWMODEL UPDATE (Only used when in 1st-person POV)
+      // In default 3rd-person view, the 3D Investigator holds the phone directly in their right hand bone
       // ---------------------------------------------------------------------
       if (phoneViewmodelRef.current) {
-        const shouldShowPhone = curSettings.showPhoneInHand !== false;
-        const motionScale = curSettings.reducedMotion ? 0 : 1;
-        const phoneBob = isMoving
-          ? Math.sin(animTime.current * (isJogging ? 13 : 8.5)) * 0.004 * motionScale
-          : Math.sin(animTime.current * 1.5) * 0.0012 * motionScale;
-        const phoneSway = isMoving
-          ? Math.cos(animTime.current * (isJogging ? 6.5 : 4.25)) * 0.003 * motionScale
-          : 0;
+        const shouldShowFirstPersonPhone =
+          curSettings.isFirstPerson &&
+          curSettings.showPhoneInHand !== false &&
+          !activeIntroShot &&
+          !activeDialogueNpcIdRef.current;
 
-        const targetY = shouldShowPhone ? -0.19 + phoneBob : -0.52;
-        if (curSettings.reducedMotion) {
-          phoneViewmodelRef.current.visible = shouldShowPhone;
-          phoneViewmodelRef.current.position.set(0.24, targetY, -0.42);
-        } else {
-          if (shouldShowPhone) {
-            phoneViewmodelRef.current.visible = true;
-          }
-          const nextY = THREE.MathUtils.lerp(
-            phoneViewmodelRef.current.position.y,
-            targetY,
-            Math.min(1, delta * 14)
-          );
-          phoneViewmodelRef.current.position.set(0.24 + phoneSway, nextY, -0.42);
-          if (!shouldShowPhone && Math.abs(nextY - targetY) < 0.02) {
-            phoneViewmodelRef.current.visible = false;
-          }
+        phoneViewmodelRef.current.visible = shouldShowFirstPersonPhone;
+        if (shouldShowFirstPersonPhone) {
+          const motionScale = curSettings.reducedMotion ? 0 : 1;
+          const phoneBob = isMoving
+            ? Math.sin(animTime.current * (isJogging ? 13 : 8.5)) * 0.004 * motionScale
+            : Math.sin(animTime.current * 1.5) * 0.0012 * motionScale;
+          const phoneSway = isMoving
+            ? Math.cos(animTime.current * (isJogging ? 6.5 : 4.25)) * 0.003 * motionScale
+            : 0;
+          phoneViewmodelRef.current.position.set(0.24 + phoneSway, -0.19 + phoneBob, -0.42);
+          phoneViewmodelRef.current.rotation.set(-0.14, -0.24, 0.08);
         }
-        phoneViewmodelRef.current.rotation.set(-0.14, -0.24, 0.08);
       }
 
       // ---------------------------------------------------------------------
@@ -1132,12 +1412,16 @@ export const AdventureWorld: React.FC<AdventureWorldProps> = ({
         isModalOpen ? 'cursor-auto' : 'cursor-none'
       }`}
     >
-      <div ref={containerRef} className={`w-full h-full ${isModalOpen ? 'cursor-auto' : 'cursor-none'}`} />
+      <div
+        ref={containerRef}
+        tabIndex={-1}
+        className={`w-full h-full outline-none ${isModalOpen ? 'cursor-auto' : 'cursor-none'}`}
+      />
 
       {/* Proximity-Based Contextual Pop-Up (Pops up when within approx 30cm of the person or object) */}
       <div className="absolute inset-0 pointer-events-none z-15 overflow-hidden">
         {/* Single Prioritized Contextual Prompt Positioned Somewhat at the Bottom */}
-        {primaryMarker && (
+        {primaryMarker && !isModalOpen && !introCameraShot && !activeDialogueNpcId && (
           <div
             key={primaryMarker.id}
             style={{
@@ -2148,17 +2432,11 @@ function buildPhotorealisticEnvironment(scene: THREE.Scene, setting: 'apartment'
 function createPlayerCharacter(): HumanCharacterInstance {
   return createHumanCharacter({
     id: 'player_detective',
-    name: 'Lead Investigator',
-    skinTone: 'warm',
-    skinHex: '#e2b498',
-    hairHex: '#1c1917',
-    irisHex: '#2b394a',
-    jacketHex: '#1e293b',
-    innerShirtHex: '#f1f5f9',
-    trousersHex: '#0f172a',
-    shoesHex: '#18181b',
+    name: 'Detective Rowan Vance',
+    archetype: 'investigator',
     style: 'investigator_coat',
     isNpc: false,
+    hasBeard: false,
   });
 }
 
@@ -2167,15 +2445,6 @@ function createNpcCharacter(npc: NpcDef): HumanCharacterInstance {
     id: npc.id,
     name: npc.name,
     role: npc.role,
-    skinTone: 'warm',
-    skinHex: '#e6ba9d',
-    hairHex: '#1f1712',
-    irisHex: '#3b2314',
-    jacketHex: npc.jacketColor || '#2563eb',
-    innerShirtHex: '#f8fafc',
-    trousersHex: '#1e293b',
-    shoesHex: '#0284c7',
-    style: 'casual_everyday',
     isNpc: true,
   });
 }

@@ -1,33 +1,335 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import * as THREE from 'three';
+import {
+  createHumanCharacter,
+  HumanCharacterInstance,
+  CharacterArchetypeId,
+  CHARACTER_ARCHETYPE_CATALOG,
+} from '../3d/HumanCharacterBuilder';
 import {
   User,
   Users,
   Compass,
   Smartphone,
-  Eye,
   X,
   Search,
-  Sparkles,
-  Layers,
-  ChevronRight,
   Shield,
-  Laptop,
-  Maximize2,
   CheckCircle2,
-  Palette,
   Camera,
 } from 'lucide-react';
+
+export type DossierAnimationPose =
+  | 'phone'
+  | 'idle'
+  | 'walking'
+  | 'turning'
+  | 'listening'
+  | 'speaking';
+
+interface Character3DPreviewStageProps {
+  archetype: CharacterArchetypeId;
+  selectedPose: DossierAnimationPose;
+  selectedExpression: 'attentive' | 'concerned' | 'thinking' | 'relieved';
+  isInvestigator?: boolean;
+  viewAngle?: 'front' | 'threeQuarter';
+}
+
+const Character3DPreviewStage: React.FC<Character3DPreviewStageProps> = ({
+  archetype,
+  selectedPose,
+  selectedExpression,
+  isInvestigator = false,
+  viewAngle = 'front',
+}) => {
+  const mountRef = useRef<HTMLDivElement>(null);
+  const poseRef = useRef(selectedPose);
+  const exprRef = useRef(selectedExpression);
+  const viewAngleRef = useRef(viewAngle);
+  const yawOffsetRef = useRef(viewAngle === 'threeQuarter' ? -0.34 : 0);
+  const isDraggingRef = useRef(false);
+  const userHasDraggedRef = useRef(false);
+  const lastXRef = useRef(0);
+
+  useEffect(() => {
+    poseRef.current = selectedPose;
+  }, [selectedPose]);
+
+  useEffect(() => {
+    exprRef.current = selectedExpression;
+  }, [selectedExpression]);
+
+  useEffect(() => {
+    viewAngleRef.current = viewAngle;
+    userHasDraggedRef.current = false;
+    yawOffsetRef.current = viewAngle === 'threeQuarter' ? -0.34 : 0;
+  }, [viewAngle]);
+
+  useEffect(() => {
+    const container = mountRef.current;
+    if (!container) return;
+
+    const width = container.clientWidth || 440;
+    const height = container.clientHeight || 360;
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(34, width / height, 0.1, 20);
+    camera.position.set(0, 1.28, 2.70);
+    camera.lookAt(0, 1.18, 0);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setSize(width, height);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.14;
+    container.innerHTML = '';
+    container.appendChild(renderer.domElement);
+
+    const hemiLight = new THREE.HemisphereLight(0xdbeafe, 0x1e293b, 1.18);
+    scene.add(hemiLight);
+
+    const keyLight = new THREE.DirectionalLight(0xfff4e0, 1.9);
+    keyLight.position.set(1.8, 3.2, 2.4);
+    keyLight.castShadow = true;
+    scene.add(keyLight);
+
+    const rimLight = new THREE.DirectionalLight(0x38bdf8, 0.88);
+    rimLight.position.set(-2.2, 2.1, -1.8);
+    scene.add(rimLight);
+
+    const fillLight = new THREE.PointLight(0xf59e0b, 0.58, 5);
+    fillLight.position.set(-1.3, 1.2, 1.6);
+    scene.add(fillLight);
+
+    const floorGeo = new THREE.CircleGeometry(0.75, 48);
+    const floorMat = new THREE.MeshStandardMaterial({
+      color: 0x0b1324,
+      roughness: 0.85,
+      metalness: 0.15,
+    });
+    const floorMesh = new THREE.Mesh(floorGeo, floorMat);
+    floorMesh.rotation.x = -Math.PI / 2;
+    floorMesh.receiveShadow = true;
+    scene.add(floorMesh);
+
+    const ringGeo = new THREE.RingGeometry(0.68, 0.72, 48);
+    const ringMat = new THREE.MeshBasicMaterial({
+      color: 0x38bdf8,
+      transparent: true,
+      opacity: 0.32,
+      side: THREE.DoubleSide,
+    });
+    const ringMesh = new THREE.Mesh(ringGeo, ringMat);
+    ringMesh.rotation.x = -Math.PI / 2;
+    ringMesh.position.y = 0.003;
+    scene.add(ringMesh);
+
+    const profile = CHARACTER_ARCHETYPE_CATALOG[archetype] || CHARACTER_ARCHETYPE_CATALOG.investigator;
+    const characterRig: HumanCharacterInstance = createHumanCharacter({
+      id: `dossier_${archetype}`,
+      name: profile.displayName,
+      role: profile.roleTitle,
+      archetype,
+      isNpc: !isInvestigator,
+    });
+    scene.add(characterRig.group);
+
+    let frameId = 0;
+    const clock = new THREE.Clock();
+
+    const animate = () => {
+      frameId = requestAnimationFrame(animate);
+      const dt = Math.min(clock.getDelta(), 0.05);
+      const elapsed = clock.getElapsedTime();
+
+      const pose = poseRef.current;
+      const expr = exprRef.current;
+
+      const isWalking = pose === 'walking';
+      const isPhone = pose === 'phone';
+      const isTurning = pose === 'turning';
+      const isListening = pose === 'listening';
+      const isSpeaking = pose === 'speaking';
+
+      const turnVel = isTurning
+        ? Math.cos(elapsed * 1.65) * 1.45
+        : !isDraggingRef.current && !userHasDraggedRef.current
+        ? Math.cos(elapsed * 0.45) * 0.04
+        : 0;
+
+      if (!isDraggingRef.current && !userHasDraggedRef.current) {
+        const baseYaw = viewAngleRef.current === 'threeQuarter' ? -0.34 : 0;
+        if (isTurning) {
+          yawOffsetRef.current = baseYaw + Math.sin(elapsed * 1.65) * 0.52;
+        } else {
+          yawOffsetRef.current = baseYaw + Math.sin(elapsed * 0.45) * 0.06;
+        }
+      }
+      characterRig.group.rotation.y = yawOffsetRef.current;
+
+      characterRig.update(dt, elapsed, {
+        isWalking,
+        isJogging: false,
+        isInspectingPhone: isPhone,
+        showPhoneInHand: isInvestigator || isPhone,
+        cameraFacingMode: 'front',
+        isSpeaking,
+        isListening,
+        turnVelocity: turnVel,
+        speed: isWalking ? 2.8 : 0,
+        expression: expr,
+      });
+
+      renderer.render(scene, camera);
+    };
+    animate();
+
+    const handleResize = () => {
+      if (!container) return;
+      const w = container.clientWidth || 440;
+      const h = container.clientHeight || 360;
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+      renderer.setSize(w, h);
+    };
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      cancelAnimationFrame(frameId);
+      window.removeEventListener('resize', handleResize);
+      renderer.dispose();
+    };
+  }, [archetype, isInvestigator]);
+
+  return (
+    <div
+      ref={mountRef}
+      onPointerDown={(e) => {
+        isDraggingRef.current = true;
+        userHasDraggedRef.current = true;
+        lastXRef.current = e.clientX;
+      }}
+      onPointerMove={(e) => {
+        if (!isDraggingRef.current) return;
+        const dx = e.clientX - lastXRef.current;
+        lastXRef.current = e.clientX;
+        yawOffsetRef.current += dx * 0.012;
+      }}
+      onPointerUp={() => {
+        isDraggingRef.current = false;
+      }}
+      onPointerLeave={() => {
+        isDraggingRef.current = false;
+      }}
+      className="relative z-10 my-2 w-full h-[350px] flex items-center justify-center cursor-grab active:cursor-grabbing"
+      title="Drag horizontally to rotate the 3D character model 360°"
+    />
+  );
+};
 
 interface RealisticGameGraphicsDossierProps {
   onClose: () => void;
 }
 
+const SUPPORTING_CAST_PROFILES: Array<{
+  archetype: CharacterArchetypeId;
+  name: string;
+  role: string;
+  age: string;
+  heightLabel: string;
+  setting: string;
+  clothing: string;
+  personality: string;
+  expression: string;
+  avatarColor: string;
+  badge: string;
+}> = [
+  {
+    archetype: 'alex',
+    name: 'Alex Rivera',
+    role: 'Freelance Graphic Designer & Tenant',
+    age: '24 years old',
+    heightLabel: '176 cm',
+    setting: 'Sunset Heights Apartment 4B',
+    clothing: 'Cobalt textured knit sweater over ivory crew tee, dark indigo denim, slate slip-ons',
+    personality:
+      'Creative illustrator waiting on replacement studio equipment, momentarily rattled by a fake courier customs fee.',
+    expression: 'Puzzled and earnest, holding phone messages for verification.',
+    avatarColor: '#2563EB',
+    badge: 'Cases 01 · 05 · 09 · 10',
+  },
+  {
+    archetype: 'maya',
+    name: 'Maya Chen',
+    role: 'University Architecture Student',
+    age: '20 years old',
+    heightLabel: '165 cm',
+    setting: 'North Quad Study Commons',
+    clothing: 'Olive fleece pullover hoodie, wireframe glasses, canvas academic daypack, dark jeans',
+    personality:
+      'Sharp undergraduate juggling midterms and scholarship renewals, targeted by urgent portal and internship notices.',
+    expression: 'Alert and inquisitive, cross-checking portal URLs before signing in.',
+    avatarColor: '#059669',
+    badge: 'Cases 02 · 06 · 10',
+  },
+  {
+    archetype: 'marcus',
+    name: 'Marcus Vance',
+    role: 'Roastery Café Owner & Seller',
+    age: '35 years old',
+    heightLabel: '182 cm',
+    setting: 'Roast & Bean Neighborhood Café',
+    clothing: 'Caramel duck-canvas utility jacket with chest pockets, charcoal henley, dark work trousers',
+    personality:
+      'Grounded small-business owner selling vintage camera gear and managing supplier invoices under time pressure.',
+    expression: 'Measured and skeptical, verifying bank clearance before releasing goods.',
+    avatarColor: '#D97706',
+    badge: 'Cases 03 · 07 · 10',
+  },
+  {
+    archetype: 'priya',
+    name: 'Priya Sharma',
+    role: 'Senior Systems Engineer',
+    age: '29 years old',
+    heightLabel: '169 cm',
+    setting: 'Veridian Glass Office Suite',
+    clothing: 'Tailored navy wool blazer over heather-grey ribbed turtleneck, charcoal slacks, silver studs',
+    personality:
+      'Detail-oriented infrastructure lead auditing wire approvals, cloud MFA prompts, and vendor routing changes.',
+    expression: 'Composed and analytical, comparing cryptographic headers and callback records.',
+    avatarColor: '#7C3AED',
+    badge: 'Cases 04 · 08 · 10',
+  },
+  {
+    archetype: 'david',
+    name: 'David Chen',
+    role: 'IT Security Liaison & Coordinator',
+    age: '38 years old',
+    heightLabel: '177 cm',
+    setting: 'Cybersecurity Operations Hub',
+    clothing: 'Charcoal structured zip overshirt, half-rim glasses, cyan security ID badge lanyard',
+    personality:
+      'Veteran incident-response specialist assisting with domain takedowns, header forensics, and institutional advisories.',
+    expression: 'Calm, supportive, and procedurally thorough.',
+    avatarColor: '#0891B2',
+    badge: 'Incident Support',
+  },
+];
+
 export const RealisticGameGraphicsDossier: React.FC<RealisticGameGraphicsDossierProps> = ({ onClose }) => {
   const [activeTab, setActiveTab] = useState<'protagonist' | 'supporting' | 'environments' | 'evidence'>('protagonist');
   const [selectedExpression, setSelectedExpression] = useState<'attentive' | 'concerned' | 'thinking' | 'relieved'>('attentive');
-  const [selectedPose, setSelectedPose] = useState<'idle' | 'phone' | 'laptop' | 'walking' | 'discovery'>('phone');
+  const [selectedPose, setSelectedPose] = useState<DossierAnimationPose>('phone');
+  const [investigatorViewAngle, setInvestigatorViewAngle] = useState<'front' | 'threeQuarter'>('front');
+  const [selectedCastArchetype, setSelectedCastArchetype] = useState<CharacterArchetypeId>('alex');
+  const [selectedCastPose, setSelectedCastPose] = useState<DossierAnimationPose>('listening');
   const [selectedEnvironment, setSelectedEnvironment] = useState<'apartment' | 'campus' | 'cafe' | 'office'>('apartment');
   const [magnifierActive, setMagnifierActive] = useState<boolean>(true);
+
+  const activeCastProfile =
+    SUPPORTING_CAST_PROFILES.find((c) => c.archetype === selectedCastArchetype) ||
+    SUPPORTING_CAST_PROFILES[0];
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/95 backdrop-blur-xl animate-fade-in pointer-events-auto select-none">
@@ -44,7 +346,7 @@ export const RealisticGameGraphicsDossier: React.FC<RealisticGameGraphicsDossier
                   PRODUCTION ASSET DOSSIER
                 </span>
                 <span className="text-[10px] font-mono bg-white/10 text-white/80 px-2 py-0.5 rounded-full">
-                  GROUNDED 3D REALISM
+                  CINEMATIC 3D CRIME-DRAMA REALISM
                 </span>
               </div>
               <h2 className="font-heading font-black text-lg sm:text-xl text-white leading-tight">
@@ -133,9 +435,9 @@ export const RealisticGameGraphicsDossier: React.FC<RealisticGameGraphicsDossier
                   <span className="font-mono text-[10px] text-[#00F0FF] uppercase tracking-wider font-bold block">
                     Character Identity
                   </span>
-                  <h3 className="font-heading font-black text-base text-white">The Cyber Investigator</h3>
+                  <h3 className="font-heading font-black text-base text-white">Detective Rowan Vance</h3>
                   <p className="text-xs text-[#94A3B8] leading-relaxed">
-                    Relatable young adult digital safety researcher. Curious, observant, and calm. Expressive through posture and analytical gaze rather than exaggerated cartoon gestures.
+                    Lead Cyber & Financial Fraud Investigator. Classic cinematic leading-man look: broad, refined facial contours, 90s textured curtain fringe cut with soft rounded volume on top, forward-flowing piecey feathered locks across the forehead, tapered sides in warm golden sandy dirty-blonde, clear light-blue eyes, expressive brows, and a confident, thoughtful gaze.
                   </p>
                 </div>
 
@@ -143,9 +445,9 @@ export const RealisticGameGraphicsDossier: React.FC<RealisticGameGraphicsDossier
                   <span className="font-mono text-[10px] text-amber-400 uppercase tracking-wider font-bold block">
                     Wardrobe & Silhouette
                   </span>
-                  <h3 className="font-heading font-black text-base text-white">Practical Contemporary Wear</h3>
+                  <h3 className="font-heading font-black text-base text-white">Tailored Field Trench & Knit</h3>
                   <p className="text-xs text-[#94A3B8] leading-relaxed">
-                    Charcoal durable utility overshirt, muted heather-grey crewneck knit, dark tailored chinos, neutral leather sneakers, minimal smartwatch, and compact crossbody tech sling.
+                    Charcoal wool-blend field jacket with woven twill texture and natural drapery folds over a slate-taupe crewneck shirt, dark chinos, leather satchel, and field watch.
                   </p>
                 </div>
 
@@ -153,9 +455,9 @@ export const RealisticGameGraphicsDossier: React.FC<RealisticGameGraphicsDossier
                   <span className="font-mono text-[10px] text-emerald-400 uppercase tracking-wider font-bold block">
                     Art Consistency Rules
                   </span>
-                  <h3 className="font-heading font-black text-base text-white">Photorealistic Fidelity</h3>
+                  <h3 className="font-heading font-black text-base text-white">Unified Across Gameplay & Dossier</h3>
                   <p className="text-xs text-[#94A3B8] leading-relaxed">
-                    Preserves identical facial proportions, natural hair textures, soft studio ambient rim light, and neutral color grading across all camera perspectives (1st-person & 3rd-person).
+                    Uses the exact same 3D humanoid rig, facial bone sculpt, PBR skin subsurface sheen, and cloth fold geometry across active scenes, cutscenes, and dossier inspection.
                   </p>
                 </div>
               </div>
@@ -168,117 +470,49 @@ export const RealisticGameGraphicsDossier: React.FC<RealisticGameGraphicsDossier
                   <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-slate-800/40 via-[#070D1E] to-[#040812] pointer-events-none" />
 
                   {/* Character State Indicator */}
-                  <div className="relative z-10 w-full flex items-center justify-between">
+                  <div className="relative z-10 w-full flex items-center justify-between gap-2">
                     <span className="px-3 py-1 rounded-full bg-black/60 border border-white/15 font-mono text-xs text-white/90">
-                      View: 3/4 Perspective · Pose: {selectedPose.toUpperCase()}
+                      INVESTIGATOR LOADOUT · CASE PHONE
                     </span>
-                    <span className="font-mono text-xs text-amber-400 font-bold">
-                      Mood: {selectedExpression.toUpperCase()}
-                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => setInvestigatorViewAngle('front')}
+                        className={`px-2.5 py-1 rounded-lg font-mono text-[10px] font-bold border transition-all cursor-pointer ${
+                          investigatorViewAngle === 'front'
+                            ? 'bg-[#00F0FF]/20 border-[#00F0FF] text-white'
+                            : 'bg-black/50 border-white/15 text-[#94A3B8] hover:text-white'
+                        }`}
+                      >
+                        Front View
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setInvestigatorViewAngle('threeQuarter')}
+                        className={`px-2.5 py-1 rounded-lg font-mono text-[10px] font-bold border transition-all cursor-pointer ${
+                          investigatorViewAngle === 'threeQuarter'
+                            ? 'bg-[#00F0FF]/20 border-[#00F0FF] text-white'
+                            : 'bg-black/50 border-white/15 text-[#94A3B8] hover:text-white'
+                        }`}
+                      >
+                        3/4 View
+                      </button>
+                    </div>
                   </div>
 
-                  {/* Character Anatomical Figure SVG Illustration (Realistic proportions, charcoal jacket, tech sling) */}
-                  <div className="relative z-10 my-4 flex items-center justify-center">
-                    <svg viewBox="0 0 320 460" className="w-64 sm:w-80 h-auto drop-shadow-[0_20px_35px_rgba(0,0,0,0.8)]">
-                      {/* Ground Contact Shadow */}
-                      <ellipse cx="160" cy="445" rx="90" ry="14" fill="rgba(0,0,0,0.6)" filter="blur(4px)" />
-
-                      {/* Legs / Chinos */}
-                      <path d="M135 240 L125 410 L145 415 L155 270 Z" fill="#1E293B" stroke="#0F172A" strokeWidth="2" />
-                      <path d="M165 270 L175 415 L195 410 L185 240 Z" fill="#1E293B" stroke="#0F172A" strokeWidth="2" />
-
-                      {/* Clean Neutral Sneakers */}
-                      <path d="M115 410 C115 410, 120 428, 145 428 C155 428, 155 415, 145 415 Z" fill="#F1F5F9" />
-                      <path d="M175 415 C165 415, 165 428, 175 428 C200 428, 205 410, 205 410 Z" fill="#F1F5F9" />
-                      <line x1="120" y1="422" x2="148" y2="422" stroke="#CBD5E1" strokeWidth="2" />
-                      <line x1="172" y1="422" x2="200" y2="422" stroke="#CBD5E1" strokeWidth="2" />
-
-                      {/* Torso: Heather Crewneck base */}
-                      <path d="M125 125 Q160 135 195 125 L195 245 Q160 252 125 245 Z" fill="#475569" />
-
-                      {/* Charcoal Utility Overshirt / Jacket */}
-                      <path d="M115 120 L135 250 L115 250 L100 135 Z" fill="#1E293B" stroke="#0F172A" strokeWidth="1.5" />
-                      <path d="M205 120 L220 135 L205 250 L185 250 Z" fill="#1E293B" stroke="#0F172A" strokeWidth="1.5" />
-
-                      {/* Tech Sling Strap across chest */}
-                      <path d="M115 120 L205 245 L195 252 L105 125 Z" fill="#090E17" opacity="0.95" />
-                      <rect x="150" y="175" width="22" height="12" rx="3" fill="#64748B" />
-
-                      {/* Left Arm & Posed Hand */}
-                      {selectedPose === 'phone' ? (
-                        <>
-                          {/* Arm holding phone */}
-                          <path d="M102 135 Q90 180 130 195 L145 185 Q115 170 118 135 Z" fill="#1E293B" />
-                          <circle cx="148" cy="188" r="8" fill="#D4A373" />
-                          {/* Smartphone with glowing display */}
-                          <rect x="142" y="160" width="22" height="40" rx="4" fill="#0F172A" stroke="#94A3B8" strokeWidth="1.5" transform="rotate(-15 142 160)" />
-                          <rect x="145" y="164" width="16" height="32" rx="2" fill="#00F0FF" opacity="0.85" transform="rotate(-15 142 160)" />
-                        </>
-                      ) : (
-                        <path d="M102 135 Q85 190 98 250 L112 248 Q102 195 118 135 Z" fill="#1E293B" />
-                      )}
-
-                      {/* Right Arm */}
-                      <path d="M218 135 Q235 190 222 250 L208 248 Q218 195 202 135 Z" fill="#1E293B" />
-                      <circle cx="218" cy="254" r="7" fill="#D4A373" />
-
-                      {/* Neck & Head */}
-                      <path d="M150 115 L150 95 L170 95 L170 115 Z" fill="#D4A373" />
-
-                      {/* Head Oval & Jaw */}
-                      <ellipse cx="160" cy="75" rx="28" ry="34" fill="#D4A373" />
-
-                      {/* Natural Hair - Dark contemporary crop with soft texture */}
-                      <path d="M130 65 Q160 32 190 65 Q185 45 160 42 Q135 45 130 65 Z" fill="#1C1917" />
-                      <path d="M130 65 Q128 90 134 95 Q136 75 140 68 Z" fill="#1C1917" />
-                      <path d="M190 65 Q192 90 186 95 Q184 75 180 68 Z" fill="#1C1917" />
-
-                      {/* Natural Facial Features tailored to selectedExpression */}
-                      {/* Eyes & Brows */}
-                      {selectedExpression === 'thinking' ? (
-                        <>
-                          <line x1="145" y1="68" x2="155" y2="67" stroke="#1C1917" strokeWidth="2.5" />
-                          <line x1="165" y1="67" x2="175" y2="70" stroke="#1C1917" strokeWidth="2.5" />
-                          <circle cx="150" cy="74" r="2.5" fill="#1C1917" />
-                          <circle cx="170" cy="74" r="2.5" fill="#1C1917" />
-                          <line x1="154" y1="92" x2="166" y2="90" stroke="#9A3412" strokeWidth="2" />
-                        </>
-                      ) : selectedExpression === 'concerned' ? (
-                        <>
-                          <line x1="145" y1="67" x2="155" y2="70" stroke="#1C1917" strokeWidth="2.5" />
-                          <line x1="165" y1="70" x2="175" y2="67" stroke="#1C1917" strokeWidth="2.5" />
-                          <circle cx="150" cy="74" r="3" fill="#1C1917" />
-                          <circle cx="170" cy="74" r="3" fill="#1C1917" />
-                          <ellipse cx="160" cy="93" rx="4" ry="3" fill="#9A3412" />
-                        </>
-                      ) : selectedExpression === 'relieved' ? (
-                        <>
-                          <line x1="145" y1="68" x2="155" y2="68" stroke="#1C1917" strokeWidth="2" />
-                          <line x1="165" y1="68" x2="175" y2="68" stroke="#1C1917" strokeWidth="2" />
-                          <circle cx="150" cy="73" r="2.5" fill="#1C1917" />
-                          <circle cx="170" cy="73" r="2.5" fill="#1C1917" />
-                          <path d="M152 90 Q160 96 168 90" stroke="#9A3412" strokeWidth="2" fill="none" />
-                        </>
-                      ) : (
-                        <>
-                          {/* Attentive / Focused */}
-                          <line x1="145" y1="69" x2="155" y2="69" stroke="#1C1917" strokeWidth="2.5" />
-                          <line x1="165" y1="69" x2="175" y2="69" stroke="#1C1917" strokeWidth="2.5" />
-                          <circle cx="150" cy="74" r="2.8" fill="#1C1917" />
-                          <circle cx="170" cy="74" r="2.8" fill="#1C1917" />
-                          <line x1="154" y1="92" x2="166" y2="92" stroke="#9A3412" strokeWidth="2" />
-                        </>
-                      )}
-
-                      {/* Nose */}
-                      <path d="M160 76 L158 83 L163 83" stroke="#B45309" strokeWidth="1.5" fill="none" />
-                    </svg>
-                  </div>
+                  {/* Live 3D Human Investigator Model Viewport */}
+                  <Character3DPreviewStage
+                    archetype="investigator"
+                    selectedPose={selectedPose}
+                    selectedExpression={selectedExpression}
+                    isInvestigator={true}
+                    viewAngle={investigatorViewAngle}
+                  />
 
                   {/* Character Model Scale & Stats Strip */}
                   <div className="relative z-10 w-full pt-3 border-t border-white/10 flex items-center justify-between text-[11px] font-mono text-[#94A3B8]">
-                    <span>Height: 178 cm · Proportions: 1:7.5 Natural Anatomical</span>
-                    <span className="text-emerald-400">PBR Materials · Rigged for 3rd/1st Person</span>
+                    <span>Height: 178 cm · Drag to Orbit 360°</span>
+                    <span className="text-emerald-400">Mood: {selectedExpression.toUpperCase()} · Active 3D Rig</span>
                   </div>
                 </div>
 
@@ -313,22 +547,24 @@ export const RealisticGameGraphicsDossier: React.FC<RealisticGameGraphicsDossier
                     </div>
                   </div>
 
-                  {/* Gameplay Action Poses */}
+                  {/* Gameplay Action & Animation Poses */}
                   <div className="p-4 rounded-2xl bg-[#0B152B] border border-white/10 space-y-3">
                     <span className="font-mono text-[10px] text-[#00F0FF] font-bold uppercase tracking-wider block">
-                      Gameplay Investigation Poses
+                      Humanoid Skeleton Animations (6 States)
                     </span>
                     <div className="grid grid-cols-2 gap-2 text-xs">
                       {[
-                        { id: 'phone', label: 'Inspecting Phone', desc: 'One hand raised with AMOLED scanner' },
-                        { id: 'laptop', label: 'Examining Laptop', desc: 'Leaning over desk, verifying portal' },
-                        { id: 'walking', label: 'Walking Field Move', desc: 'Smooth, grounded locomotion gait' },
-                        { id: 'discovery', label: 'Discovery Reveal', desc: 'Focusing on mismatched link flag' },
+                        { id: 'phone', label: 'Phone Interaction', desc: 'Back of phone facing camera with screen facing investigator' },
+                        { id: 'idle', label: 'Natural Idle', desc: 'Grounded breathing & subtle weight shift' },
+                        { id: 'walking', label: 'Walking Gait', desc: 'Balanced stride with counter-arm swing' },
+                        { id: 'turning', label: 'Turning & Scanning', desc: 'Torso banking & head lead rotation' },
+                        { id: 'listening', label: 'Attentive Listening', desc: 'Subtle head nods & brow focus' },
+                        { id: 'speaking', label: 'Speaking / Briefing', desc: 'Jaw morph lip-sync & hand cadence' },
                       ].map((pose) => (
                         <button
                           key={pose.id}
                           type="button"
-                          onClick={() => setSelectedPose(pose.id as any)}
+                          onClick={() => setSelectedPose(pose.id as DossierAnimationPose)}
                           className={`p-2.5 rounded-xl text-left border transition-all cursor-pointer ${
                             selectedPose === pose.id
                               ? 'bg-[#00F0FF]/20 border-[#00F0FF] text-white shadow-md'
@@ -345,16 +581,16 @@ export const RealisticGameGraphicsDossier: React.FC<RealisticGameGraphicsDossier
                   {/* Character Model Lighting & Material Specs */}
                   <div className="p-4 rounded-2xl bg-[#081022] border border-white/10 text-xs space-y-2">
                     <span className="font-mono text-[10px] text-[#64748B] uppercase tracking-wider block font-bold">
-                      Material Calibration
+                      Material & Geometry Calibration
                     </span>
                     <div className="space-y-1.5 text-[11px] font-mono text-[#CBD5E1]">
                       <div className="flex justify-between">
                         <span>Skin Shading:</span>
-                        <span className="text-white">Subsurface scattering, diffuse satin</span>
+                        <span className="text-white">Subsurface sheen, micro-pore detail</span>
                       </div>
                       <div className="flex justify-between">
-                        <span>Jacket Fabric:</span>
-                        <span className="text-white">Heavy cotton twill, rough 0.85, metal 0.0</span>
+                        <span>Garment Drapery:</span>
+                        <span className="text-white">3D cloth folds + woven twill normal map</span>
                       </div>
                       <div className="flex justify-between">
                         <span>Color Grading:</span>
@@ -368,82 +604,136 @@ export const RealisticGameGraphicsDossier: React.FC<RealisticGameGraphicsDossier
           )}
 
           {/* ===================================================================
-              TAB 2: SUPPORTING CAST (The 5 Everyday People)
+              TAB 2: SUPPORTING CAST (The 5 Everyday People + Live 3D Stage)
           =================================================================== */}
           {activeTab === 'supporting' && (
             <div className="space-y-6 animate-fade-in">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-white/10">
                 <div>
-                  <h3 className="font-heading font-black text-lg text-white">The Five Key Supporting Characters</h3>
+                  <h3 className="font-heading font-black text-lg text-white">
+                    Recurring Cast — Live 3D Crime-Drama Character Models
+                  </h3>
                   <p className="text-xs text-[#94A3B8]">
-                    Realistic everyday people the player meets across each case. Distinct silhouettes, relatable clothing, and authentic emotional reactions.
+                    Ordinary people from Scam Sleuth’s world with distinct facial structures, hairstyles, fabric textures, and animations preserved across every scene.
                   </p>
                 </div>
                 <span className="font-mono text-xs text-amber-400 font-bold self-start sm:self-auto">
-                  Safe Scenarios · Scammers Off-Screen
+                  Identical 3D Rigs in Gameplay, Dialogue & Dossier
                 </span>
+              </div>
+
+              {/* Interactive 3D Supporting Character Inspector */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                <div className="lg:col-span-7 bg-[#050A16] border-2 border-white/15 rounded-3xl p-6 relative flex flex-col items-center justify-between min-h-[440px] shadow-2xl overflow-hidden">
+                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-slate-800/40 via-[#070D1E] to-[#040812] pointer-events-none" />
+
+                  <div className="relative z-10 w-full flex items-center justify-between">
+                    <span className="px-3 py-1 rounded-full bg-black/60 border border-white/15 font-mono text-xs text-white/90">
+                      {activeCastProfile.name.toUpperCase()} · {activeCastProfile.badge.toUpperCase()}
+                    </span>
+                    <span className="font-mono text-xs text-[#00F0FF] font-bold">
+                      Animation: {selectedCastPose.toUpperCase()}
+                    </span>
+                  </div>
+
+                  <Character3DPreviewStage
+                    archetype={selectedCastArchetype}
+                    selectedPose={selectedCastPose}
+                    selectedExpression="attentive"
+                    isInvestigator={false}
+                  />
+
+                  <div className="relative z-10 w-full pt-3 border-t border-white/10 flex items-center justify-between text-[11px] font-mono text-[#94A3B8]">
+                    <span>
+                      Height: {activeCastProfile.heightLabel} · {activeCastProfile.age} · Drag to Orbit 360°
+                    </span>
+                    <span className="text-emerald-400">Active 3D Scene Model</span>
+                  </div>
+                </div>
+
+                <div className="lg:col-span-5 space-y-4">
+                  {/* Character Switcher */}
+                  <div className="p-4 rounded-2xl bg-[#0B152B] border border-white/10 space-y-2.5">
+                    <span className="font-mono text-[10px] text-amber-400 font-bold uppercase tracking-wider block">
+                      Select Recurring Character to Inspect in 3D
+                    </span>
+                    <div className="grid grid-cols-1 gap-2">
+                      {SUPPORTING_CAST_PROFILES.map((npc) => {
+                        const isSelected = npc.archetype === selectedCastArchetype;
+                        return (
+                          <button
+                            key={npc.archetype}
+                            type="button"
+                            onClick={() => setSelectedCastArchetype(npc.archetype)}
+                            className={`p-2.5 rounded-xl text-left border transition-all flex items-center justify-between cursor-pointer ${
+                              isSelected
+                                ? 'bg-amber-500/20 border-amber-400 text-white shadow-md'
+                                : 'bg-white/5 border-white/10 text-[#94A3B8] hover:text-white'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2.5">
+                              <span
+                                className="w-3 h-3 rounded-full shrink-0"
+                                style={{ backgroundColor: npc.avatarColor }}
+                              />
+                              <div>
+                                <span className="font-heading font-black text-xs block text-white">
+                                  {npc.name}
+                                </span>
+                                <span className="text-[10px] text-[#CBD5E1] block">{npc.role}</span>
+                              </div>
+                            </div>
+                            <span className="font-mono text-[10px] text-[#00F0FF]">{npc.badge}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Supporting Cast Animation Selector */}
+                  <div className="p-4 rounded-2xl bg-[#0B152B] border border-white/10 space-y-2.5">
+                    <span className="font-mono text-[10px] text-[#00F0FF] font-bold uppercase tracking-wider block">
+                      Preview Character Animation State
+                    </span>
+                    <div className="grid grid-cols-3 gap-2 text-xs">
+                      {[
+                        { id: 'listening', label: 'Listening' },
+                        { id: 'speaking', label: 'Speaking' },
+                        { id: 'idle', label: 'Natural Idle' },
+                        { id: 'walking', label: 'Walking' },
+                        { id: 'turning', label: 'Turning' },
+                        { id: 'phone', label: 'Phone Check' },
+                      ].map((pose) => (
+                        <button
+                          key={pose.id}
+                          type="button"
+                          onClick={() => setSelectedCastPose(pose.id as DossierAnimationPose)}
+                          className={`px-2.5 py-2 rounded-xl font-heading font-bold text-center border transition-all cursor-pointer ${
+                            selectedCastPose === pose.id
+                              ? 'bg-[#00F0FF]/20 border-[#00F0FF] text-white'
+                              : 'bg-white/5 border-white/10 text-[#94A3B8] hover:text-white'
+                          }`}
+                        >
+                          {pose.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
               </div>
 
               {/* Character Cards Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {[
-                  {
-                    name: 'Alex Rivera',
-                    role: 'Delivery Recipient / Roommate',
-                    age: '24 years old',
-                    setting: 'Sunset Heights Apartment 4B',
-                    clothing: 'Casual cobalt blue knit sweater, dark denim, slip-on shoes',
-                    personality: 'Creative freelance illustrator, eager for art package, momentarily stressed by phantom customs fee.',
-                    expression: 'Puzzled, holding phone toward detective asking for guidance.',
-                    avatarColor: '#2563EB',
-                    badge: 'Level 01',
-                  },
-                  {
-                    name: 'Maya Lin',
-                    role: 'University Student',
-                    age: '20 years old',
-                    setting: 'North Quad Study Commons',
-                    clothing: 'Olive green hoodie, canvas backpack, wireframe glasses',
-                    personality: 'Midterms student rushing between classes, alarmed by 24-hour campus account suspension threat.',
-                    expression: 'Anxious, staring at laptop login screen before entering credentials.',
-                    avatarColor: '#059669',
-                    badge: 'Level 02',
-                  },
-                  {
-                    name: 'Marcus Vance',
-                    role: 'Marketplace Seller',
-                    age: '32 years old',
-                    setting: 'Little Seoul Urban Bistro & Café',
-                    clothing: 'Caramel workwear jacket, dark henley, worn leather boots',
-                    personality: 'Selling vintage camera equipment, received fake peer-to-peer payment screenshot claiming funds are in escrow.',
-                    expression: 'Suspicious and hesitating to hand over goods before seeing real bank balance.',
-                    avatarColor: '#D97706',
-                    badge: 'Level 03',
-                  },
-                  {
-                    name: 'Elena Rostova',
-                    role: 'Job Seeker / Candidate',
-                    age: '27 years old',
-                    setting: 'Apex Tower Career Suite',
-                    clothing: 'Navy tailored blazer, grey turtleneck, portfolio folder',
-                    personality: 'Remote career applicant who received an offer with an advance check for office equipment.',
-                    expression: 'Hopeful yet alert, scrutinizing check deposit terms.',
-                    avatarColor: '#7C3AED',
-                    badge: 'Level 04',
-                  },
-                  {
-                    name: 'David Chen',
-                    role: 'IT Security Liaison & Coworker',
-                    age: '38 years old',
-                    setting: 'Cybersecurity Operations Hub',
-                    clothing: 'Charcoal polo shirt, company badge lanyard, smart tablet',
-                    personality: 'Experienced internal security coordinator, assists with rapid incident logging and protocol verification.',
-                    expression: 'Supportive, reassuring, and procedurally thorough.',
-                    avatarColor: '#0891B2',
-                    badge: 'Incident Support',
-                  },
-                ].map((npc, idx) => (
-                  <div key={idx} className="p-5 rounded-3xl bg-[#091329] border border-white/10 space-y-4 hover:border-amber-400/50 transition-all shadow-lg flex flex-col justify-between">
+                {SUPPORTING_CAST_PROFILES.map((npc) => (
+                  <div
+                    key={npc.archetype}
+                    onClick={() => setSelectedCastArchetype(npc.archetype)}
+                    className={`p-5 rounded-3xl bg-[#091329] border space-y-4 transition-all shadow-lg flex flex-col justify-between cursor-pointer ${
+                      selectedCastArchetype === npc.archetype
+                        ? 'border-amber-400 ring-1 ring-amber-400/40'
+                        : 'border-white/10 hover:border-amber-400/50'
+                    }`}
+                  >
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
                         <span className="font-mono text-[10px] text-[#00F0FF] uppercase tracking-wider font-bold">

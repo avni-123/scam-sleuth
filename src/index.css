@@ -6,6 +6,7 @@
     --font-body: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
     --font-mono: 'JetBrains Mono', monospace;
     --font-typewriter: 'Courier Prime', monospace;
+    --font-editorial: 'Bodoni Moda', 'Cormorant Garamond', Georgia, serif;
   }
 
   body {
@@ -26,6 +27,10 @@
 
   .font-typewriter {
     font-family: var(--font-typewriter);
+  }
+
+  .font-editorial {
+    font-family: var(--font-editorial);
   }
 }
 
@@ -178,3 +183,11 @@
   animation: promptPop 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
   will-change: transform, opacity;
 }
+
+/* Hide OS cursor completely across the entire viewport during active 3D gameplay */
+html.gameplay-cursor-none,
+body.gameplay-cursor-none,
+body.gameplay-cursor-none * {
+  cursor: none !important;
+}
+

@@ -1,32 +1,36 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Play,
+  RotateCcw,
+  FolderOpen,
+  Award,
   Settings as SettingsIcon,
+  LogOut,
   CheckCircle2,
   Lock,
   Unlock,
   Eye,
-  ShieldCheck,
+  X,
   ChevronRight,
-  Award,
-  BookOpen,
-  Compass,
-  FolderOpen,
-  RotateCcw,
-  FileText,
-  UserCheck,
-  Search,
+  ShieldCheck,
 } from 'lucide-react';
 import { ADVENTURE_LEVELS } from '../../data/adventureLevels';
-import { LevelId, AdventureLevel, InspectionData } from '../../types/adventure';
+import {
+  LevelId,
+  AdventureLevel,
+  InspectionData,
+  GameSettings,
+} from '../../types/adventure';
 import { soundEngine } from '../../utils/proceduralAudio';
 import { ChapterInvestigationModal } from './ChapterInvestigationModal';
 import { CompleteCampaignScriptView } from './CompleteCampaignScriptView';
+import { ScamSleuthLogo } from './ScamSleuthLogo';
+import rainyDeskBgImg from '../../assets/images/scam_sleuth_rainy_desk_bg_1794040522608.jpg';
 import detectivePortraitImg from '../../assets/images/detective_character_portrait_1794034150867.jpg';
-import caseBoardBackdropImg from '../../assets/images/case_journal_board_backdrop_1794034150256.jpg';
 
 interface TitleScreenProps {
   onStartInvestigation: () => void;
+  onNewInvestigation?: () => void;
   onSelectLevel: (levelId: LevelId, initialChapter?: 1 | 2 | 3) => void;
   onOpenSettings: () => void;
   completedLevels: string[];
@@ -35,12 +39,29 @@ interface TitleScreenProps {
   currentLevelId?: LevelId;
   activeChapterNum?: 1 | 2 | 3;
   hasSpokenToNpc?: boolean;
+  settings?: GameSettings;
+  onUpdateSettings?: (partial: Partial<GameSettings>) => void;
   onOpenArtDossier?: () => void;
   onUnlockAllLevels?: () => void;
   onRestartFromLevel1?: () => void;
 }
 
+type ActiveSubModal = 'none' | 'case-files' | 'achievements' | 'new-confirm' | 'quit';
+
+const RAIN_STREAKS = [
+  { left: '8%', delay: '0s', duration: '2.4s', height: '68px' },
+  { left: '16%', delay: '0.6s', duration: '2.1s', height: '54px' },
+  { left: '24%', delay: '1.3s', duration: '2.6s', height: '72px' },
+  { left: '33%', delay: '0.3s', duration: '2.2s', height: '60px' },
+  { left: '42%', delay: '1.7s', duration: '2.5s', height: '64px' },
+  { left: '51%', delay: '0.9s', duration: '2.0s', height: '58px' },
+  { left: '60%', delay: '1.4s', duration: '2.3s', height: '70px' },
+  { left: '68%', delay: '0.2s', duration: '2.4s', height: '62px' },
+  { left: '76%', delay: '1.1s', duration: '2.2s', height: '56px' },
+];
+
 export const TitleScreen: React.FC<TitleScreenProps> = ({
+  onNewInvestigation,
   onSelectLevel,
   onOpenSettings,
   completedLevels,
@@ -49,30 +70,44 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
   currentLevelId,
   activeChapterNum = 1,
   hasSpokenToNpc = false,
+  settings,
+  onUpdateSettings,
   onOpenArtDossier,
   onUnlockAllLevels,
   onRestartFromLevel1,
 }) => {
-  const [activeTab, setActiveTab] = useState<'journal' | 'board' | 'script' | 'controls'>('journal');
+  const [selectedIndex, setSelectedIndex] = useState<number>(0);
+  const [activeSubModal, setActiveSubModal] = useState<ActiveSubModal>('none');
+  const [caseFilesTab, setCaseFilesTab] = useState<'board' | 'script'>('board');
   const [boardFilter, setBoardFilter] = useState<'all' | 'current' | 'completed' | 'locked'>('all');
   const [previewLevel, setPreviewLevel] = useState<AdventureLevel | null>(null);
   const [previewChapterNum, setPreviewChapterNum] = useState<1 | 2 | 3>(1);
-  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [bgLoaded, setBgLoaded] = useState<boolean>(true);
   const [portraitLoaded, setPortraitLoaded] = useState<boolean>(true);
+  const [entered, setEntered] = useState<boolean>(false);
 
+  const reducedMotion = Boolean(settings?.reducedMotion);
   const totalLevels = ADVENTURE_LEVELS.length; // 10 Levels
-  const totalChapters = totalLevels * 3; // 30 Chapters
   const completedCount = completedLevels.length;
 
-  // Unlock levels in campaign order: Level 1 is available at start, Level N unlocks when Level N-1 is completed
-  const isLevelUnlocked = (idx: number): boolean => {
-    if (idx === 0) return true;
-    const prevLevel = ADVENTURE_LEVELS[idx - 1];
-    return (
-      completedLevels.includes(prevLevel.id) ||
-      completedLevels.includes(ADVENTURE_LEVELS[idx].id)
-    );
-  };
+  // Cinematic fade-in on mount
+  useEffect(() => {
+    const t = setTimeout(() => setEntered(true), 40);
+    return () => clearTimeout(t);
+  }, []);
+
+  // Unlock levels in campaign order
+  const isLevelUnlocked = useCallback(
+    (idx: number): boolean => {
+      if (idx === 0) return true;
+      const prevLevel = ADVENTURE_LEVELS[idx - 1];
+      return (
+        completedLevels.includes(prevLevel.id) ||
+        completedLevels.includes(ADVENTURE_LEVELS[idx].id)
+      );
+    },
+    [completedLevels]
+  );
 
   // Determine the current active campaign level
   const currentActiveIndex = (() => {
@@ -94,9 +129,7 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
   const currentLevelCluesMap = cluesByLevel[currentLevel.id] || {};
   const foundCluesCount = Object.keys(currentLevelCluesMap).length;
   const totalCluesInCurrent = currentLevel.objects.length;
-  const remainingCluesCount = Math.max(0, totalCluesInCurrent - foundCluesCount);
 
-  // Determine current chapter for display
   const resolvedChapterNum: 1 | 2 | 3 =
     currentLevel.id === currentLevelId
       ? activeChapterNum
@@ -106,34 +139,21 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
       ? 2
       : 1;
 
-  const currentChapterDef =
-    currentLevel.chapters.find((c) => c.number === resolvedChapterNum) || currentLevel.chapters[0];
+  const getCleanLevelTitle = (rawTitle: string): string =>
+    rawTitle.replace(/^Level\s+\d+\s*:\s*/i, '').trim();
 
-  // Compute concise, actionable next step ("Inspect Alex's phone", etc.)
-  const nextObjectiveAction = (() => {
-    const npcName = currentLevel.npcs[0]?.name || 'the witness';
-    const firstUnfoundObj = currentLevel.objects.find(
-      (obj) => !currentLevelCluesMap[obj.inspection.clueId]
-    );
+  const totalCluesLoggedAcrossCampaign = Object.values(cluesByLevel).reduce(
+    (acc, map) => acc + Object.keys(map || {}).length,
+    0
+  );
 
-    if (resolvedChapterNum === 1 && !hasSpokenToNpc && foundCluesCount === 0) {
-      if (firstUnfoundObj) {
-        return `Talk to ${npcName} or inspect ${firstUnfoundObj.name}`;
-      }
-      return `Talk to ${npcName} to hear what happened`;
-    }
-    if (firstUnfoundObj) {
-      return `Inspect ${firstUnfoundObj.name}`;
-    }
-    return `Make the safe verification decision with ${npcName}`;
-  })();
+  const hasSavedProgress =
+    completedCount > 0 ||
+    totalCluesLoggedAcrossCampaign > 0 ||
+    hasSpokenToNpc ||
+    activeChapterNum > 1;
 
-  // Clean exact level title without "Level X: " prefix
-  const getCleanLevelTitle = (rawTitle: string): string => {
-    return rawTitle.replace(/^Level\s+\d+\s*:\s*/i, '').trim();
-  };
-
-  // Investigator rank title based on solved cases
+  // Investigator rank title
   const investigatorRank =
     completedCount >= 10
       ? 'Master Lead Investigator'
@@ -141,554 +161,477 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
       ? 'Senior Cyber Sleuth'
       : completedCount >= 3
       ? 'Field Investigator'
-      : 'Junior Neighborhood Investigator';
+      : 'Neighborhood Investigator';
 
-  // Last completed case for the Recent Case Recap
-  const lastCompletedLevel = (() => {
-    if (completedLevels.length === 0) return null;
+  // Latest earned achievement (or next target preview)
+  const latestAchievement = (() => {
     for (let i = ADVENTURE_LEVELS.length - 1; i >= 0; i--) {
-      if (completedLevels.includes(ADVENTURE_LEVELS[i].id)) {
-        return ADVENTURE_LEVELS[i];
+      const lvl = ADVENTURE_LEVELS[i];
+      if (
+        earnedBadges.includes(lvl.debrief.badgeName) ||
+        completedLevels.includes(lvl.id)
+      ) {
+        return {
+          earned: true,
+          badgeName: lvl.debrief.badgeName,
+          caseLabel: `Case 0${i + 1}`,
+          habit: lvl.debrief.realWorldHabit,
+        };
       }
     }
-    return null;
+    return {
+      earned: false,
+      badgeName: currentLevel.debrief.badgeName,
+      caseLabel: `Case 0${currentActiveIndex + 1} Target`,
+      habit: currentLevel.debrief.realWorldHabit,
+    };
   })();
 
-  // Filtered levels for the Campaign Case Board
-  const filteredLevels = ADVENTURE_LEVELS.map((lvl, idx) => ({ lvl, idx })).filter(({ lvl, idx }) => {
-    const isCompleted = completedLevels.includes(lvl.id);
-    const isCurrent = idx === currentActiveIndex && !isCompleted;
-    const isLocked = !isLevelUnlocked(idx) && !isCompleted;
-    if (boardFilter === 'completed') return isCompleted;
-    if (boardFilter === 'current') return isCurrent;
-    if (boardFilter === 'locked') return isLocked;
-    return true;
-  });
+  const handleActivateMenuOption = useCallback(
+    (index: number) => {
+      soundEngine.playGtaMenuSelect();
+      switch (index) {
+        case 0: // Continue Investigation
+          soundEngine.playGtaMissionStart();
+          onSelectLevel(currentLevel.id, resolvedChapterNum);
+          break;
+        case 1: // New Investigation
+          if (hasSavedProgress) {
+            setActiveSubModal('new-confirm');
+          } else if (onNewInvestigation) {
+            onNewInvestigation();
+          } else {
+            onSelectLevel('tutorial-delivery', 1);
+          }
+          break;
+        case 2: // Case Files
+          setCaseFilesTab('board');
+          setActiveSubModal('case-files');
+          break;
+        case 3: // Achievements
+          setActiveSubModal('achievements');
+          break;
+        case 4: // Settings
+          onOpenSettings();
+          break;
+        case 5: // Quit
+          setActiveSubModal('quit');
+          break;
+        default:
+          break;
+      }
+    },
+    [
+      currentLevel.id,
+      resolvedChapterNum,
+      hasSavedProgress,
+      onNewInvestigation,
+      onSelectLevel,
+      onOpenSettings,
+    ]
+  );
+
+  // Keyboard / Controller navigation for the vertical menu
+  useEffect(() => {
+    if (activeSubModal !== 'none' || previewLevel) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.target as HTMLElement)?.tagName === 'INPUT') return;
+
+      if (e.code === 'ArrowDown' || e.code === 'KeyS') {
+        e.preventDefault();
+        soundEngine.playGtaMenuHover();
+        setSelectedIndex((prev) => (prev + 1) % 6);
+      } else if (e.code === 'ArrowUp' || e.code === 'KeyW') {
+        e.preventDefault();
+        soundEngine.playGtaMenuHover();
+        setSelectedIndex((prev) => (prev - 1 + 6) % 6);
+      } else if (e.code === 'Enter' || e.code === 'Space') {
+        e.preventDefault();
+        handleActivateMenuOption(selectedIndex);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [activeSubModal, previewLevel, selectedIndex, handleActivateMenuOption]);
+
+  // Close sub-modals on Escape
+  useEffect(() => {
+    if (activeSubModal === 'none') return;
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.code === 'Escape') {
+        e.preventDefault();
+        setActiveSubModal('none');
+      }
+    };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [activeSubModal]);
+
+  const filteredLevels = ADVENTURE_LEVELS.map((lvl, idx) => ({ lvl, idx })).filter(
+    ({ lvl, idx }) => {
+      const isCompleted = completedLevels.includes(lvl.id);
+      const isCurrent = idx === currentActiveIndex && !isCompleted;
+      const isLocked = !isLevelUnlocked(idx) && !isCompleted;
+      if (boardFilter === 'completed') return isCompleted;
+      if (boardFilter === 'current') return isCurrent;
+      if (boardFilter === 'locked') return isLocked;
+      return true;
+    }
+  );
+
+  const menuOptions = [
+    {
+      id: 'continue',
+      label: 'Start Investigation',
+      meta: `Case 0${currentActiveIndex + 1}: ${getCleanLevelTitle(
+        currentLevel.title
+      )} · Ch. ${resolvedChapterNum}/3 · ${completedCount}/${totalLevels} Solved`,
+      disabled: false,
+    },
+    {
+      id: 'new',
+      label: 'New Investigation',
+      meta: hasSavedProgress
+        ? 'Start fresh from Case 01: The Parcel That Never Came'
+        : 'Begin Case 01 in Sunset Heights Apt 4B',
+      disabled: false,
+    },
+    {
+      id: 'case-files',
+      label: 'Case Files',
+      meta: `${completedCount} of ${totalLevels} Cases Solved · 30 Investigation Chapters`,
+      disabled: false,
+    },
+    {
+      id: 'achievements',
+      label: 'Achievements',
+      meta: `${earnedBadges.length} of ${totalLevels} Investigator Safety Badges Earned`,
+      disabled: false,
+    },
+    {
+      id: 'settings',
+      label: 'Settings',
+      meta: 'Audio, Subtitles, Camera Sensitivity & Accessibility',
+      disabled: false,
+    },
+    {
+      id: 'quit',
+      label: 'Quit',
+      meta: 'Stand down from the investigation desk',
+      disabled: false,
+    },
+  ];
 
   return (
-    <div className="relative w-full min-h-screen bg-[#0B101E] text-[#F1F5F9] flex flex-col justify-between overflow-x-hidden select-none font-sans">
-      {/* Subtle Ambient Desk Backdrop */}
-      <div className="fixed inset-0 pointer-events-none opacity-15">
-        <img
-          src={caseBoardBackdropImg}
-          alt=""
-          referrerPolicy="no-referrer"
-          className="w-full h-full object-cover object-center"
-          onError={(e) => {
-            (e.currentTarget as HTMLImageElement).style.display = 'none';
-          }}
+    <div className="relative w-screen h-screen overflow-hidden bg-[#060A14] text-slate-100 select-none font-sans flex flex-col justify-between">
+      {/* =====================================================================
+          1. FULL-SCREEN CINEMATIC RAINY APARTMENT & DETECTIVE DESK ARTWORK
+      ===================================================================== */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        {bgLoaded ? (
+          <img
+            src={rainyDeskBgImg}
+            alt="Late-night detective desk facing a rain-streaked apartment window with case notes and a glowing smartphone"
+            referrerPolicy="no-referrer"
+            onError={() => setBgLoaded(false)}
+            className={`w-full h-full object-cover object-center ${
+              reducedMotion
+                ? ''
+                : 'transition-transform duration-[18000ms] ease-out scale-[1.03]'
+            }`}
+          />
+        ) : (
+          <div className="w-full h-full bg-gradient-to-br from-[#070D1B] via-[#0F1B33] to-[#1A1423]" />
+        )}
+
+        {/* Measured Contrast Scrim: keeps left/center menu high-contrast while revealing the rainy window, lamp, and glowing phone */}
+        <div
+          className="absolute inset-0 bg-gradient-to-b from-[#040711]/80 via-[#050A17]/60 to-[#040711]/92"
+          aria-hidden="true"
         />
+        <div
+          className="absolute inset-0 bg-[radial-gradient(circle_at_50%_42%,rgba(6,11,24,0.45)_0%,rgba(4,7,17,0.88)_100%)]"
+          aria-hidden="true"
+        />
+
+        {/* Subtle Rain Streaks Over Window Glass (Disabled when Reduced Motion is On) */}
+        {!reducedMotion && (
+          <div className="absolute inset-0 overflow-hidden opacity-30" aria-hidden="true">
+            <style>{`
+              @keyframes sleuthRainFall {
+                0% { transform: translate3d(0, -120px, 0) rotate(8deg); opacity: 0; }
+                20% { opacity: 0.55; }
+                80% { opacity: 0.45; }
+                100% { transform: translate3d(-45px, 105vh, 0) rotate(8deg); opacity: 0; }
+              }
+            `}</style>
+            {RAIN_STREAKS.map((drop, i) => (
+              <div
+                key={i}
+                style={{
+                  left: drop.left,
+                  height: drop.height,
+                  animation: `sleuthRainFall ${drop.duration} linear ${drop.delay} infinite`,
+                }}
+                className="absolute top-0 w-[1px] bg-gradient-to-b from-transparent via-sky-200/50 to-transparent"
+              />
+            ))}
+          </div>
+        )}
       </div>
-      <div className="fixed inset-0 bg-gradient-to-b from-[#0B101E]/90 via-[#0B101E]/95 to-[#080C17] pointer-events-none" />
 
       {/* =====================================================================
-          TOP NAVIGATION BAR (Strict 3-Zone Contract)
+          2. TOP SUBTLE AMBIENT HEADER (Quiet Case File Kicker & Reduced Motion Toggle)
       ===================================================================== */}
-      <header className="sticky top-0 z-30 w-full px-4 sm:px-8 py-3.5 bg-[#0B101E]/95 backdrop-blur-md border-b border-slate-800/80 flex items-center justify-between gap-4 sm:gap-8">
-        {/* Zone 1: Single-line Brand Wordmark */}
-        <button
-          type="button"
-          onClick={() => setActiveTab('journal')}
-          className="font-heading font-extrabold text-lg sm:text-xl tracking-tight text-amber-400 hover:text-amber-300 transition-colors whitespace-nowrap shrink-0 cursor-pointer text-left"
-        >
-          Scam Sleuth
-        </button>
+      <header className="relative z-10 w-full max-w-6xl mx-auto px-6 sm:px-10 pt-6 flex items-center justify-between text-xs font-mono text-slate-300/80">
+        <div className="flex items-center gap-2">
+          <span className="text-amber-300/90 font-semibold">THE GLASSHOUSE FILES</span>
+          <span aria-hidden="true">·</span>
+          <span>10 CASES · 30 CHAPTERS</span>
+        </div>
 
-        {/* Zone 2: Concise Single-Line Navigation Links */}
-        <nav className="flex items-center gap-3 sm:gap-6 text-xs sm:text-sm font-medium text-slate-300 overflow-x-auto no-scrollbar">
-          <button
-            type="button"
-            onClick={() => {
-              soundEngine.playGtaMenuHover();
-              setActiveTab('journal');
-            }}
-            className={`py-1 border-b-2 transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
-              activeTab === 'journal'
-                ? 'border-amber-400 text-white font-semibold'
-                : 'border-transparent text-slate-400 hover:text-white'
-            }`}
-          >
-            Case Journal
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              soundEngine.playGtaMenuHover();
-              setActiveTab('board');
-            }}
-            className={`py-1 border-b-2 transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
-              activeTab === 'board'
-                ? 'border-amber-400 text-white font-semibold'
-                : 'border-transparent text-slate-400 hover:text-white'
-            }`}
-          >
-            Case Board
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              soundEngine.playGtaMenuHover();
-              setActiveTab('script');
-            }}
-            className={`py-1 border-b-2 transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
-              activeTab === 'script'
-                ? 'border-amber-400 text-white font-semibold'
-                : 'border-transparent text-slate-400 hover:text-white'
-            }`}
-          >
-            30 Chapters
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              soundEngine.playGtaMenuHover();
-              setActiveTab('controls');
-            }}
-            className={`py-1 border-b-2 transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
-              activeTab === 'controls'
-                ? 'border-amber-400 text-white font-semibold'
-                : 'border-transparent text-slate-400 hover:text-white'
-            }`}
-          >
-            Field Guide
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              soundEngine.playGtaMenuSelect();
-              onOpenSettings();
-            }}
-            className="py-1 border-b-2 border-transparent text-slate-400 hover:text-white transition-colors whitespace-nowrap shrink-0 cursor-pointer"
-          >
-            Settings
-          </button>
-        </nav>
-
-        {/* Zone 3: 1 Primary Action CTA */}
-        <div className="shrink-0">
-          <button
-            type="button"
-            onClick={() => {
-              soundEngine.playGtaMissionStart();
-              onSelectLevel(currentLevel.id, resolvedChapterNum);
-            }}
-            className="px-4 py-2 rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 font-heading font-bold text-xs sm:text-sm transition-colors flex items-center gap-2 whitespace-nowrap shrink-0 cursor-pointer shadow-sm"
-          >
-            <Play className="w-3.5 h-3.5 fill-current shrink-0" />
-            <span>Continue Investigation</span>
-          </button>
+        <div className="flex items-center gap-4">
+          {onUpdateSettings && (
+            <button
+              type="button"
+              onClick={() => {
+                soundEngine.playGtaMenuHover();
+                onUpdateSettings({ reducedMotion: !reducedMotion });
+              }}
+              className="text-slate-300/80 hover:text-white transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 rounded px-1.5 py-0.5"
+              title="Toggle Reduced Background Motion"
+            >
+              Motion: {reducedMotion ? 'Reduced' : 'Subtle'}
+            </button>
+          )}
+          {onOpenArtDossier && (
+            <button
+              type="button"
+              onClick={() => {
+                soundEngine.playGtaMenuSelect();
+                onOpenArtDossier();
+              }}
+              className="text-slate-300/80 hover:text-white transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 rounded px-1.5 py-0.5"
+            >
+              Character Dossier
+            </button>
+          )}
         </div>
       </header>
 
       {/* =====================================================================
-          MAIN DETECTIVE'S CASE JOURNAL WORKSPACE
+          3. CENTER / UPPER-CENTER TITLE & SIMPLE VERTICAL MENU OVER THE SCENE
       ===================================================================== */}
-      <main className="relative z-10 flex-1 max-w-7xl mx-auto w-full px-4 sm:px-8 pt-6 pb-20 space-y-10">
-        {statusMessage && (
-          <div className="text-xs font-mono text-amber-200 bg-amber-500/10 border border-amber-400/30 px-4 py-3 rounded-xl flex items-center justify-between">
-            <span>{statusMessage}</span>
-            <button
-              type="button"
-              onClick={() => setStatusMessage(null)}
-              className="text-white hover:underline ml-4 cursor-pointer whitespace-nowrap shrink-0"
-            >
-              Dismiss
-            </button>
-          </div>
-        )}
+      <main
+        className={`relative z-10 flex-1 flex flex-col items-center justify-center px-6 sm:px-10 transition-opacity duration-700 ${
+          entered ? 'opacity-100' : 'opacity-0'
+        }`}
+      >
+        {/* Clean, Confident SCAM SLEUTH Title & Subtitle */}
+        <div className="mb-8 sm:mb-12">
+          <ScamSleuthLogo reducedMotion={reducedMotion} />
+        </div>
 
-        {activeTab === 'journal' && (
-          <>
-            {/* ===============================================================
-                PRIORITY 1 & 3 & 4: DETECTIVE PROFILE + CURRENT LEVEL & OBJECTIVE
-                Balanced 12-Column Split with Character Artwork Anchor
-            =============================================================== */}
-            <section
-              aria-label="Investigator Profile and Active Case Assignment"
-              className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch"
-            >
-              {/* Left 5 Columns: Player Profile & Character Portrait Visual Anchor */}
-              <div className="lg:col-span-5 rounded-2xl bg-[#111827] border border-slate-800 overflow-hidden flex flex-col justify-between shadow-lg">
-                <div className="relative h-72 sm:h-80 w-full bg-[#0D1322] overflow-hidden">
-                  {portraitLoaded ? (
-                    <img
-                      src={detectivePortraitImg}
-                      alt="Detective Rowan Vance examining digital evidence at the desk"
-                      referrerPolicy="no-referrer"
-                      onError={() => setPortraitLoaded(false)}
-                      className="w-full h-full object-cover object-top"
+        {/* Simple Vertical Menu Over the Scene */}
+        <nav
+          aria-label="Main Menu"
+          className="w-full max-w-md flex flex-col items-center space-y-1.5 sm:space-y-2"
+        >
+          {menuOptions.map((item, idx) => {
+            const isSelected = selectedIndex === idx;
+            const isContinue = item.id === 'continue';
+
+            return (
+              <div key={item.id} className="w-full flex flex-col items-center">
+                <button
+                  type="button"
+                  disabled={item.disabled}
+                  onMouseEnter={() => {
+                    if (selectedIndex !== idx) {
+                      soundEngine.playGtaMenuHover();
+                      setSelectedIndex(idx);
+                    }
+                  }}
+                  onFocus={() => setSelectedIndex(idx)}
+                  onClick={() => handleActivateMenuOption(idx)}
+                  className={`group relative w-full py-2 sm:py-2.5 px-6 flex flex-col items-center justify-center transition-all duration-150 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 rounded-lg ${
+                    item.disabled ? 'opacity-40 cursor-not-allowed' : ''
+                  }`}
+                >
+                  <div className="flex items-center justify-center gap-3">
+                    {/* Subtle Left Selection Marker */}
+                    <span
+                      aria-hidden="true"
+                      className={`h-1.5 w-1.5 rounded-full transition-all duration-150 ${
+                        isSelected
+                          ? 'bg-amber-400 shadow-[0_0_10px_#F59E0B] scale-125'
+                          : 'bg-transparent'
+                      }`}
                     />
-                  ) : (
-                    <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-slate-800 to-slate-950 p-6 text-center">
-                      <UserCheck className="w-12 h-12 text-amber-400 mb-2" />
-                      <span className="font-heading font-bold text-base text-white">
-                        Detective Rowan Vance
-                      </span>
-                    </div>
-                  )}
-                  {/* Measured Contrast Scrim for Text Overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#111827] via-[#111827]/35 to-transparent" />
 
-                  <div className="absolute bottom-4 left-5 right-5 space-y-1">
-                    <div className="text-xs font-mono text-amber-300 tracking-wide">
-                      <span>{investigatorRank}</span>
-                      <span aria-hidden="true"> · </span>
-                      <span>Sunset Heights Desk</span>
-                    </div>
-                    <h1 className="font-heading font-extrabold text-2xl sm:text-3xl text-white tracking-tight">
-                      Detective Rowan Vance
-                    </h1>
-                  </div>
-                </div>
-
-                <div className="p-5 sm:p-6 space-y-4 flex-1 flex flex-col justify-between">
-                  <p className="text-sm text-slate-300 leading-relaxed">
-                    Neighborhood cyber-safety investigator documenting the{' '}
-                    <strong className="text-white font-semibold">Glasshouse</strong> campaign. You
-                    verify suspicious delivery notices, urgent payment requests, and look-alike login
-                    pages before residents lose their savings.
-                  </p>
-
-                  {/* Tabular Campaign Standing Summary */}
-                  <div className="pt-4 border-t border-slate-800/90 grid grid-cols-3 gap-4 text-left font-mono tabular-nums">
-                    <div>
-                      <span className="text-xs text-slate-400 block">Cases Solved</span>
-                      <span className="text-lg font-bold text-white">
-                        {completedCount} / {totalLevels}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-xs text-slate-400 block">Badges Earned</span>
-                      <span className="text-lg font-bold text-amber-400">
-                        {earnedBadges.length} / {totalLevels}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-xs text-slate-400 block">Chapters</span>
-                      <span className="text-lg font-bold text-emerald-400">
-                        {completedCount * 3} / {totalChapters}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Right 7 Columns: Active Case Dossier, Current Objective, Clues & Recap */}
-              <div className="lg:col-span-7 rounded-2xl bg-[#111827] border border-amber-400/50 p-6 sm:p-7 flex flex-col justify-between gap-6 shadow-lg">
-                <div className="space-y-5">
-                  {/* Top Kicker & Level Progress */}
-                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-4">
-                    <div className="text-xs font-mono text-amber-400">
-                      <span>Active Case File 0{currentActiveIndex + 1}</span>
-                      <span aria-hidden="true"> · </span>
-                      <span>{currentLevel.locationName}</span>
-                      <span aria-hidden="true"> · </span>
-                      <span>
-                        Chapter {resolvedChapterNum} of 3 ({currentChapterDef.phase})
-                      </span>
-                    </div>
-                    <span className="font-mono text-xs text-slate-400 tabular-nums">
-                      Case {currentActiveIndex + 1} of {totalLevels}
-                    </span>
-                  </div>
-
-                  {/* Level Title & Chapter Subtitle */}
-                  <div className="space-y-1.5">
-                    <h2 className="font-heading font-extrabold text-2xl sm:text-3xl text-white tracking-tight text-balance">
-                      {currentLevel.title}
-                    </h2>
-                    <p className="text-sm font-medium text-slate-300">
-                      {currentChapterDef.title} — {currentChapterDef.summary}
-                    </p>
-                  </div>
-
-                  {/* Current Objective Callout + Case Progress (Clues Found & Remaining) */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
-                    {/* Current Objective */}
-                    <div className="p-4 rounded-xl bg-[#0B101E] border border-slate-800/90 space-y-1.5">
-                      <div className="flex items-center gap-2 text-xs font-mono text-amber-400">
-                        <Compass className="w-4 h-4 shrink-0" />
-                        <span>Current Objective</span>
-                      </div>
-                      <p className="font-heading font-bold text-base text-white leading-snug">
-                        {nextObjectiveAction}
-                      </p>
-                      <p className="text-xs text-slate-400">
-                        Witness on scene: {currentLevel.npcs[0]?.name} ({currentLevel.npcs[0]?.role})
-                      </p>
-                    </div>
-
-                    {/* Case Progress: Clues Found & Remaining */}
-                    <div className="p-4 rounded-xl bg-[#0B101E] border border-slate-800/90 space-y-2 font-mono tabular-nums">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-slate-300 flex items-center gap-1.5">
-                          <Search className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                          <span>Case Clues</span>
-                        </span>
-                        <span className="text-white font-bold">
-                          {foundCluesCount} Found · {remainingCluesCount} Remaining
-                        </span>
-                      </div>
-
-                      {/* Progress Bar */}
-                      <div className="w-full h-2 rounded-full bg-slate-800 overflow-hidden">
-                        <div
-                          className="h-full bg-amber-400 transition-all duration-300"
-                          style={{
-                            width: `${Math.max(
-                              12,
-                              Math.round((foundCluesCount / Math.max(1, totalCluesInCurrent)) * 100)
-                            )}%`,
-                          }}
-                        />
-                      </div>
-
-                      {/* Individual Clue Status List */}
-                      <div className="space-y-1 pt-1 text-[11px]">
-                        {currentLevel.objects.map((obj) => {
-                          const isFound = Boolean(currentLevelCluesMap[obj.inspection.clueId]);
-                          return (
-                            <div
-                              key={obj.id}
-                              className="flex items-center justify-between gap-2 text-slate-300"
-                            >
-                              <span className="truncate">{obj.name}</span>
-                              <span
-                                className={
-                                  isFound
-                                    ? 'text-emerald-400 font-semibold shrink-0'
-                                    : 'text-slate-500 shrink-0'
-                                }
-                              >
-                                {isFound ? 'Logged ✓' : 'Uninspected'}
-                              </span>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Recent Case Recap (Compact Summary of Last Completed Case or Field Note) */}
-                  <div className="p-4 rounded-xl bg-[#0B101E]/75 border border-slate-800/80 space-y-1">
-                    <div className="flex items-center justify-between text-xs font-mono text-emerald-400">
-                      <span className="flex items-center gap-1.5">
-                        <BookOpen className="w-3.5 h-3.5 shrink-0" />
-                        <span>
-                          {lastCompletedLevel
-                            ? `Recent Case Recap · ${lastCompletedLevel.title}`
-                            : 'Recent Case Recap · Investigator Field Note'}
-                        </span>
-                      </span>
-                      {lastCompletedLevel && (
-                        <span className="text-slate-400">
-                          Badge: {lastCompletedLevel.debrief.badgeName}
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-xs text-slate-300 leading-relaxed">
-                      {lastCompletedLevel
-                        ? `${lastCompletedLevel.debrief.summary} Habit: ${lastCompletedLevel.debrief.realWorldHabit}`
-                        : 'No cases closed yet. Begin with Case 01 in Sunset Heights Apartment 4B: inspect Alex’s smartphone delivery text and compare it with the building’s official courier policy card.'}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Primary & Secondary Actions */}
-                <div className="pt-4 border-t border-slate-800 flex flex-wrap items-center justify-between gap-3">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      soundEngine.playGtaMissionStart();
-                      onSelectLevel(currentLevel.id, resolvedChapterNum);
-                    }}
-                    className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-heading font-extrabold text-sm tracking-wide flex items-center justify-center gap-2.5 cursor-pointer transition-colors shadow-md whitespace-nowrap shrink-0"
-                  >
-                    <Play className="w-4 h-4 fill-current shrink-0" />
-                    <span>
-                      Continue Investigation · {getCleanLevelTitle(currentLevel.title)}
-                    </span>
-                    <ChevronRight className="w-4 h-4 stroke-[2.5] shrink-0" />
-                  </button>
-
-                  <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto justify-end">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        soundEngine.playGtaMenuHover();
-                        setPreviewChapterNum(resolvedChapterNum);
-                        setPreviewLevel(currentLevel);
-                      }}
-                      className="px-4 py-2.5 rounded-xl bg-slate-800/90 hover:bg-slate-700 text-slate-200 text-xs font-medium flex items-center gap-1.5 cursor-pointer transition-colors whitespace-nowrap shrink-0"
-                    >
-                      <FileText className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                      <span>Case Notes & Clues</span>
-                    </button>
-
-                    {onOpenArtDossier && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          soundEngine.playGtaMenuSelect();
-                          onOpenArtDossier();
-                        }}
-                        className="px-4 py-2.5 rounded-xl bg-slate-800/90 hover:bg-slate-700 text-slate-200 text-xs font-medium flex items-center gap-1.5 cursor-pointer transition-colors whitespace-nowrap shrink-0"
-                      >
-                        <Eye className="w-3.5 h-3.5 text-slate-300 shrink-0" />
-                        <span>Character Dossier</span>
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </section>
-
-            {/* ===============================================================
-                PRIORITY 2: ACHIEVEMENTS & EARNED INVESTIGATOR BADGES
-                Earned badges prominent; upcoming achievements as locked previews
-            =============================================================== */}
-            <section aria-label="Investigator Achievements and Badges" className="space-y-4">
-              <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-slate-800 pb-3">
-                <div>
-                  <h2 className="font-heading font-bold text-xl text-white tracking-tight">
-                    Investigator Achievements & Safety Badges
-                  </h2>
-                  <p className="text-xs text-slate-400 mt-0.5">
-                    Earned by making verified safe decisions in Chapter 3 of each case.
-                  </p>
-                </div>
-                <span className="font-mono text-xs text-amber-400 tabular-nums">
-                  {earnedBadges.length} of {totalLevels} Badges Earned
-                </span>
-              </div>
-
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
-                {ADVENTURE_LEVELS.map((lvl, idx) => {
-                  const badgeTitle = lvl.debrief.badgeName;
-                  const isEarned =
-                    earnedBadges.includes(badgeTitle) || completedLevels.includes(lvl.id);
-                  const isNextTarget = idx === currentActiveIndex && !isEarned;
-
-                  return (
-                    <div
-                      key={lvl.id}
-                      onClick={() => {
-                        soundEngine.playGtaMenuHover();
-                        setPreviewChapterNum(3);
-                        setPreviewLevel(lvl);
-                      }}
-                      className={`p-4 rounded-xl border transition-colors cursor-pointer flex flex-col justify-between gap-3 ${
-                        isEarned
-                          ? 'bg-[#111D2B] border-emerald-500/50 hover:border-emerald-400'
-                          : isNextTarget
-                          ? 'bg-[#131B2E] border-amber-400/50 hover:border-amber-400'
-                          : 'bg-[#0E1424]/70 border-slate-800/80 opacity-65 hover:opacity-90'
+                    <span
+                      className={`font-heading tracking-wider transition-all duration-150 [text-shadow:0_2px_12px_rgba(0,0,0,0.98),0_1px_3px_rgba(0,0,0,0.95)] ${
+                        isSelected
+                          ? 'text-xl sm:text-2xl font-bold text-white'
+                          : 'text-lg sm:text-xl font-medium text-slate-300/85 hover:text-white'
                       }`}
                     >
-                      <div className="flex items-start justify-between gap-2">
-                        <div
-                          className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
-                            isEarned
-                              ? 'bg-emerald-500/20 text-emerald-300'
-                              : isNextTarget
-                              ? 'bg-amber-400/20 text-amber-300'
-                              : 'bg-slate-800 text-slate-500'
-                          }`}
-                        >
-                          {isEarned ? (
-                            <Award className="w-5 h-5" />
-                          ) : (
-                            <Lock className="w-4 h-4" />
-                          )}
-                        </div>
-                        <span className="font-mono text-[11px] text-slate-400 tabular-nums">
-                          Case 0{idx + 1}
-                        </span>
-                      </div>
+                      {item.label}
+                    </span>
 
-                      <div className="space-y-1">
-                        <h3
-                          className={`font-heading font-bold text-sm leading-snug ${
-                            isEarned ? 'text-white' : 'text-slate-300'
-                          }`}
-                        >
-                          {badgeTitle}
-                        </h3>
-                        <p className="text-[11px] text-slate-400 line-clamp-2 leading-relaxed">
-                          {isEarned
-                            ? lvl.debrief.realWorldHabit
-                            : `Complete ${getCleanLevelTitle(lvl.title)} to unlock this habit badge.`}
-                        </p>
-                      </div>
+                    <span
+                      aria-hidden="true"
+                      className={`h-1.5 w-1.5 rounded-full transition-all duration-150 ${
+                        isSelected
+                          ? 'bg-amber-400 shadow-[0_0_10px_#F59E0B] scale-125'
+                          : 'bg-transparent'
+                      }`}
+                    />
+                  </div>
 
-                      <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px] font-mono">
-                        {isEarned ? (
-                          <span className="text-emerald-400 font-semibold flex items-center gap-1">
-                            <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
-                            <span>Earned</span>
-                          </span>
-                        ) : isNextTarget ? (
-                          <span className="text-amber-300 font-semibold">Active Target</span>
-                        ) : (
-                          <span className="text-slate-500">Locked Preview</span>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
+                  {/* Subtle Underline / Soft Glow on Active Selection */}
+                  <div
+                    aria-hidden="true"
+                    className={`mt-1 h-[2px] rounded-full transition-all duration-200 ${
+                      isSelected
+                        ? 'w-44 bg-gradient-to-r from-transparent via-amber-400 to-transparent shadow-[0_0_14px_rgba(245,158,11,0.8)]'
+                        : 'w-0 bg-transparent'
+                    }`}
+                  />
+
+                  {/* Campaign Progress & Current Level beneath Continue Investigation (and subtle context on active selection) */}
+                  {(isContinue || isSelected) && (
+                    <span
+                      className={`mt-1 font-mono text-[11px] sm:text-xs tracking-wide [text-shadow:0_1px_4px_rgba(0,0,0,0.98)] transition-opacity duration-200 ${
+                        isContinue
+                          ? 'text-amber-300/95 font-medium'
+                          : 'text-slate-300/85'
+                      }`}
+                    >
+                      {item.meta}
+                    </span>
+                  )}
+                </button>
               </div>
-            </section>
-          </>
-        )}
+            );
+          })}
+        </nav>
+      </main>
 
-        {/* ===============================================================
-            CAMPAIGN INVESTIGATION CASE BOARD (Shown on 'journal' and 'board')
-            All 10 levels arranged as connected case files with Completed,
-            Current, and Locked states.
-        =============================================================== */}
-        {(activeTab === 'journal' || activeTab === 'board') && (
-          <section aria-label="Campaign Investigation Case Board" className="space-y-5">
-            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-slate-800 pb-4">
+      {/* =====================================================================
+          4. BOTTOM BAR: COMPACT PLAYER PORTRAIT & LATEST ACHIEVEMENT
+      ===================================================================== */}
+      <footer className="relative z-10 w-full max-w-6xl mx-auto px-6 sm:px-10 pb-6 pt-2 flex flex-col sm:flex-row items-center justify-between gap-4">
+        {/* Left: Compact Player-Character Portrait & Investigator Status */}
+        <div className="flex items-center gap-3.5">
+          <div className="w-11 h-11 rounded-full overflow-hidden border border-amber-400/60 bg-[#0D1527] shrink-0 shadow-[0_0_16px_rgba(0,0,0,0.85)]">
+            {portraitLoaded ? (
+              <img
+                src={detectivePortraitImg}
+                alt="Detective Rowan Vance"
+                referrerPolicy="no-referrer"
+                onError={() => setPortraitLoaded(false)}
+                className="w-full h-full object-cover object-top"
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center font-heading font-bold text-xs text-amber-300">
+                RV
+              </div>
+            )}
+          </div>
+          <div className="[text-shadow:0_1px_4px_rgba(0,0,0,0.95)]">
+            <div className="flex items-center gap-2 text-xs sm:text-sm font-heading font-semibold text-white">
+              <span>Detective Rowan Vance</span>
+              <span className="text-slate-400 font-normal">·</span>
+              <span className="text-amber-300/90 text-xs font-mono font-normal">
+                {investigatorRank}
+              </span>
+            </div>
+            <div className="font-mono text-[11px] text-slate-300/85 tabular-nums">
+              {completedCount}/{totalLevels} Cases Solved · {totalCluesLoggedAcrossCampaign} Clues Logged
+            </div>
+          </div>
+        </div>
+
+        {/* Right: Latest Achievement / Next Badge Preview */}
+        <button
+          type="button"
+          onClick={() => {
+            soundEngine.playGtaMenuSelect();
+            setActiveSubModal('achievements');
+          }}
+          className="flex items-center gap-3 text-left group cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 rounded-lg px-2 py-1 [text-shadow:0_1px_4px_rgba(0,0,0,0.95)]"
+          title="View All Investigator Achievements"
+        >
+          <div
+            className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border ${
+              latestAchievement.earned
+                ? 'bg-emerald-500/20 border-emerald-400/50 text-emerald-300'
+                : 'bg-amber-400/15 border-amber-400/40 text-amber-300'
+            }`}
+          >
+            <Award className="w-4 h-4" />
+          </div>
+          <div>
+            <div className="font-mono text-[10px] uppercase tracking-wider text-slate-300/80">
+              {latestAchievement.earned ? 'Latest Achievement' : 'Next Achievement Target'} ·{' '}
+              {latestAchievement.caseLabel}
+            </div>
+            <div className="font-heading font-semibold text-xs sm:text-sm text-white group-hover:text-amber-300 transition-colors">
+              {latestAchievement.badgeName}
+            </div>
+          </div>
+        </button>
+      </footer>
+
+      {/* =====================================================================
+          5. CASE FILES OVERLAY MODAL (Opened when selecting "Case Files")
+      ===================================================================== */}
+      {activeSubModal === 'case-files' && (
+        <div
+          className="fixed inset-0 z-40 bg-[#050914]/90 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 overflow-y-auto"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Case Files"
+        >
+          <div className="w-full max-w-5xl max-h-[90vh] bg-[#0B1222] border border-slate-700/80 rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+            {/* Modal Header */}
+            <div className="px-6 py-4 border-b border-slate-800 flex flex-wrap items-center justify-between gap-4">
               <div>
-                <div className="text-xs font-mono text-amber-400">
-                  <span>The Glasshouse Files</span>
-                  <span aria-hidden="true"> · </span>
-                  <span>10 Connected Case Files</span>
-                  <span aria-hidden="true"> · </span>
-                  <span>30 Chapters</span>
-                </div>
-                <h2 className="font-heading font-extrabold text-xl sm:text-2xl text-white tracking-tight mt-0.5">
-                  Investigation Case Board
+                <span className="font-mono text-xs text-amber-400 block">
+                  THE GLASSHOUSE FILES · 10 CONNECTED CASES
+                </span>
+                <h2 className="font-heading font-bold text-xl sm:text-2xl text-white">
+                  Investigation Case Files
                 </h2>
               </div>
 
-              {/* Interactive Filter Controls + Secondary Campaign Tools */}
               <div className="flex flex-wrap items-center gap-2">
                 <div className="flex items-center gap-1 p-1 bg-[#111827] border border-slate-800 rounded-lg">
-                  {(
-                    [
-                      { id: 'all', label: 'All Cases (10)' },
-                      { id: 'current', label: 'Current' },
-                      { id: 'completed', label: `Solved (${completedCount})` },
-                      { id: 'locked', label: 'Locked' },
-                    ] as const
-                  ).map((tab) => (
-                    <button
-                      key={tab.id}
-                      type="button"
-                      onClick={() => {
-                        soundEngine.playGtaMenuHover();
-                        setBoardFilter(tab.id);
-                      }}
-                      className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
-                        boardFilter === tab.id
-                          ? 'bg-amber-400 text-slate-950 font-semibold'
-                          : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      {tab.label}
-                    </button>
-                  ))}
+                  <button
+                    type="button"
+                    onClick={() => setCaseFilesTab('board')}
+                    className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer ${
+                      caseFilesTab === 'board'
+                        ? 'bg-amber-400 text-slate-950 font-semibold'
+                        : 'text-slate-300 hover:text-white'
+                    }`}
+                  >
+                    Case Board (10)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCaseFilesTab('script')}
+                    className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer ${
+                      caseFilesTab === 'script'
+                        ? 'bg-amber-400 text-slate-950 font-semibold'
+                        : 'text-slate-300 hover:text-white'
+                    }`}
+                  >
+                    All 30 Chapters
+                  </button>
                 </div>
 
                 {onUnlockAllLevels && completedCount < totalLevels && (
@@ -697,304 +640,383 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
                     onClick={() => {
                       soundEngine.playGtaMenuSelect();
                       onUnlockAllLevels();
-                      setStatusMessage('All 10 Case Files unlocked for inspection.');
                     }}
-                    className="px-3 py-2 rounded-lg bg-[#111827] hover:bg-slate-800 border border-slate-700 text-slate-200 text-xs font-medium flex items-center gap-1.5 cursor-pointer transition-colors whitespace-nowrap shrink-0"
+                    className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-medium flex items-center gap-1.5 cursor-pointer"
                   >
-                    <Unlock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                    <span>Unlock All Cases</span>
+                    <Unlock className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Unlock All</span>
                   </button>
                 )}
 
-                {onRestartFromLevel1 && completedCount > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      soundEngine.playGtaMenuSelect();
-                      onRestartFromLevel1();
-                      setStatusMessage('Case Journal reset to Case 01: The Parcel That Never Came.');
-                    }}
-                    className="px-3 py-2 rounded-lg bg-[#111827] hover:bg-slate-800 border border-slate-700 text-slate-300 text-xs font-medium flex items-center gap-1.5 cursor-pointer transition-colors whitespace-nowrap shrink-0"
-                  >
-                    <RotateCcw className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                    <span>Reset Journal</span>
-                  </button>
-                )}
+                <button
+                  type="button"
+                  onClick={() => setActiveSubModal('none')}
+                  className="p-2 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white cursor-pointer"
+                  title="Close Case Files (Esc)"
+                >
+                  <X className="w-4 h-4" />
+                </button>
               </div>
             </div>
 
-            {/* Connected Case Files Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              {filteredLevels.map(({ lvl, idx }) => {
-                const levelNum = idx + 1;
-                const cleanTitle = getCleanLevelTitle(lvl.title);
-                const isCompleted = completedLevels.includes(lvl.id);
-                const isAvailable = isLevelUnlocked(idx);
-                const isCurrent = idx === currentActiveIndex && !isCompleted;
-                const lvlCluesFound = Object.keys(cluesByLevel[lvl.id] || {}).length;
-                const lvlCluesTotal = lvl.objects.length;
-
-                return (
-                  <article
-                    key={lvl.id}
-                    className={`rounded-2xl border p-5 sm:p-6 flex flex-col justify-between gap-5 transition-all ${
-                      isCurrent
-                        ? 'bg-[#131C31] border-amber-400 shadow-[0_0_30px_rgba(245,158,11,0.12)]'
-                        : isCompleted
-                        ? 'bg-[#0F1928] border-emerald-500/45'
-                        : 'bg-[#0E1422]/75 border-slate-800/80 opacity-75 hover:opacity-95'
-                    }`}
-                  >
-                    <div className="space-y-4">
-                      {/* Case File Header */}
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="space-y-1">
-                          <div className="text-xs font-mono text-slate-400 tabular-nums">
-                            <span>Case File 0{levelNum}</span>
-                            <span aria-hidden="true"> · </span>
-                            <span>{lvl.locationName}</span>
-                            <span aria-hidden="true"> · </span>
-                            <span>{lvl.npcs[0]?.name}</span>
-                          </div>
-                          <h3 className="font-heading font-bold text-lg sm:text-xl text-white leading-snug">
-                            {levelNum}. {cleanTitle}
-                          </h3>
-                        </div>
-
-                        {/* Clear Semantic State Label with Icon */}
-                        <div className="shrink-0 font-mono text-xs font-semibold flex items-center gap-1.5">
-                          {isCompleted ? (
-                            <span className="text-emerald-400 flex items-center gap-1">
-                              <CheckCircle2 className="w-4 h-4 shrink-0" />
-                              <span>Solved</span>
-                            </span>
-                          ) : isCurrent ? (
-                            <span className="text-amber-300 flex items-center gap-1">
-                              <FolderOpen className="w-4 h-4 shrink-0" />
-                              <span>Active Case</span>
-                            </span>
-                          ) : isAvailable ? (
-                            <span className="text-slate-200">Available</span>
-                          ) : (
-                            <span className="text-slate-500 flex items-center gap-1">
-                              <Lock className="w-3.5 h-3.5 shrink-0" />
-                              <span>Locked</span>
-                            </span>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Objective & Clue Tally Summary */}
-                      <p className="text-xs text-slate-300 leading-relaxed">{lvl.objective}</p>
-
-                      {/* 3 Connected Chapter Step Buttons */}
-                      <div className="space-y-2 pt-2 border-t border-slate-800/80">
-                        <div className="flex items-center justify-between text-[11px] font-mono text-slate-400 tabular-nums">
-                          <span>3 Investigation Chapters</span>
-                          <span>
-                            {isCompleted
-                              ? `${lvlCluesTotal}/${lvlCluesTotal} Clues Verified`
-                              : `${lvlCluesFound}/${lvlCluesTotal} Clues Logged`}
-                          </span>
-                        </div>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                          {lvl.chapters.map((ch) => (
-                            <button
-                              key={ch.number}
-                              type="button"
-                              onClick={() => {
-                                soundEngine.playGtaMenuSelect();
-                                if (isAvailable) {
-                                  onSelectLevel(lvl.id, ch.number);
-                                } else {
-                                  setPreviewChapterNum(ch.number);
-                                  setPreviewLevel(lvl);
-                                }
-                              }}
-                              className={`p-2.5 rounded-xl border text-left transition-colors cursor-pointer flex flex-col justify-between gap-1 ${
-                                isCompleted
-                                  ? 'bg-emerald-950/20 border-emerald-500/30 hover:border-emerald-400'
-                                  : isCurrent && ch.number === resolvedChapterNum
-                                  ? 'bg-amber-400/15 border-amber-400 text-white'
-                                  : isAvailable
-                                  ? 'bg-[#0B101E] border-slate-800 hover:border-slate-600'
-                                  : 'bg-[#0B101E]/50 border-slate-800/60 hover:border-slate-700'
-                              }`}
-                            >
-                              <span className="font-mono text-[10px] text-amber-300 font-semibold">
-                                Ch {ch.number} · {ch.phase.replace('The ', '')}
-                              </span>
-                              <span className="font-heading font-semibold text-xs text-white line-clamp-1">
-                                {ch.title.replace(/^Chapter\s+\d+\s*:\s*/i, '')}
-                              </span>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Case File Footer Actions */}
-                    <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between gap-3">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          soundEngine.playGtaMenuHover();
-                          setPreviewChapterNum(1);
-                          setPreviewLevel(lvl);
-                        }}
-                        className="text-xs font-medium text-slate-300 hover:text-white flex items-center gap-1.5 cursor-pointer transition-colors whitespace-nowrap shrink-0"
-                      >
-                        <Eye className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                        <span>Read Case File</span>
-                      </button>
-
-                      {isAvailable ? (
+            {/* Modal Content */}
+            <div className="p-6 overflow-y-auto space-y-5">
+              {caseFilesTab === 'board' ? (
+                <>
+                  {/* Filter Bar */}
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex items-center gap-1 p-1 bg-[#111827] border border-slate-800 rounded-lg">
+                      {(
+                        [
+                          { id: 'all', label: 'All Cases (10)' },
+                          { id: 'current', label: 'Current' },
+                          { id: 'completed', label: `Solved (${completedCount})` },
+                          { id: 'locked', label: 'Locked' },
+                        ] as const
+                      ).map((tab) => (
                         <button
+                          key={tab.id}
                           type="button"
-                          onClick={() => {
-                            soundEngine.playGtaMissionStart();
-                            onSelectLevel(lvl.id, isCurrent ? resolvedChapterNum : 1);
-                          }}
-                          className={`px-4 py-2 rounded-lg font-heading font-bold text-xs flex items-center gap-1.5 cursor-pointer transition-colors whitespace-nowrap shrink-0 ${
-                            isCurrent
-                              ? 'bg-amber-400 hover:bg-amber-300 text-slate-950 shadow-sm'
-                              : 'bg-slate-800 hover:bg-slate-700 text-white'
+                          onClick={() => setBoardFilter(tab.id)}
+                          className={`px-3 py-1 rounded-md text-xs font-medium transition-colors cursor-pointer ${
+                            boardFilter === tab.id
+                              ? 'bg-slate-700 text-white font-semibold'
+                              : 'text-slate-400 hover:text-white'
                           }`}
                         >
-                          <Play className="w-3.5 h-3.5 fill-current shrink-0" />
-                          <span>
-                            {isCurrent
-                              ? `Continue Case 0${levelNum}`
-                              : isCompleted
-                              ? `Replay Case 0${levelNum}`
-                              : `Start Case 0${levelNum}`}
-                          </span>
+                          {tab.label}
                         </button>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            soundEngine.playGtaMenuSelect();
-                            setPreviewChapterNum(1);
-                            setPreviewLevel(lvl);
-                          }}
-                          className="px-3.5 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-400 hover:text-slate-200 text-xs font-medium flex items-center gap-1.5 cursor-pointer transition-colors whitespace-nowrap shrink-0"
-                        >
-                          <Lock className="w-3.5 h-3.5 shrink-0" />
-                          <span>Preview Dossier</span>
-                        </button>
-                      )}
+                      ))}
                     </div>
-                  </article>
+                  </div>
+
+                  {/* Case Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {filteredLevels.map(({ lvl, idx }) => {
+                      const levelNum = idx + 1;
+                      const cleanTitle = getCleanLevelTitle(lvl.title);
+                      const isCompleted = completedLevels.includes(lvl.id);
+                      const isAvailable = isLevelUnlocked(idx);
+                      const isCurrent = idx === currentActiveIndex && !isCompleted;
+                      const lvlCluesFound = Object.keys(cluesByLevel[lvl.id] || {}).length;
+                      const lvlCluesTotal = lvl.objects.length;
+
+                      return (
+                        <article
+                          key={lvl.id}
+                          className={`rounded-xl border p-5 flex flex-col justify-between gap-4 transition-all ${
+                            isCurrent
+                              ? 'bg-[#131C31] border-amber-400'
+                              : isCompleted
+                              ? 'bg-[#0F1928] border-emerald-500/45'
+                              : 'bg-[#0E1422]/80 border-slate-800 opacity-75 hover:opacity-95'
+                          }`}
+                        >
+                          <div className="space-y-2.5">
+                            <div className="flex items-start justify-between gap-2">
+                              <div>
+                                <div className="text-xs font-mono text-slate-400">
+                                  Case 0{levelNum} · {lvl.locationName} · {lvl.npcs[0]?.name}
+                                </div>
+                                <h3 className="font-heading font-bold text-base sm:text-lg text-white mt-0.5">
+                                  {levelNum}. {cleanTitle}
+                                </h3>
+                              </div>
+
+                              <span className="font-mono text-xs font-semibold shrink-0">
+                                {isCompleted ? (
+                                  <span className="text-emerald-400 flex items-center gap-1">
+                                    <CheckCircle2 className="w-3.5 h-3.5" />
+                                    Solved
+                                  </span>
+                                ) : isCurrent ? (
+                                  <span className="text-amber-300 flex items-center gap-1">
+                                    <FolderOpen className="w-3.5 h-3.5" />
+                                    Active
+                                  </span>
+                                ) : isAvailable ? (
+                                  <span className="text-slate-300">Available</span>
+                                ) : (
+                                  <span className="text-slate-500 flex items-center gap-1">
+                                    <Lock className="w-3.5 h-3.5" />
+                                    Locked
+                                  </span>
+                                )}
+                              </span>
+                            </div>
+
+                            <p className="text-xs text-slate-300 leading-relaxed">
+                              {lvl.objective}
+                            </p>
+
+                            {/* 3 Chapter Launch Buttons */}
+                            <div className="grid grid-cols-3 gap-1.5 pt-2">
+                              {lvl.chapters.map((ch) => (
+                                <button
+                                  key={ch.number}
+                                  type="button"
+                                  onClick={() => {
+                                    soundEngine.playGtaMenuSelect();
+                                    if (isAvailable) {
+                                      setActiveSubModal('none');
+                                      onSelectLevel(lvl.id, ch.number);
+                                    } else {
+                                      setPreviewChapterNum(ch.number);
+                                      setPreviewLevel(lvl);
+                                    }
+                                  }}
+                                  className="p-2 rounded-lg bg-[#090E1A] hover:bg-slate-800 border border-slate-800 text-left transition-colors cursor-pointer"
+                                >
+                                  <span className="block font-mono text-[10px] text-amber-300">
+                                    Ch {ch.number} · {ch.phase.replace('The ', '')}
+                                  </span>
+                                  <span className="block font-heading text-xs text-white truncate">
+                                    {ch.title.replace(/^Chapter\s+\d+\s*:\s*/i, '')}
+                                  </span>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between gap-2">
+                            <span className="font-mono text-[11px] text-slate-400 tabular-nums">
+                              {isCompleted
+                                ? `${lvlCluesTotal}/${lvlCluesTotal} Clues Verified`
+                                : `${lvlCluesFound}/${lvlCluesTotal} Clues Logged`}
+                            </span>
+
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setPreviewChapterNum(1);
+                                  setPreviewLevel(lvl);
+                                }}
+                                className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-200 flex items-center gap-1 cursor-pointer"
+                              >
+                                <Eye className="w-3.5 h-3.5 text-amber-400" />
+                                <span>Notes</span>
+                              </button>
+
+                              {isAvailable && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    soundEngine.playGtaMissionStart();
+                                    setActiveSubModal('none');
+                                    onSelectLevel(lvl.id, isCurrent ? resolvedChapterNum : 1);
+                                  }}
+                                  className="px-3.5 py-1.5 rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 font-heading font-bold text-xs flex items-center gap-1 cursor-pointer"
+                                >
+                                  <Play className="w-3 h-3 fill-current" />
+                                  <span>
+                                    {isCurrent
+                                      ? 'Continue'
+                                      : isCompleted
+                                      ? 'Replay'
+                                      : 'Investigate'}
+                                  </span>
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        </article>
+                      );
+                    })}
+                  </div>
+                </>
+              ) : (
+                <CompleteCampaignScriptView
+                  onPlayChapter={(lvlId, chNum) => {
+                    setActiveSubModal('none');
+                    onSelectLevel(lvlId, chNum);
+                  }}
+                  isLevelUnlocked={isLevelUnlocked}
+                  onUnlockAllLevels={onUnlockAllLevels}
+                />
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =====================================================================
+          6. ACHIEVEMENTS OVERLAY MODAL (Opened when selecting "Achievements")
+      ===================================================================== */}
+      {activeSubModal === 'achievements' && (
+        <div
+          className="fixed inset-0 z-40 bg-[#050914]/90 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 overflow-y-auto"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Investigator Achievements"
+        >
+          <div className="w-full max-w-4xl max-h-[88vh] bg-[#0B1222] border border-slate-700/80 rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+            <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between">
+              <div>
+                <span className="font-mono text-xs text-amber-400 block">
+                  INVESTIGATOR RECORD · {earnedBadges.length} OF {totalLevels} EARNED
+                </span>
+                <h2 className="font-heading font-bold text-xl sm:text-2xl text-white">
+                  Achievements & Cyber-Safety Badges
+                </h2>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setActiveSubModal('none')}
+                className="p-2 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white cursor-pointer"
+                title="Close Achievements (Esc)"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-6 overflow-y-auto grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {ADVENTURE_LEVELS.map((lvl, idx) => {
+                const badgeTitle = lvl.debrief.badgeName;
+                const isEarned =
+                  earnedBadges.includes(badgeTitle) || completedLevels.includes(lvl.id);
+                const isNextTarget = idx === currentActiveIndex && !isEarned;
+
+                return (
+                  <div
+                    key={lvl.id}
+                    className={`p-4 rounded-xl border flex items-start gap-3.5 ${
+                      isEarned
+                        ? 'bg-[#101D2E] border-emerald-500/50'
+                        : isNextTarget
+                        ? 'bg-[#131C31] border-amber-400/50'
+                        : 'bg-[#0D1322]/75 border-slate-800 opacity-65'
+                    }`}
+                  >
+                    <div
+                      className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                        isEarned
+                          ? 'bg-emerald-500/20 text-emerald-300'
+                          : isNextTarget
+                          ? 'bg-amber-400/20 text-amber-300'
+                          : 'bg-slate-800 text-slate-500'
+                      }`}
+                    >
+                      {isEarned ? <Award className="w-5 h-5" /> : <Lock className="w-4 h-4" />}
+                    </div>
+
+                    <div className="space-y-1 min-w-0">
+                      <div className="flex items-center gap-2 text-[11px] font-mono">
+                        <span className="text-slate-400">Case 0{idx + 1}</span>
+                        <span>·</span>
+                        {isEarned ? (
+                          <span className="text-emerald-400 font-semibold">Earned</span>
+                        ) : isNextTarget ? (
+                          <span className="text-amber-300 font-semibold">Current Target</span>
+                        ) : (
+                          <span className="text-slate-500">Locked Preview</span>
+                        )}
+                      </div>
+                      <h3 className="font-heading font-bold text-sm sm:text-base text-white">
+                        {badgeTitle}
+                      </h3>
+                      <p className="text-xs text-slate-300 leading-relaxed">
+                        {isEarned
+                          ? lvl.debrief.realWorldHabit
+                          : `Solve Case 0${idx + 1} (${getCleanLevelTitle(
+                              lvl.title
+                            )}) to unlock this verification habit badge.`}
+                      </p>
+                    </div>
+                  </div>
                 );
               })}
             </div>
-          </section>
-        )}
-
-        {/* ===================================================================
-            COMPLETE 30-CHAPTER STORY, QUESTIONS & GRAPHICS TAB
-        =================================================================== */}
-        {activeTab === 'script' && (
-          <CompleteCampaignScriptView
-            onPlayChapter={(lvlId, chNum) => onSelectLevel(lvlId, chNum)}
-            isLevelUnlocked={isLevelUnlocked}
-            onUnlockAllLevels={onUnlockAllLevels}
-          />
-        )}
-
-        {/* ===================================================================
-            FIELD GUIDE & CONTROLS TAB (Secondary Panel)
-        =================================================================== */}
-        {activeTab === 'controls' && (
-          <section className="max-w-3xl mx-auto w-full bg-[#111827] border border-slate-800 rounded-2xl p-6 sm:p-8 space-y-6">
-            <div className="flex items-center justify-between pb-4 border-b border-slate-800">
-              <div>
-                <span className="font-mono text-xs text-amber-400 block">
-                  Investigator Field Manual
-                </span>
-                <h2 className="font-heading font-bold text-xl text-white">
-                  How to Investigate Each 3-Chapter Case
-                </h2>
-              </div>
-              <button
-                type="button"
-                onClick={() => setActiveTab('journal')}
-                className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-medium cursor-pointer whitespace-nowrap shrink-0"
-              >
-                Back to Case Journal
-              </button>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
-              <div className="p-4 rounded-xl bg-[#0B101E] border border-slate-800 space-y-1.5">
-                <span className="font-mono text-amber-400 font-semibold block">
-                  Chapter 1 · The Setup
-                </span>
-                <p className="text-slate-300 leading-relaxed">
-                  Enter the 3D scene and press <strong className="text-white">T</strong> (or click
-                  Talk) to speak with the resident and hear what happened.
-                </p>
-              </div>
-              <div className="p-4 rounded-xl bg-[#0B101E] border border-slate-800 space-y-1.5">
-                <span className="font-mono text-amber-400 font-semibold block">
-                  Chapter 2 · The Investigation
-                </span>
-                <p className="text-slate-300 leading-relaxed">
-                  Walk up to phones, laptops, and notices and press{' '}
-                  <strong className="text-white">E</strong> to inspect digital evidence and log clues.
-                </p>
-              </div>
-              <div className="p-4 rounded-xl bg-[#0B101E] border border-slate-800 space-y-1.5">
-                <span className="font-mono text-emerald-400 font-semibold block">
-                  Chapter 3 · The Decision
-                </span>
-                <p className="text-slate-300 leading-relaxed">
-                  Choose the safest verification route from 4 options. Unsafe choices let you retry
-                  immediately with all clues kept.
-                </p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center font-mono">
-              <div className="p-3.5 rounded-xl bg-[#0B101E] border border-slate-800">
-                <span className="text-base font-bold text-amber-400 block">W / A / S / D</span>
-                <span className="text-xs text-slate-400">Move Investigator</span>
-              </div>
-              <div className="p-3.5 rounded-xl bg-[#0B101E] border border-slate-800">
-                <span className="text-base font-bold text-white block">E / T Keys</span>
-                <span className="text-xs text-slate-400">Inspect / Talk</span>
-              </div>
-              <div className="p-3.5 rounded-xl bg-[#0B101E] border border-slate-800">
-                <span className="text-base font-bold text-emerald-400 block">J Key</span>
-                <span className="text-xs text-slate-400">Case Journal</span>
-              </div>
-              <div className="p-3.5 rounded-xl bg-[#0B101E] border border-slate-800">
-                <span className="text-base font-bold text-slate-200 block">V Key</span>
-                <span className="text-xs text-slate-400">1st / 3rd Person</span>
-              </div>
-            </div>
-
-            <div className="pt-4 border-t border-slate-800 flex items-center justify-between">
-              <span className="text-xs text-slate-400">
-                Need audio, subtitle, or camera sensitivity adjustments?
-              </span>
-              <button
-                type="button"
-                onClick={onOpenSettings}
-                className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-medium text-white flex items-center gap-1.5 cursor-pointer"
-              >
-                <SettingsIcon className="w-3.5 h-3.5" />
-                <span>Open Settings</span>
-              </button>
-            </div>
-          </section>
-        )}
-      </main>
+          </div>
+        </div>
+      )}
 
       {/* =====================================================================
-          INTERACTIVE CHAPTER STORY, GRAPHICS, CLUES & QUESTION MODAL
+          7. NEW INVESTIGATION CONFIRMATION MODAL
+      ===================================================================== */}
+      {activeSubModal === 'new-confirm' && (
+        <div
+          className="fixed inset-0 z-40 bg-[#050914]/88 backdrop-blur-md flex items-center justify-center p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Start New Investigation"
+        >
+          <div className="w-full max-w-md bg-[#0B1222] border border-slate-700 rounded-2xl p-6 space-y-4 shadow-2xl">
+            <div className="flex items-center gap-2.5 text-amber-300 font-heading font-bold text-lg">
+              <RotateCcw className="w-5 h-5" />
+              <span>Start a New Investigation?</span>
+            </div>
+            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+              This will reset your current campaign journal ({completedCount}/{totalLevels} cases
+              solved) and begin fresh at <strong>Case 01: The Parcel That Never Came</strong>.
+            </p>
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setActiveSubModal('none')}
+                className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-medium text-slate-200 cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveSubModal('none');
+                  if (onNewInvestigation) {
+                    onNewInvestigation();
+                  } else {
+                    onRestartFromLevel1?.();
+                    onSelectLevel('tutorial-delivery', 1);
+                  }
+                }}
+                className="px-4 py-2 rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 font-heading font-bold text-xs flex items-center gap-1.5 cursor-pointer"
+              >
+                <span>Begin New Investigation</span>
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =====================================================================
+          8. QUIT / STAND DOWN MODAL
+      ===================================================================== */}
+      {activeSubModal === 'quit' && (
+        <div
+          className="fixed inset-0 z-40 bg-[#050914]/92 backdrop-blur-md flex items-center justify-center p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Quit Session"
+        >
+          <div className="w-full max-w-md bg-[#0B1222] border border-slate-700 rounded-2xl p-6 space-y-4 shadow-2xl text-center">
+            <div className="w-11 h-11 rounded-full bg-emerald-500/15 border border-emerald-400/40 text-emerald-300 flex items-center justify-center mx-auto">
+              <ShieldCheck className="w-5 h-5" />
+            </div>
+            <h2 className="font-heading font-bold text-lg text-white">
+              Case Progress Saved to Journal
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+              Detective Rowan Vance’s case notes ({completedCount}/{totalLevels} cases solved,{' '}
+              {totalCluesLoggedAcrossCampaign} clues logged) are safely stored in your browser.
+              You can close this tab anytime or return to the desk.
+            </p>
+            <div className="flex items-center justify-center gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setActiveSubModal('none')}
+                className="px-5 py-2 rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 font-heading font-bold text-xs cursor-pointer"
+              >
+                Return to Main Menu
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =====================================================================
+          9. CHAPTER PREVIEW DOSSIER MODAL
       ===================================================================== */}
       {previewLevel && (
         <ChapterInvestigationModal
@@ -1005,25 +1027,12 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
           onTriggerFinalDecision={() => {
             const target = previewLevel;
             setPreviewLevel(null);
+            setActiveSubModal('none');
             onSelectLevel(target.id, 3);
           }}
           isGameplayMode={false}
         />
       )}
-
-      {/* =====================================================================
-          QUIET FOOTER
-      ===================================================================== */}
-      <footer className="relative z-20 w-full px-4 sm:px-8 py-4 bg-[#080C17] border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-400">
-        <div className="flex items-center gap-2">
-          <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
-          <span>Scam Sleuth: The Glasshouse Files · Educational Cyber-Safety Case Journal</span>
-        </div>
-
-        <div className="font-mono text-xs text-slate-400 tabular-nums">
-          {completedCount} of {totalLevels} Cases Solved · {earnedBadges.length} of {totalLevels} Badges
-        </div>
-      </footer>
     </div>
   );
 };

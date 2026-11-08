@@ -1,8 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import {
   BookOpen,
-  Settings as SettingsIcon,
-  Video,
   Footprints,
   Sparkles,
   ChevronRight,
@@ -12,7 +10,7 @@ import {
   Search,
   Target,
   CheckCircle2,
-  Smartphone,
+  Film,
 } from 'lucide-react';
 import { AdventureLevel, GameSettings } from '../../types/adventure';
 import { NearbyTarget } from '../3d/AdventureWorld';
@@ -25,6 +23,9 @@ interface MissionHudProps {
   settings: GameSettings;
   collectedClueIds: string[];
   activeNearby: NearbyTarget | null;
+  openingContextSummary?: string | null;
+  onDismissOpeningSummary?: () => void;
+  onReplayOpeningStory?: () => void;
   onOpenJournal: () => void;
   onOpenChapterQuestion?: () => void;
   onTalkToPerson?: () => void;
@@ -46,6 +47,9 @@ export const MissionHud: React.FC<MissionHudProps> = ({
   settings,
   collectedClueIds,
   activeNearby,
+  openingContextSummary,
+  onDismissOpeningSummary,
+  onReplayOpeningStory,
   onOpenJournal,
   onOpenChapterQuestion,
   onTalkToPerson,
@@ -357,8 +361,22 @@ export const MissionHud: React.FC<MissionHudProps> = ({
           </div>
         </div>
 
-        {/* RIGHT: Clean Investigator Toolbar (Journal, Camera Perspective, Pause/Settings) */}
+        {/* RIGHT: Clean Investigator Toolbar (Replay Opening, Journal) */}
         <div className="flex flex-row items-center gap-2 self-end md:self-start pointer-events-auto">
+          {onReplayOpeningStory && (
+            <button
+              type="button"
+              onClick={onReplayOpeningStory}
+              className="px-3 py-2 rounded-xl bg-[#070D1E]/90 hover:bg-[#111E3C] border border-amber-400/40 text-amber-300 hover:text-white transition-all shadow-lg flex items-center gap-1.5 cursor-pointer backdrop-blur-md"
+              title="Replay Pre-Investigation Opening Story"
+            >
+              <Film className="w-4 h-4 text-amber-400" />
+              <span className="hidden sm:inline font-mono text-xs font-semibold">
+                Opening Story
+              </span>
+            </button>
+          )}
+
           <button
             type="button"
             onClick={onOpenJournal}
@@ -370,51 +388,39 @@ export const MissionHud: React.FC<MissionHudProps> = ({
               Journal ({foundCount}/{totalClues})
             </span>
           </button>
-
-          {onTogglePhoneInHand && (
-            <button
-              type="button"
-              onClick={onTogglePhoneInHand}
-              className={`px-3 py-2 rounded-xl border transition-all shadow-lg flex items-center gap-1.5 cursor-pointer backdrop-blur-md ${
-                settings.showPhoneInHand !== false
-                  ? 'bg-[#070D1E]/90 hover:bg-[#111E3C] border-[#00F0FF]/50 text-[#00F0FF]'
-                  : 'bg-[#070D1E]/90 hover:bg-[#111E3C] border-slate-700/80 text-slate-300 hover:text-white'
-              }`}
-              title="Show / Hide Phone in Hand (P)"
-            >
-              <Smartphone className="w-4 h-4" />
-              <span className="hidden sm:inline font-mono text-xs font-semibold">
-                {settings.showPhoneInHand !== false ? 'Hide Phone (P)' : 'Show Phone (P)'}
-              </span>
-            </button>
-          )}
-
-          <button
-            type="button"
-            onClick={onToggleCamera}
-            className="px-3 py-2 rounded-xl bg-[#070D1E]/90 hover:bg-[#111E3C] border border-slate-700/80 text-slate-100 hover:text-white transition-all shadow-lg flex items-center gap-1.5 cursor-pointer backdrop-blur-md"
-            title="Toggle Camera View (V)"
-          >
-            <Video className="w-4 h-4 text-[#38BDF8]" />
-            <span className="hidden sm:inline font-mono text-xs font-semibold">
-              {settings.isFirstPerson ? '1st Person' : '3rd Person'}
-            </span>
-          </button>
-
-          <button
-            type="button"
-            onClick={onOpenSettings}
-            className="px-3 py-2 rounded-xl bg-[#070D1E]/90 hover:bg-[#111E3C] border border-slate-700/80 text-slate-100 hover:text-white transition-all shadow-lg flex items-center gap-1.5 cursor-pointer backdrop-blur-md"
-            title="Settings & Controls (Esc)"
-          >
-            <SettingsIcon className="w-4 h-4 text-amber-300" />
-            <span className="hidden sm:inline font-mono text-xs font-semibold">Settings</span>
-          </button>
         </div>
       </div>
 
+      {/* =====================================================================
+          1-LINE OPENING CONTEXT SUMMARY BANNER (Shown when opening is skipped or just completed)
+      ===================================================================== */}
+      {openingContextSummary && (
+        <div className="pointer-events-auto self-center mt-2 w-full max-w-3xl px-2">
+          <div className="px-4 py-2.5 rounded-xl bg-[#070D1E]/95 border border-amber-400/50 shadow-2xl backdrop-blur-md flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <span className="px-2 py-0.5 rounded bg-amber-400/20 border border-amber-400/40 text-amber-300 font-mono text-[10px] font-bold uppercase tracking-wider shrink-0">
+                Case Context
+              </span>
+              <p className="font-sans text-xs sm:text-sm text-slate-100 truncate sm:whitespace-normal">
+                {openingContextSummary}
+              </p>
+            </div>
+            {onDismissOpeningSummary && (
+              <button
+                type="button"
+                onClick={onDismissOpeningSummary}
+                className="px-2 py-0.5 rounded-md bg-white/5 hover:bg-white/15 border border-white/10 text-slate-300 hover:text-white font-mono text-xs shrink-0 cursor-pointer"
+                title="Dismiss context banner"
+              >
+                ×
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Subtle Upper-Center Chapter Banner on Chapter Transition (Non-blocking) */}
-      {showIntroSplash && (
+      {showIntroSplash && !openingContextSummary && (
         <div className="pointer-events-none self-center mt-2 animate-fade-in">
           <div className="px-4 py-2 rounded-2xl bg-[#070D1E]/95 border border-amber-400/60 shadow-2xl backdrop-blur-md text-center">
             <span className="font-mono text-[10px] text-amber-300 uppercase tracking-widest block font-bold">
