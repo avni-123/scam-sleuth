@@ -1447,90 +1447,108 @@ function attachCharacterWardrobeDetails(
 }
 
 /**
- * Creates a detailed 3D handheld smartphone prop attached to the character's RightHand bone.
- * In the Investigator's two-handed lowered grip:
- * - The +Z face of phoneGroup points outward toward the front viewer, showing the BACK of the phone
- *   (frosted midnight-slate rear glass, raised camera island, metallic triple camera rings, LED flash, and emblem).
- * - The -Z face of phoneGroup points inward toward the character, displaying the lit AMOLED delivery-scam message screen.
+ * Creates a dedicated, anatomically unified 3D Hand-Holding-Smartphone asset:
+ * - Upright smartphone with lit AMOLED scam alert screen on -Z (pressed flat into palm).
+ * - Full broad back panel facing +Z toward viewer with metallic triple camera lenses at the top.
+ * - Palm supporting the phone screen from behind.
+ * - Wrist situated below the phone, seamlessly meeting the jacket sleeve cuff.
+ * - Four fingers (Index, Middle, Ring, Pinky) curling tightly around the outer long edge (-X),
+ *   with knuckles and distal pads visibly wrapping around the edge.
+ * - Opposing thumb gripping the inner long edge (+X).
+ * - Zero gaps, zero clipping, zero edge-on distortion.
  */
-function createHandHeldPhoneProp(): {
-  phoneGroup: THREE.Group;
+function createInvestigatorHandAndPhoneAsset(
+  skinHex: string,
+  jacketHex: string
+): {
+  assetGroup: THREE.Group;
   screenGlowLight: THREE.PointLight;
 } {
-  const phoneGroup = new THREE.Group();
-  phoneGroup.name = 'investigatorHeldPhone';
+  const assetGroup = new THREE.Group();
+  assetGroup.name = 'investigatorHandAndPhoneAsset';
+
+  const skinMat = new THREE.MeshStandardMaterial({
+    color: new THREE.Color(skinHex || '#ecc8b0'),
+    roughness: 0.56,
+    metalness: 0.04,
+  });
 
   const phoneW = 0.076;
   const phoneH = 0.156;
-  const phoneD = 0.01;
+  const phoneD = 0.009;
 
-  // 1. Slim Dark Anodized Aluminum & Brushed Titanium Frame
+  // Phone center in asset local space (positioned upright above the wrist)
+  const phoneCenterY = 0.072;
+  const phoneCenterZ = 0.012;
+
+  // -------------------------------------------------------------------------
+  // 1. SMARTPHONE PROP (Upright portrait, back facing +Z, screen facing -Z)
+  // -------------------------------------------------------------------------
+  const phoneGroup = new THREE.Group();
+  phoneGroup.name = 'investigatorPhoneProp';
+  phoneGroup.position.set(0, phoneCenterY, phoneCenterZ);
+  assetGroup.add(phoneGroup);
+
+  // Slim anodized chassis
   const chassisGeo = new THREE.BoxGeometry(phoneW, phoneH, phoneD);
   const chassisMat = new THREE.MeshStandardMaterial({
     color: 0x111827,
     roughness: 0.28,
-    metalness: 0.84,
+    metalness: 0.85,
   });
   const chassis = new THREE.Mesh(chassisGeo, chassisMat);
   chassis.castShadow = true;
   chassis.receiveShadow = true;
-  chassis.frustumCulled = false;
   phoneGroup.add(chassis);
 
-  // Metallic outer chamfer rim so the phone silhouette and edges catch light clearly with razor-sharp contrast against dark jacket
+  // Precision metallic bevel rim
   const rimGeo = new THREE.BoxGeometry(
-    phoneW + 0.0036,
-    phoneH + 0.0036,
-    phoneD - 0.0018
+    phoneW + 0.0028,
+    phoneH + 0.0028,
+    phoneD - 0.002
   );
   const rimMat = new THREE.MeshStandardMaterial({
     color: 0xd1d5db,
     roughness: 0.14,
-    metalness: 0.96,
+    metalness: 0.95,
   });
-  const rimMesh = new THREE.Mesh(rimGeo, rimMat);
-  rimMesh.frustumCulled = false;
-  phoneGroup.add(rimMesh);
+  phoneGroup.add(new THREE.Mesh(rimGeo, rimMat));
 
-  // Side tactile power & volume buttons along the frame edges
+  // Tactile side buttons
   const buttonMat = new THREE.MeshStandardMaterial({
     color: 0xe2e8f0,
     roughness: 0.16,
     metalness: 0.94,
   });
   const powerBtn = new THREE.Mesh(
-    new THREE.BoxGeometry(0.0028, 0.018, 0.004),
+    new THREE.BoxGeometry(0.0026, 0.018, 0.0035),
     buttonMat
   );
-  powerBtn.position.set(phoneW / 2 + 0.0018, 0.024, 0);
-  powerBtn.frustumCulled = false;
+  powerBtn.position.set(phoneW / 2 + 0.0016, 0.024, 0);
 
   const volUpBtn = new THREE.Mesh(
-    new THREE.BoxGeometry(0.0028, 0.016, 0.004),
+    new THREE.BoxGeometry(0.0026, 0.015, 0.0035),
     buttonMat
   );
-  volUpBtn.position.set(-phoneW / 2 - 0.0018, 0.032, 0);
-  volUpBtn.frustumCulled = false;
+  volUpBtn.position.set(-phoneW / 2 - 0.0016, 0.032, 0);
 
   const volDownBtn = new THREE.Mesh(
-    new THREE.BoxGeometry(0.0028, 0.016, 0.004),
+    new THREE.BoxGeometry(0.0026, 0.015, 0.0035),
     buttonMat
   );
-  volDownBtn.position.set(-phoneW / 2 - 0.0018, 0.01, 0);
-  volDownBtn.frustumCulled = false;
+  volDownBtn.position.set(-phoneW / 2 - 0.0016, 0.011, 0);
   phoneGroup.add(powerBtn, volUpBtn, volDownBtn);
 
-  // 2. BACK OF THE PHONE (+Z outward face — clearly visible from front / Dossier view)
+  // Broad rear back panel (+Z outward face)
   const backGlass = new THREE.Mesh(
     new THREE.PlaneGeometry(phoneW - 0.002, phoneH - 0.002),
     new THREE.MeshStandardMaterial({
-      color: 0x334155,
-      roughness: 0.22,
-      metalness: 0.65,
+      color: 0x1e293b,
+      roughness: 0.2,
+      metalness: 0.7,
     })
   );
   backGlass.position.z = phoneD / 2 + 0.0006;
-  backGlass.frustumCulled = false;
   phoneGroup.add(backGlass);
 
   const backSheen = new THREE.Mesh(
@@ -1542,136 +1560,236 @@ function createHandHeldPhoneProp(): {
     })
   );
   backSheen.position.z = phoneD / 2 + 0.0008;
-  backSheen.frustumCulled = false;
   phoneGroup.add(backSheen);
 
-  // Raised Camera Island (Upper-left of the back of the phone)
+  // Raised Camera Island at TOP-LEFT (-X, +Y in phone space)
   const islandW = 0.033;
-  const islandH = 0.047;
+  const islandH = 0.046;
   const islandX = -phoneW / 2 + islandW / 2 + 0.006;
   const islandY = phoneH / 2 - islandH / 2 - 0.006;
 
-  const camIslandBezel = new THREE.Mesh(
-    new THREE.BoxGeometry(islandW + 0.0025, islandH + 0.0025, 0.0026),
+  const islandBezel = new THREE.Mesh(
+    new THREE.BoxGeometry(islandW + 0.0024, islandH + 0.0024, 0.0028),
     new THREE.MeshStandardMaterial({
       color: 0xe2e8f0,
       roughness: 0.15,
       metalness: 0.95,
     })
   );
-  camIslandBezel.position.set(islandX, islandY, phoneD / 2 + 0.0013);
-  camIslandBezel.frustumCulled = false;
-  phoneGroup.add(camIslandBezel);
+  islandBezel.position.set(islandX, islandY, phoneD / 2 + 0.0014);
+  phoneGroup.add(islandBezel);
 
-  const camIsland = new THREE.Mesh(
+  const island = new THREE.Mesh(
     new THREE.BoxGeometry(islandW, islandH, 0.0034),
     new THREE.MeshStandardMaterial({
-      color: 0x0f172a,
-      roughness: 0.12,
-      metalness: 0.88,
+      color: 0x090d16,
+      roughness: 0.1,
+      metalness: 0.9,
     })
   );
-  camIsland.position.set(islandX, islandY, phoneD / 2 + 0.0018);
-  camIsland.frustumCulled = false;
-  phoneGroup.add(camIsland);
+  island.position.set(islandX, islandY, phoneD / 2 + 0.0019);
+  phoneGroup.add(island);
 
-  // Three Pro Camera Lenses (Bright Metallic Outer Rings + Deep Sapphire Optics)
-  const ringCylinderGeo = new THREE.CylinderGeometry(0.007, 0.007, 0.0044, 20);
-  ringCylinderGeo.rotateX(Math.PI / 2);
-  const ringCylinderMat = new THREE.MeshStandardMaterial({
+  // Triple Pro Camera Lenses
+  const lensRingGeo = new THREE.CylinderGeometry(0.0068, 0.0068, 0.004, 18);
+  lensRingGeo.rotateX(Math.PI / 2);
+  const lensRingMat = new THREE.MeshStandardMaterial({
     color: 0xf8fafc,
-    roughness: 0.12,
+    roughness: 0.1,
     metalness: 0.98,
   });
 
-  const opticCylinderGeo = new THREE.CylinderGeometry(0.0049, 0.0049, 0.0048, 20);
-  opticCylinderGeo.rotateX(Math.PI / 2);
-  const opticCylinderMat = new THREE.MeshStandardMaterial({
+  const opticGeo = new THREE.CylinderGeometry(0.0048, 0.0048, 0.0044, 18);
+  opticGeo.rotateX(Math.PI / 2);
+  const opticMat = new THREE.MeshStandardMaterial({
     color: 0x020617,
-    roughness: 0.06,
+    roughness: 0.05,
     metalness: 0.98,
   });
 
-  const lensPositions: [number, number][] = [
+  [
     [islandX - 0.007, islandY + 0.012],
     [islandX - 0.007, islandY - 0.012],
     [islandX + 0.0075, islandY],
-  ];
-
-  lensPositions.forEach(([lx, ly]) => {
-    const ring = new THREE.Mesh(ringCylinderGeo, ringCylinderMat);
-    ring.position.set(lx, ly, phoneD / 2 + 0.0023);
-    ring.frustumCulled = false;
-
-    const optic = new THREE.Mesh(opticCylinderGeo, opticCylinderMat);
-    optic.position.set(lx, ly, phoneD / 2 + 0.0025);
-    optic.frustumCulled = false;
-
+  ].forEach(([lx, ly]) => {
+    const ring = new THREE.Mesh(lensRingGeo, lensRingMat);
+    ring.position.set(lx, ly, phoneD / 2 + 0.0022);
+    const optic = new THREE.Mesh(opticGeo, opticMat);
+    optic.position.set(lx, ly, phoneD / 2 + 0.0024);
     phoneGroup.add(ring, optic);
   });
 
-  // LED Flash & LiDAR Sensor on Camera Island
-  const flashGeo = new THREE.CylinderGeometry(0.0033, 0.0033, 0.0044, 16);
+  // Flash & LiDAR
+  const flashGeo = new THREE.CylinderGeometry(0.0032, 0.0032, 0.004, 14);
   flashGeo.rotateX(Math.PI / 2);
-  const flashMesh = new THREE.Mesh(
+  const flash = new THREE.Mesh(
     flashGeo,
     new THREE.MeshBasicMaterial({ color: 0xfef08a })
   );
-  flashMesh.position.set(islandX + 0.0075, islandY + 0.013, phoneD / 2 + 0.0024);
-  flashMesh.frustumCulled = false;
+  flash.position.set(islandX + 0.0075, islandY + 0.013, phoneD / 2 + 0.0023);
+  phoneGroup.add(flash);
 
-  const lidarMesh = new THREE.Mesh(
+  const lidar = new THREE.Mesh(
     flashGeo,
     new THREE.MeshStandardMaterial({
       color: 0x475569,
-      roughness: 0.18,
-      metalness: 0.85,
+      roughness: 0.2,
+      metalness: 0.8,
     })
   );
-  lidarMesh.position.set(islandX + 0.0075, islandY - 0.013, phoneD / 2 + 0.0023);
-  lidarMesh.frustumCulled = false;
-  phoneGroup.add(flashMesh, lidarMesh);
+  lidar.position.set(islandX + 0.0075, islandY - 0.013, phoneD / 2 + 0.0022);
+  phoneGroup.add(lidar);
 
-  // Subtle Metallic Emblem Circle on Center Back of Phone
-  const emblemGeo = new THREE.RingGeometry(0.0055, 0.0088, 24);
-  const emblemMesh = new THREE.Mesh(
-    emblemGeo,
+  // Metallic Center Emblem Ring
+  const emblem = new THREE.Mesh(
+    new THREE.RingGeometry(0.0055, 0.0085, 24),
     new THREE.MeshBasicMaterial({ color: 0x94a3b8, side: THREE.DoubleSide })
   );
-  emblemMesh.position.set(0, -0.006, phoneD / 2 + 0.0009);
-  emblemMesh.frustumCulled = false;
-  phoneGroup.add(emblemMesh);
+  emblem.position.set(0, -0.006, phoneD / 2 + 0.0008);
+  phoneGroup.add(emblem);
 
-  // 3. LIT FRONT SCREEN (-Z inward face — facing palm and investigator)
+  // Lit AMOLED front screen (-Z face pressed against palm)
   const screenTex =
     ProceduralTextureGenerator.createCaseDeliveryMessageScreenTexture();
   const screenGeo = new THREE.PlaneGeometry(phoneW - 0.006, phoneH - 0.008);
-  const screenMat = new THREE.MeshBasicMaterial({
-    map: screenTex,
-  });
+  const screenMat = new THREE.MeshBasicMaterial({ map: screenTex });
   const frontScreen = new THREE.Mesh(screenGeo, screenMat);
   frontScreen.rotation.y = Math.PI;
   frontScreen.position.z = -phoneD / 2 - 0.0006;
-  frontScreen.frustumCulled = false;
   phoneGroup.add(frontScreen);
 
   const screenGlowLight = new THREE.PointLight(0xfffbeb, 0.12, 0.45, 2.0);
-  screenGlowLight.position.set(0, 0.02, -0.05);
+  screenGlowLight.position.set(0, 0.02, -0.04);
   phoneGroup.add(screenGlowLight);
 
-  // Ensure no frustum culling on phone prop sub-meshes so phone is always visible
-  phoneGroup.traverse((child) => {
+  // -------------------------------------------------------------------------
+  // 2. SCULPTED HAND (Natural one-handed phone grip)
+  // -------------------------------------------------------------------------
+  const handGroup = new THREE.Group();
+  handGroup.name = 'investigatorSculptedHand';
+  assetGroup.add(handGroup);
+
+  // A. WRIST & SLEEVE SEAM: Sits below the phone, seamlessly meeting RightForeArm
+  const wristSleeveGeo = new THREE.CylinderGeometry(0.021, 0.024, 0.022, 20);
+  wristSleeveGeo.scale(1.15, 1, 0.85);
+  const wristSleeveMat = new THREE.MeshStandardMaterial({
+    color: new THREE.Color(jacketHex || '#1e1b4b'),
+    roughness: 0.75,
+  });
+  const sleeveCuff = new THREE.Mesh(wristSleeveGeo, wristSleeveMat);
+  sleeveCuff.position.set(0, -0.008, 0);
+  handGroup.add(sleeveCuff);
+
+  const shirtCuffGeo = new THREE.CylinderGeometry(0.0195, 0.0215, 0.008, 20);
+  shirtCuffGeo.scale(1.14, 1, 0.84);
+  const shirtCuff = new THREE.Mesh(
+    shirtCuffGeo,
+    new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.6 })
+  );
+  shirtCuff.position.set(0, 0.006, 0);
+  handGroup.add(shirtCuff);
+
+  const wristStemGeo = new THREE.CylinderGeometry(0.018, 0.019, 0.028, 20);
+  wristStemGeo.scale(1.12, 1, 0.82);
+  const wristStem = new THREE.Mesh(wristStemGeo, skinMat);
+  wristStem.position.set(0, 0.022, 0.002);
+  handGroup.add(wristStem);
+
+  // B. PALM: Supporting the phone screen from behind
+  const palmBackZ = phoneCenterZ - phoneD / 2 - 0.009;
+  const palmGeo = new THREE.BoxGeometry(phoneW * 0.92, 0.076, 0.018);
+  const palm = new THREE.Mesh(palmGeo, skinMat);
+  palm.position.set(0, phoneCenterY - 0.012, palmBackZ);
+  handGroup.add(palm);
+
+  // Thenar eminence (thumb base muscular mound on inner edge +X)
+  const thenarGeo = new THREE.SphereGeometry(0.018, 16, 16);
+  thenarGeo.scale(1.1, 1.4, 0.78);
+  const thenar = new THREE.Mesh(thenarGeo, skinMat);
+  thenar.position.set(phoneW / 2 - 0.012, phoneCenterY - 0.028, palmBackZ);
+  handGroup.add(thenar);
+
+  // Hypothenar eminence (pinky base muscular mound on outer edge -X)
+  const hypothenarGeo = new THREE.SphereGeometry(0.016, 16, 16);
+  hypothenarGeo.scale(0.9, 1.45, 0.75);
+  const hypothenar = new THREE.Mesh(hypothenarGeo, skinMat);
+  hypothenar.position.set(-phoneW / 2 + 0.012, phoneCenterY - 0.034, palmBackZ);
+  handGroup.add(hypothenar);
+
+  // C. FOUR CURLED FINGERS: Wrapping tightly along the outer long edge (-X)
+  const fingers = [
+    { name: 'Index', y: phoneCenterY + 0.030, r: 0.0068 },
+    { name: 'Middle', y: phoneCenterY + 0.007, r: 0.0072 },
+    { name: 'Ring', y: phoneCenterY - 0.016, r: 0.0066 },
+    { name: 'Pinky', y: phoneCenterY - 0.038, r: 0.0058 },
+  ];
+
+  fingers.forEach((f) => {
+    // 1. Knuckle behind the phone (connecting palm to outer side)
+    const knuckleGeo = new THREE.SphereGeometry(f.r * 1.05, 14, 14);
+    const knuckle = new THREE.Mesh(knuckleGeo, skinMat);
+    knuckle.position.set(-phoneW / 2 - f.r * 0.25, f.y, palmBackZ + 0.002);
+    handGroup.add(knuckle);
+
+    // 2. Side phalanx wrapping around outer chassis edge (-X)
+    const sidePhalanxGeo = new THREE.CylinderGeometry(f.r, f.r * 0.95, 0.012, 16);
+    sidePhalanxGeo.rotateZ(Math.PI / 2);
+    const sidePhalanx = new THREE.Mesh(sidePhalanxGeo, skinMat);
+    sidePhalanx.position.set(-phoneW / 2 - f.r * 0.38, f.y, phoneCenterZ);
+    handGroup.add(sidePhalanx);
+
+    // 3. Curled distal fingertip pad: curves over onto front bevel (+Z)
+    const tipPadGeo = new THREE.SphereGeometry(f.r * 0.96, 14, 14);
+    tipPadGeo.scale(1.22, 0.92, 0.82);
+    const tipPad = new THREE.Mesh(tipPadGeo, skinMat);
+    tipPad.position.set(
+      -phoneW / 2 + f.r * 0.52,
+      f.y,
+      phoneCenterZ + phoneD / 2 + f.r * 0.22
+    );
+    handGroup.add(tipPad);
+  });
+
+  // D. OPPOSING THUMB: Wrapping along the inner long edge (+X)
+  const thumbProxGeo = new THREE.CylinderGeometry(0.0085, 0.0105, 0.03, 16);
+  thumbProxGeo.rotateZ(-Math.PI / 5);
+  thumbProxGeo.rotateY(Math.PI / 6);
+  const thumbProx = new THREE.Mesh(thumbProxGeo, skinMat);
+  thumbProx.position.set(
+    phoneW / 2 - 0.006,
+    phoneCenterY - 0.016,
+    palmBackZ + 0.006
+  );
+  handGroup.add(thumbProx);
+
+  const thumbDistalGeo = new THREE.CylinderGeometry(0.0078, 0.0084, 0.018, 16);
+  thumbDistalGeo.rotateZ(-Math.PI / 2);
+  const thumbDistal = new THREE.Mesh(thumbDistalGeo, skinMat);
+  thumbDistal.position.set(
+    phoneW / 2 + 0.0035,
+    phoneCenterY - 0.002,
+    phoneCenterZ
+  );
+  handGroup.add(thumbDistal);
+
+  const thumbPadGeo = new THREE.SphereGeometry(0.0084, 14, 14);
+  thumbPadGeo.scale(1.2, 0.95, 0.82);
+  const thumbPad = new THREE.Mesh(thumbPadGeo, skinMat);
+  thumbPad.position.set(
+    phoneW / 2 - 0.005,
+    phoneCenterY,
+    phoneCenterZ + phoneD / 2 + 0.002
+  );
+  handGroup.add(thumbPad);
+
+  // Disable frustum culling on all child meshes
+  assetGroup.traverse((child) => {
     if ((child as THREE.Mesh).isMesh) {
-      const m = child as THREE.Mesh;
-      m.frustumCulled = false;
+      (child as THREE.Mesh).frustumCulled = false;
     }
   });
 
-  // Positioned inside palmGripAnchor with clean local origin
-  phoneGroup.position.set(0, 0, 0);
-  phoneGroup.rotation.set(0, 0, 0);
-
-  return { phoneGroup, screenGlowLight };
+  return { assetGroup, screenGlowLight };
 }
 
 /**
@@ -1744,6 +1862,8 @@ export function createHumanCharacter(
   let characterModel: THREE.Group | null = null;
   let heldPhoneGroup: THREE.Group | null = null;
   let heldPhoneLight: THREE.PointLight | null = null;
+  let handPhoneAnchor: THREE.Group | null = null;
+  let handPhoneAsset: THREE.Group | null = null;
   let leftBrowMesh: THREE.Mesh | null = null;
   let rightBrowMesh: THREE.Mesh | null = null;
 
@@ -2145,23 +2265,23 @@ export function createHumanCharacter(
       rightBrowMesh = rightBrow;
     }
 
-    // Attach 3D smartphone prop to explicit rightPalmGripAnchor attached to RightHand bone
-    if (bones.rightHand) {
-      const palmGripAnchor = new THREE.Group();
-      palmGripAnchor.name = 'rightPalmGripAnchor';
-      // Anchor position: Centered directly in the palm cup (X = 0.002m, Y = 0.058m down from wrist, Z = +0.022m flush on palm face)
-      palmGripAnchor.position.set(0.002, 0.058, 0.022);
-      // Anchor rotation: Map +Z phone face (broad back panel & camera island) to hand palm normal (+Z_hand / +Z_world); map +Y phone (cameras at top) pointing UP (-Y_hand / +Y_world)
-      palmGripAnchor.rotation.set(0, 0, Math.PI);
-      bones.rightHand.add(palmGripAnchor);
+    // Attach dedicated hand-and-phone asset to RightForeArm at wrist interface
+    if (bones.rightForeArm) {
+      const anchor = new THREE.Group();
+      anchor.name = 'rightHandPhoneAnchor';
+      anchor.position.set(0, 0.252, 0); // At the wrist interface at the end of RightForeArm
+      bones.rightForeArm.add(anchor);
+      handPhoneAnchor = anchor;
 
-      const { phoneGroup, screenGlowLight } = createHandHeldPhoneProp();
-      phoneGroup.visible = !config.isNpc;
-      phoneGroup.position.set(0, 0, 0);
-      phoneGroup.rotation.set(0, 0, 0);
-      palmGripAnchor.add(phoneGroup);
+      const { assetGroup, screenGlowLight } = createInvestigatorHandAndPhoneAsset(
+        skinHex,
+        jacketHex
+      );
+      assetGroup.visible = !config.isNpc;
+      anchor.add(assetGroup);
 
-      heldPhoneGroup = phoneGroup;
+      handPhoneAsset = assetGroup;
+      heldPhoneGroup = assetGroup;
       heldPhoneLight = screenGlowLight;
     }
 
@@ -2531,19 +2651,22 @@ export function createHumanCharacter(
     const armRelaxX = 0.36;
 
     if (hasPhoneInHand) {
-      // RIGHT-HANDED SMARTPHONE HOLD: Character's anatomical right hand holds phone vertically beside right thigh/hip
-      // (appears on the left side of the image when facing camera). Both arms hang naturally and straight at his sides.
-
-      // Right hand: Four fingers wrapped along outer long edge and thumb on inner edge, with palm supporting back:
-      rightGripFingers.forEach(({ j1, j2, j3 }, idx) => {
-        const spread = (idx - 1.5) * 0.025;
-        slerpBoneOffset(j1, 0.38, spread, 0.06, blendAlpha);
-        slerpBoneOffset(j2, 0.44, 0.0, 0.03, blendAlpha);
-        slerpBoneOffset(j3, 0.25, 0.0, 0.01, blendAlpha);
-      });
-      slerpBoneOffset(rightThumbBones.t1, 0.46, -0.62, -0.40, blendAlpha);
-      slerpBoneOffset(rightThumbBones.t2, 0.38, -0.22, -0.12, blendAlpha);
-      slerpBoneOffset(rightThumbBones.t3, 0.28, 0.0, 0.0, blendAlpha);
+      // Seamlessly tuck the default open-hand GLTF mesh into the sleeve
+      if (bones.rightHand) {
+        bones.rightHand.scale.set(0.0001, 0.0001, 0.0001);
+      }
+      if (handPhoneAsset) {
+        handPhoneAsset.visible = true;
+      }
+      if (handPhoneAnchor && bones.rightForeArm && characterModel) {
+        bones.rightForeArm.updateWorldMatrix(true, false);
+        bones.rightForeArm.getWorldQuaternion(_handWorldQuat);
+        characterModel.getWorldQuaternion(_rootWorldQuat);
+        handPhoneAnchor.quaternion
+          .copy(_handWorldQuat)
+          .invert()
+          .multiply(_rootWorldQuat);
+      }
 
       // Left hand: Completely relaxed, hanging straight down alongside left hip/thigh (empty hand, no props):
       leftGripFingers.forEach(({ j1, j2, j3 }) => {
@@ -2551,9 +2674,9 @@ export function createHumanCharacter(
         slerpBoneOffset(j2, 0.12, 0, 0, blendAlpha);
         slerpBoneOffset(j3, 0.08, 0, 0, blendAlpha);
       });
-      slerpBoneOffset(leftThumbBones.t1, 0.06, 0, 0, blendAlpha);
-      slerpBoneOffset(leftThumbBones.t2, 0.04, 0, 0, blendAlpha);
-      slerpBoneOffset(leftThumbBones.t3, 0.04, 0, 0, blendAlpha);
+      leftThumbBones.t1 && slerpBoneOffset(leftThumbBones.t1, 0.06, 0, 0, blendAlpha);
+      leftThumbBones.t2 && slerpBoneOffset(leftThumbBones.t2, 0.04, 0, 0, blendAlpha);
+      leftThumbBones.t3 && slerpBoneOffset(leftThumbBones.t3, 0.04, 0, 0, blendAlpha);
 
       const syncBreath = Math.sin(animTimeAcc * 1.65) * 0.005;
 
@@ -2571,7 +2694,6 @@ export function createHumanCharacter(
           blendAlpha
         );
         slerpBoneOffset(bones.rightForeArm, 0.06, 0.02, 0, blendAlpha);
-        slerpBoneOffset(bones.rightHand, -1.68, 1.13, 1.80, blendAlpha);
 
         // Left arm natural walk swing
         slerpBoneOffset(
@@ -2594,7 +2716,6 @@ export function createHumanCharacter(
           blendAlpha
         );
         slerpBoneOffset(bones.rightForeArm, 0.06, 0.02, 0.0, blendAlpha);
-        slerpBoneOffset(bones.rightHand, -1.68, 1.13, 1.80, blendAlpha);
 
         // Left arm relaxed straight down alongside left hip (empty hand):
         slerpBoneOffset(
@@ -2608,6 +2729,12 @@ export function createHumanCharacter(
         slerpBoneOffset(bones.leftHand, 0, 0, 0, blendAlpha);
       }
     } else {
+      if (bones.rightHand) {
+        bones.rightHand.scale.set(1, 1, 1);
+      }
+      if (handPhoneAsset) {
+        handPhoneAsset.visible = false;
+      }
       // NPCs (when not holding phone): natural relaxed fingers and expressive arm postures
       rightGripFingers.forEach(({ j1, j2, j3 }) => {
         slerpBoneOffset(j1, 0.12, 0, 0, blendAlpha);
