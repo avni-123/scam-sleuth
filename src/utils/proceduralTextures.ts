@@ -1778,7 +1778,7 @@ export class ProceduralTextureGenerator {
     return texture;
   }
 
-  // Realistic Everyday Fabric Weave & Cloth Texture (Cotton / Twill / Denim)
+  // Realistic Everyday Fabric Weave & Cloth Texture (Gabardine / Wool Twill / Cotton Poplin)
   static createFabricClothTexture(baseHex = '#1e293b', isDenim = false): THREE.CanvasTexture {
     const size = 512;
     const canvas = document.createElement('canvas');
@@ -1795,17 +1795,24 @@ export class ProceduralTextureGenerator {
     for (let y = 0; y < size; y += step) {
       for (let x = 0; x < size; x += step) {
         const isWarp = (Math.floor(x / step) + Math.floor(y / step)) % 2 === 0;
-        const alpha = isWarp ? 0.06 : 0.03;
-        ctx.fillStyle = isWarp ? `rgba(255, 255, 255, ${alpha})` : `rgba(0, 0, 0, ${alpha * 1.5})`;
+        const alpha = isWarp ? 0.065 : 0.035;
+        ctx.fillStyle = isWarp ? `rgba(255, 255, 255, ${alpha})` : `rgba(0, 0, 0, ${alpha * 1.6})`;
         ctx.fillRect(x, y, step, step);
       }
     }
 
-    // Subtle diagonal twill ribs for denim / sturdy jackets
+    // Diagonal gabardine / wool-twill ribs & subtle herringbone texture
     if (isDenim) {
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
-      ctx.lineWidth = 1.2;
-      for (let d = -size; d < size * 2; d += 8) {
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.06)';
+      ctx.lineWidth = 1.25;
+      for (let d = -size; d < size * 2; d += 6) {
+        ctx.beginPath();
+        ctx.moveTo(d, 0);
+        ctx.lineTo(d + size, size);
+        ctx.stroke();
+      }
+      ctx.strokeStyle = 'rgba(0, 0, 0, 0.06)';
+      for (let d = -size + 3; d < size * 2; d += 6) {
         ctx.beginPath();
         ctx.moveTo(d, 0);
         ctx.lineTo(d + size, size);
@@ -1813,15 +1820,36 @@ export class ProceduralTextureGenerator {
       }
     }
 
-    // Organic cloth fold shadows and creases
+    // Vertical and horizontal organic cloth fold shadows and creases
     for (let c = 0; c < 8; c++) {
       const grad = ctx.createLinearGradient(0, c * 64, 0, (c + 1) * 64);
-      grad.addColorStop(0, 'rgba(0, 0, 0, 0.06)');
-      grad.addColorStop(0.5, 'rgba(255, 255, 255, 0.03)');
-      grad.addColorStop(1, 'rgba(0, 0, 0, 0.08)');
+      grad.addColorStop(0, 'rgba(0, 0, 0, 0.07)');
+      grad.addColorStop(0.45, 'rgba(255, 255, 255, 0.04)');
+      grad.addColorStop(1, 'rgba(0, 0, 0, 0.09)');
       ctx.fillStyle = grad;
       ctx.fillRect(0, c * 64, size, 64);
     }
+
+    for (let v = 0; v < 6; v++) {
+      const vGrad = ctx.createLinearGradient(v * 85, 0, (v + 1) * 85, 0);
+      vGrad.addColorStop(0, 'rgba(0, 0, 0, 0.05)');
+      vGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0.035)');
+      vGrad.addColorStop(1, 'rgba(0, 0, 0, 0.06)');
+      ctx.fillStyle = vGrad;
+      ctx.fillRect(v * 85, 0, 85, size);
+    }
+
+    // Subtle double topstitch seam lines along panel borders
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.14)';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([5, 4]);
+    for (const sx of [64, 256, 448]) {
+      ctx.beginPath();
+      ctx.moveTo(sx, 0);
+      ctx.lineTo(sx, size);
+      ctx.stroke();
+    }
+    ctx.setLineDash([]);
 
     const texture = new THREE.CanvasTexture(canvas);
     texture.wrapS = THREE.RepeatWrapping;

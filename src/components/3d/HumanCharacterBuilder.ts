@@ -121,7 +121,7 @@ export const CHARACTER_ARCHETYPE_CATALOG: Record<
     heightCm: 178,
     locationLabel: 'Field Operations · All Cases',
     wardrobeSummary:
-      'Charcoal heavy cotton-twill utility field coat over a slate-taupe ribbed crewneck knit, dark tailored chinos, leather field boots, wristwatch, and leather case satchel.',
+      'Long tailored tan gabardine trench coat with belted waist and storm flaps over a charcoal-gray buttoned waistcoat, crisp white dress shirt, deep red silk tie, dark gray tailored trousers, polished dark leather shoes, and a muted gray-brown wool flat cap.',
     personalitySummary:
       'Grounded, observant digital forensics investigator. Calm under pressure, analytical, and confident when cross-referencing social-engineering trails.',
     signatureExpression:
@@ -129,8 +129,8 @@ export const CHARACTER_ARCHETYPE_CATALOG: Record<
     badgeLabel: 'Lead Investigator',
     accentHex: '#00F0FF',
     bodyScale: [1.0, 1.0, 1.0],
-    shoulderWidthScale: 1.02,
-    hemMinY: 0.89,
+    shoulderWidthScale: 1.025,
+    hemMinY: 0.46,
     faceSculpt: {
       jawWidth: 1.05,
       cheekboneWidth: 1.04,
@@ -141,10 +141,10 @@ export const CHARACTER_ARCHETYPE_CATALOG: Record<
     skinHex: '#e4bca2',
     hairHex: '#4a3629',
     irisHex: '#70c4f8',
-    jacketHex: '#232b38',
-    innerShirtHex: '#64748b',
-    trousersHex: '#141923',
-    shoesHex: '#1c1815',
+    jacketHex: '#bfa074',
+    innerShirtHex: '#f8fafc',
+    trousersHex: '#2c313a',
+    shoesHex: '#12100e',
     isDenimJacket: true,
     hairstyle: 'side_part_detective',
     facialHair: 'none',
@@ -451,8 +451,7 @@ const _rootWorldQuat = new THREE.Quaternion();
 const _handWorldQuat = new THREE.Quaternion();
 const _phoneTargetWorldQuat = new THREE.Quaternion();
 const _phoneLocalToRootEuler = new THREE.Euler();
-const _phoneLocalToRootQuat = new THREE.Quaternion();
-const _phoneWorldPos = new THREE.Vector3();
+const _phoneUprightWorldQuat = new THREE.Quaternion(); // Identity: upright portrait orientation (cameras at top pointing +Y, back panel facing +Z to viewer, screen facing -Z to palm)
 
 function preloadHumanModel(): Promise<THREE.Group> {
   if (cachedGltfScene) return Promise.resolve(cachedGltfScene);
@@ -486,21 +485,137 @@ if (typeof window !== 'undefined') {
 // ---------------------------------------------------------------------------
 
 /**
- * Splits Wolf3D_Outfit_Top into two distinct SkinnedMesh geometries:
- * 1) outerJacketGeo: Jacket torso, sleeves, lapels, and sleeve buttons, with the
- *    wedding tuxedo coattails tailored into a modern hip/field-coat hem and subtle
- *    3D fabric fold creases.
- * 2) innerShirtGeo: Inner crewneck/henley/turtleneck shirt front, collar, and cuffs.
- * Completely removes the wedding bow tie and wedding boutonniere lapel flower.
+ * Appends a procedural BufferGeometry to an accumulating skinned vertex buffer,
+ * transferring skinIndex and skinWeight from the nearest bind-pose vertex in
+ * topGeo (for y >= 1.03) or bottomGeo (for y < 1.03) so all tailored garments
+ * deform 100% seamlessly with the character's humanoid skeleton.
+ */
+function appendSkinnedPartGeometry(
+  partGeo: THREE.BufferGeometry,
+  targetPos: number[],
+  targetNorm: number[],
+  targetUv: number[],
+  targetSkinIdx: number[],
+  targetSkinWgt: number[],
+  targetIndices: number[],
+  topPos: THREE.BufferAttribute,
+  topSkinIdx: THREE.BufferAttribute,
+  topSkinWgt: THREE.BufferAttribute,
+  botPos?: THREE.BufferAttribute,
+  botSkinIdx?: THREE.BufferAttribute,
+  botSkinWgt?: THREE.BufferAttribute
+) {
+  partGeo.computeVertexNormals();
+  const pPos = partGeo.attributes.position;
+  const pNorm = partGeo.attributes.normal;
+  const pUv = partGeo.attributes.uv;
+  const pIdx = partGeo.index;
+  const baseVertOffset = targetPos.length / 3;
+
+  for (let v = 0; v < pPos.count; v++) {
+    const vx = pPos.getX(v);
+    const vy = pPos.getY(v);
+    const vz = pPos.getZ(v);
+
+    targetPos.push(vx, vy, vz);
+    targetNorm.push(
+      pNorm ? pNorm.getX(v) : 0,
+      pNorm ? pNorm.getY(v) : 1,
+      pNorm ? pNorm.getZ(v) : 0
+    );
+    targetUv.push(pUv ? pUv.getX(v) : vx * 2.5 + 0.5, pUv ? pUv.getY(v) : vy * 1.5);
+
+    const useBottom = Boolean(botPos && botSkinIdx && botSkinWgt && vy < 1.025);
+    const refPos = useBottom ? botPos! : topPos;
+    const refSi = useBottom ? botSkinIdx! : topSkinIdx;
+    const refSw = useBottom ? botSkinWgt! : topSkinWgt;
+
+    let bestIdx = 0;
+    let bestDistSq = Infinity;
+    for (let j = 0; j < refPos.count; j++) {
+      const dx = refPos.getX(j) - vx;
+      const dy = (refPos.getY(j) - vy) * 1.6;
+      const dz = refPos.getZ(j) - vz;
+      const dSq = dx * dx + dy * dy + dz * dz;
+      if (dSq < bestDistSq) {
+        bestDistSq = dSq;
+        bestIdx = j;
+      }
+    }
+
+    targetSkinIdx.push(
+      refSi.getX(bestIdx),
+      refSi.getY(bestIdx),
+      refSi.getZ(bestIdx),
+      refSi.getW(bestIdx)
+    );
+    targetSkinWgt.push(
+      refSw.getX(bestIdx),
+      refSw.getY(bestIdx),
+      refSw.getZ(bestIdx),
+      refSw.getW(bestIdx)
+    );
+  }
+
+  if (pIdx) {
+    const arr = pIdx.array;
+    for (let i = 0; i < arr.length; i++) {
+      targetIndices.push(baseVertOffset + arr[i]);
+    }
+  } else {
+    for (let i = 0; i < pPos.count; i++) {
+      targetIndices.push(baseVertOffset + i);
+    }
+  }
+}
+
+function buildSkinnedBufferGeometry(
+  pos: number[],
+  norm: number[],
+  uv: number[],
+  skinIdx: number[],
+  skinWgt: number[],
+  indices: number[]
+): THREE.BufferGeometry {
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  geo.setAttribute('normal', new THREE.Float32BufferAttribute(norm, 3));
+  geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+  geo.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(skinIdx, 4));
+  geo.setAttribute('skinWeight', new THREE.Float32BufferAttribute(skinWgt, 4));
+  geo.setIndex(indices);
+  geo.computeVertexNormals();
+  return geo;
+}
+
+/**
+ * Splits Wolf3D_Outfit_Top into distinct SkinnedMesh geometries.
+ * For the investigator ('investigator'), decomposes and tailors:
+ * - outerJacketGeo: Long tailored tan trench coat with wide lapels, storm flaps, shoulder epaulets,
+ *   belted waist, slanted side pockets, sleeve straps, and a full below-the-knee pleated skirt.
+ * - innerShirtGeo: Crisp white dress shirt collar, upper chest bib, and wrist cuffs.
+ * - waistcoatGeo: Tailored charcoal-gray waistcoat worn over the crisp white shirt.
+ * - tieGeo: Deep red silk tie (Windsor knot at collar + tapered blade tucking into waistcoat V-neck).
+ * - buttonsGeo: Dark horn buttons on the waistcoat, trench coat front panels, epaulets, and cuffs.
+ * - buckleGeo: Rectangular gunmetal/aged-brass belt buckle and center prong at the front waist.
  */
 function decomposeAndTailorOutfitTop(
   sourceGeo: THREE.BufferGeometry,
-  profile: CharacterArchetypeProfile
+  profile: CharacterArchetypeProfile,
+  bottomGeo?: THREE.BufferGeometry
 ): {
   outerJacketGeo: THREE.BufferGeometry;
   innerShirtGeo: THREE.BufferGeometry;
+  waistcoatGeo?: THREE.BufferGeometry;
+  tieGeo?: THREE.BufferGeometry;
+  buttonsGeo?: THREE.BufferGeometry;
+  buckleGeo?: THREE.BufferGeometry;
 } {
-  const pos = sourceGeo.attributes.position;
+  const pos = sourceGeo.attributes.position as THREE.BufferAttribute;
+  const normAttr = sourceGeo.attributes.normal as THREE.BufferAttribute | undefined;
+  const uvAttr = sourceGeo.attributes.uv as THREE.BufferAttribute | undefined;
+  const skinIdxAttr = sourceGeo.attributes.skinIndex as THREE.BufferAttribute;
+  const skinWgtAttr = sourceGeo.attributes.skinWeight as THREE.BufferAttribute;
   const idxAttr = sourceGeo.index;
   if (!idxAttr) {
     return {
@@ -551,46 +666,116 @@ function decomposeAndTailorOutfitTop(
     if (z > comp.max[2]) comp.max[2] = z;
   }
 
-  const compRole = new Map<number, 'BOWTIE' | 'FLOWER' | 'INNER' | 'OUTER'>();
+  const isInvestigator = profile.archetype === 'investigator';
+
+  type CompRole =
+    | 'BOWTIE'
+    | 'TIE_KNOT'
+    | 'FLOWER'
+    | 'SHIRT'
+    | 'WAISTCOAT'
+    | 'BUTTONS'
+    | 'OUTER';
+
+  const compRole = new Map<number, CompRole>();
   comps.forEach((c, r) => {
+    const isTieKnot =
+      isInvestigator &&
+      c.min[1] > 1.515 &&
+      c.max[1] < 1.568 &&
+      c.min[2] > 0.055 &&
+      c.min[0] > -0.015 &&
+      c.max[0] < 0.02;
+
     const isBowtie =
+      !isTieKnot &&
       c.min[1] > 1.5 &&
       c.max[1] < 1.576 &&
       c.min[2] > 0.055 &&
       c.min[0] > -0.06 &&
       c.max[0] < 0.065;
+
     const isFlower =
-      c.min[0] < -0.085 &&
       c.max[0] < -0.085 &&
       c.min[1] > 1.355 &&
       c.max[1] < 1.475 &&
       c.min[2] > 0.045;
-    const isInner =
+
+    const isButton =
+      isInvestigator &&
       !isBowtie &&
       !isFlower &&
-      ((c.min[1] > 1.5 && c.max[1] > 1.565) ||
-        (c.min[1] > 1.02 &&
-          c.max[1] < 1.135 &&
-          (c.max[0] < -0.38 || c.min[0] > 0.38)) ||
-        (c.min[2] > 0.01 &&
-          c.max[0] <= 0.1 &&
-          c.min[0] >= -0.1 &&
-          c.max[1] < 1.55));
+      ((c.min[0] > -0.015 &&
+        c.max[0] < 0.015 &&
+        c.min[1] > 1.1 &&
+        c.max[1] < 1.35 &&
+        c.min[2] > 0.14) ||
+        (Math.abs(c.min[0]) > 0.34 &&
+          c.max[0] - c.min[0] < 0.03 &&
+          c.min[1] > 1.08 &&
+          c.max[1] < 1.19));
 
-    compRole.set(
-      r,
-      isBowtie ? 'BOWTIE' : isFlower ? 'FLOWER' : isInner ? 'INNER' : 'OUTER'
-    );
+    // Upper dress shirt chest bib (Roots 382 & 533: X[-0.10, 0.10] Y[1.339, 1.588] Z[-0.071, 0.135])
+    const isShirtChestBib =
+      isInvestigator &&
+      c.min[0] >= -0.105 &&
+      c.max[0] <= 0.105 &&
+      c.min[1] > 1.33 &&
+      c.max[1] < 1.595 &&
+      c.min[2] < -0.05;
+
+    // Collar & wrist cuffs
+    const isCollarOrCuffs =
+      (c.min[1] > 1.5 && c.max[1] > 1.565) ||
+      (c.min[1] > 1.02 &&
+        c.max[1] < 1.135 &&
+        (c.max[0] < -0.38 || c.min[0] > 0.38));
+
+    // Waistcoat front panels (Roots 696, 681, 314, 465: X[-0.10, 0.10] Y[1.045, 1.55] Z[0.01, 0.16])
+    const isWaistcoatPanel =
+      !isBowtie &&
+      !isFlower &&
+      !isButton &&
+      c.min[2] > 0.01 &&
+      c.max[0] <= 0.102 &&
+      c.min[0] >= -0.102 &&
+      c.max[1] < 1.55;
+
+    if (isTieKnot) {
+      compRole.set(r, 'TIE_KNOT');
+    } else if (isBowtie) {
+      compRole.set(r, 'BOWTIE');
+    } else if (isFlower) {
+      compRole.set(r, 'FLOWER');
+    } else if (isButton) {
+      compRole.set(r, 'BUTTONS');
+    } else if (isInvestigator && isWaistcoatPanel) {
+      compRole.set(r, 'WAISTCOAT');
+    } else if (isCollarOrCuffs || isShirtChestBib || (!isInvestigator && isWaistcoatPanel)) {
+      compRole.set(r, 'SHIRT');
+    } else {
+      compRole.set(r, 'OUTER');
+    }
   });
 
   const outerIndices: number[] = [];
   const innerIndices: number[] = [];
+  const waistcoatIndices: number[] = [];
+  const tieIndices: number[] = [];
+  const buttonIndices: number[] = [];
+
   for (let i = 0; i < idx.length; i += 3) {
     const role = compRole.get(find(idx[i]));
     if (role === 'OUTER') {
       outerIndices.push(idx[i], idx[i + 1], idx[i + 2]);
-    } else if (role === 'INNER') {
+    } else if (role === 'SHIRT') {
       innerIndices.push(idx[i], idx[i + 1], idx[i + 2]);
+    } else if (role === 'WAISTCOAT') {
+      waistcoatIndices.push(idx[i], idx[i + 1], idx[i + 2]);
+    } else if (role === 'TIE_KNOT') {
+      tieIndices.push(idx[i], idx[i + 1], idx[i + 2]);
+    } else if (role === 'BUTTONS') {
+      buttonIndices.push(idx[i], idx[i + 1], idx[i + 2]);
     }
   }
 
@@ -600,11 +785,8 @@ function decomposeAndTailorOutfitTop(
   const innerShirtGeo = sourceGeo.clone();
   innerShirtGeo.setIndex(innerIndices);
 
-  // Tailor the outer jacket:
-  // 1) Eliminate tuxedo coattails (vertices with y < hemMinY) so it sits cleanly as a modern jacket/coat
-  // 2) Apply shoulder/torso width proportioning & subtle organic sleeve/torso drapery folds
-  const outPos = outerJacketGeo.attributes.position;
-  const outNorm = outerJacketGeo.attributes.normal;
+  const outPos = outerJacketGeo.attributes.position as THREE.BufferAttribute;
+  const outNorm = outerJacketGeo.attributes.normal as THREE.BufferAttribute | undefined;
   const hemMinY = profile.hemMinY;
   const shoulderScale = profile.shoulderWidthScale;
 
@@ -615,13 +797,24 @@ function decomposeAndTailorOutfitTop(
     const nx = outNorm ? outNorm.getX(v) : 0;
     const nz = outNorm ? outNorm.getZ(v) : 0;
 
-    // Smoothly tailor long rear tuxedo tails into a clean hip-length or mid-thigh jacket hem
-    if (y < hemMinY) {
-      const excess = hemMinY - y;
-      y = hemMinY - excess * 0.08;
-      if (z < 0) {
-        // Pull flared rear tail inward toward the trousers
-        z += Math.min(0.032, excess * 0.085);
+    // 1) Clamp legacy cutaway tuxedo tails cleanly at waist level (y = 1.068 for investigator
+    // where the belted long trench coat skirt takes over seamlessly, or hemMinY for NPCs)
+    const targetHemY = isInvestigator ? 1.068 : Math.max(1.045, hemMinY);
+    if (Math.abs(x) < 0.24 && y < targetHemY) {
+      y = targetHemY;
+      x *= isInvestigator ? 0.96 : 0.93;
+      z *= isInvestigator ? 0.95 : 0.92;
+    }
+
+    // 2) For the investigator's tailored trench coat, widen the notched front lapels & collar slightly
+    if (isInvestigator) {
+      if (y > 1.16 && y < 1.55 && z > 0.06 && Math.abs(x) < 0.16) {
+        z += 0.005;
+        x *= 1.05;
+      }
+      if (y >= 1.52 && Math.abs(x) < 0.12) {
+        x += Math.sign(x || 1) * 0.004;
+        z += z < 0 ? -0.005 : 0.003;
       }
     }
 
@@ -631,10 +824,11 @@ function decomposeAndTailorOutfitTop(
       x *= 1 + (shoulderScale - 1) * t;
     }
 
-    // Add subtle, realistic fabric fold relief along sleeves and torso
+    // Add realistic fabric fold relief along sleeves and torso
+    const foldAmp = isInvestigator ? 0.0024 : 0.0018;
     const foldWave =
-      Math.sin(y * 38.0 + x * 12.0) * 0.0018 +
-      Math.cos(y * 62.0 - z * 18.0) * 0.0011;
+      Math.sin(y * 38.0 + x * 12.0) * foldAmp +
+      Math.cos(y * 62.0 - z * 18.0) * (foldAmp * 0.65);
     x += nx * foldWave;
     z += nz * foldWave;
 
@@ -642,8 +836,8 @@ function decomposeAndTailorOutfitTop(
   }
   outPos.needsUpdate = true;
 
-  // Also apply shoulder proportion scaling to the inner shirt collar/chest so it stays flush
-  const inPos = innerShirtGeo.attributes.position;
+  // Apply shoulder proportion scaling to the inner shirt
+  const inPos = innerShirtGeo.attributes.position as THREE.BufferAttribute;
   for (let v = 0; v < inPos.count; v++) {
     let x = inPos.getX(v);
     const y = inPos.getY(v);
@@ -656,7 +850,618 @@ function decomposeAndTailorOutfitTop(
   }
   inPos.needsUpdate = true;
 
-  return { outerJacketGeo, innerShirtGeo };
+  if (!isInvestigator) {
+    return { outerJacketGeo, innerShirtGeo };
+  }
+
+  // -------------------------------------------------------------------------
+  // INVESTIGATOR BESPOKE LAYERED OUTFIT GEOMETRIES (100% Skinned to Skeleton)
+  // -------------------------------------------------------------------------
+  const botPos = bottomGeo?.attributes.position as THREE.BufferAttribute | undefined;
+  const botSkinIdx = bottomGeo?.attributes.skinIndex as THREE.BufferAttribute | undefined;
+  const botSkinWgt = bottomGeo?.attributes.skinWeight as THREE.BufferAttribute | undefined;
+
+  // 1. CHARCOAL-GRAY WAISTCOAT (Roots 696, 681, 314, 465)
+  const waistcoatGeo = sourceGeo.clone();
+  waistcoatGeo.setIndex(waistcoatIndices);
+  const wPos = waistcoatGeo.attributes.position as THREE.BufferAttribute;
+  for (let v = 0; v < wPos.count; v++) {
+    let x = wPos.getX(v);
+    const y = wPos.getY(v);
+    let z = wPos.getZ(v);
+    if (y > 1.03 && y < 1.56 && Math.abs(x) < 0.12 && z > 0) {
+      // Subtle tailored waist suppression & vertical dart seam relief
+      const dart = Math.exp(-Math.pow((Math.abs(x) - 0.048) / 0.012, 2)) * 0.0018;
+      z += 0.0018 + dart;
+    }
+    wPos.setXYZ(v, x, y, z);
+  }
+  wPos.needsUpdate = true;
+  waistcoatGeo.computeVertexNormals();
+
+  // 2. DEEP RED SILK TIE (Windsor Knot + Tapered Silk Blade tucking into Waistcoat V-neck)
+  const tiePos: number[] = [];
+  const tieNorm: number[] = [];
+  const tieUv: number[] = [];
+  const tieSkinIdx: number[] = [];
+  const tieSkinWgt: number[] = [];
+  const tieOutIndices: number[] = [];
+
+  // Copy Windsor knot vertices from Root 1895 and bring slightly forward between collar points
+  const knotRemap = new Map<number, number>();
+  for (let i = 0; i < tieIndices.length; i++) {
+    const origV = tieIndices[i];
+    if (!knotRemap.has(origV)) {
+      const newV = tiePos.length / 3;
+      knotRemap.set(origV, newV);
+      const kx = pos.getX(origV) * 1.18;
+      const ky = pos.getY(origV);
+      const kz = pos.getZ(origV) + 0.0055;
+      tiePos.push(kx, ky, kz);
+      tieNorm.push(
+        normAttr ? normAttr.getX(origV) : 0,
+        normAttr ? normAttr.getY(origV) : 0,
+        normAttr ? normAttr.getZ(origV) : 1
+      );
+      tieUv.push(uvAttr ? uvAttr.getX(origV) : 0.5, uvAttr ? uvAttr.getY(origV) : 0.5);
+      tieSkinIdx.push(
+        skinIdxAttr.getX(origV),
+        skinIdxAttr.getY(origV),
+        skinIdxAttr.getZ(origV),
+        skinIdxAttr.getW(origV)
+      );
+      tieSkinWgt.push(
+        skinWgtAttr.getX(origV),
+        skinWgtAttr.getY(origV),
+        skinWgtAttr.getZ(origV),
+        skinWgtAttr.getW(origV)
+      );
+    }
+    tieOutIndices.push(knotRemap.get(origV)!);
+  }
+
+  // Sculpted 3D Tie Blade (draping down the crisp white shirt chest from y=1.530 to y=1.328)
+  const tieSpine: Array<{ y: number; z: number; halfW: number; thick: number }> = [
+    { y: 1.532, z: 0.071, halfW: 0.011, thick: 0.0045 },
+    { y: 1.512, z: 0.074, halfW: 0.014, thick: 0.0042 },
+    { y: 1.482, z: 0.091, halfW: 0.018, thick: 0.0040 },
+    { y: 1.445, z: 0.109, halfW: 0.021, thick: 0.0038 },
+    { y: 1.405, z: 0.125, halfW: 0.023, thick: 0.0036 },
+    { y: 1.368, z: 0.139, halfW: 0.023, thick: 0.0032 },
+    { y: 1.332, z: 0.141, halfW: 0.014, thick: 0.0025 },
+  ];
+  const bladeGeo = new THREE.BufferGeometry();
+  const bPosArr: number[] = [];
+  const bIdxArr: number[] = [];
+  for (let r = 0; r < tieSpine.length; r++) {
+    const { y, z, halfW, thick } = tieSpine[r];
+    // 5 vertices across each row: back-left, front-left, front-center-ridge, front-right, back-right
+    bPosArr.push(-halfW, y, z - thick * 0.5);
+    bPosArr.push(-halfW * 0.85, y, z + thick * 0.65);
+    bPosArr.push(0.002, y, z + thick);
+    bPosArr.push(halfW * 0.85, y, z + thick * 0.65);
+    bPosArr.push(halfW, y, z - thick * 0.5);
+    if (r < tieSpine.length - 1) {
+      const r0 = r * 5;
+      const r1 = (r + 1) * 5;
+      for (let c = 0; c < 4; c++) {
+        bIdxArr.push(r0 + c, r1 + c, r0 + c + 1);
+        bIdxArr.push(r0 + c + 1, r1 + c, r1 + c + 1);
+      }
+    }
+  }
+  bladeGeo.setAttribute('position', new THREE.Float32BufferAttribute(bPosArr, 3));
+  bladeGeo.setIndex(bIdxArr);
+  appendSkinnedPartGeometry(
+    bladeGeo,
+    tiePos,
+    tieNorm,
+    tieUv,
+    tieSkinIdx,
+    tieSkinWgt,
+    tieOutIndices,
+    pos,
+    skinIdxAttr,
+    skinWgtAttr
+  );
+  const tieGeo = buildSkinnedBufferGeometry(
+    tiePos,
+    tieNorm,
+    tieUv,
+    tieSkinIdx,
+    tieSkinWgt,
+    tieOutIndices
+  );
+
+  // 3. LONG TAILORED TAN TRENCH COAT SKIRT, BELT, STORM FLAPS, EPAULETS & SLEEVE STRAPS
+  // Seed outer coat buffers with the tailored upper coat (outerJacketGeo)
+  const coatPos: number[] = [];
+  const coatNorm: number[] = [];
+  const coatUv: number[] = [];
+  const coatSkinIdx: number[] = [];
+  const coatSkinWgt: number[] = [];
+  const coatIndices: number[] = [];
+
+  const upperCoatRemap = new Map<number, number>();
+  for (let i = 0; i < outerIndices.length; i++) {
+    const origV = outerIndices[i];
+    if (!upperCoatRemap.has(origV)) {
+      const newV = coatPos.length / 3;
+      upperCoatRemap.set(origV, newV);
+      coatPos.push(outPos.getX(origV), outPos.getY(origV), outPos.getZ(origV));
+      coatNorm.push(
+        outNorm ? outNorm.getX(origV) : 0,
+        outNorm ? outNorm.getY(origV) : 1,
+        outNorm ? outNorm.getZ(origV) : 0
+      );
+      coatUv.push(
+        uvAttr ? uvAttr.getX(origV) : 0.5,
+        uvAttr ? uvAttr.getY(origV) : 0.5
+      );
+      coatSkinIdx.push(
+        skinIdxAttr.getX(origV),
+        skinIdxAttr.getY(origV),
+        skinIdxAttr.getZ(origV),
+        skinIdxAttr.getW(origV)
+      );
+      coatSkinWgt.push(
+        skinWgtAttr.getX(origV),
+        skinWgtAttr.getY(origV),
+        skinWgtAttr.getZ(origV),
+        skinWgtAttr.getW(origV)
+      );
+    }
+    coatIndices.push(upperCoatRemap.get(origV)!);
+  }
+
+  // 3A. Build the Long Tailored Trench Coat Skirt (y = 1.090 down to y = 0.460, below the knees)
+  // Double-sided with thick turned front lapels/plackets, vertical drapery pleats, side welt pockets,
+  // and guaranteed clearance around the trousers and the lowered right-hand smartphone grip.
+  const nRings = 24;
+  const nCols = 56;
+  const yTop = 1.090;
+  const yBot = 0.460;
+  const coatThick = 0.0045;
+
+  const skirtGeo = new THREE.BufferGeometry();
+  const sPosArr: number[] = [];
+  const sUvArr: number[] = [];
+  const sIdxArr: number[] = [];
+
+  for (let r = 0; r < nRings; r++) {
+    const tDown = r / (nRings - 1);
+    const y = THREE.MathUtils.lerp(yTop, yBot, tDown);
+
+    // Center-front open split widens gracefully from the belted waist down to the hem
+    const thetaOpen = 0.25 + 0.11 * tDown;
+    const totalArc = (Math.PI - thetaOpen) * 2;
+
+    // A-line trench coat flare from waist to below-the-knee hem
+    const rxBase = 0.162 + 0.044 * Math.pow(tDown, 0.88);
+    const rzFrontBase = 0.156 + 0.014 * tDown;
+    const rzBackBase = 0.126 + 0.036 * tDown;
+    const zCenter = 0.012 - 0.016 * tDown;
+
+    for (let c = 0; c < nCols; c++) {
+      const u = c / (nCols - 1);
+      // u=0 is front-left (+X, +Z), u=0.5 is center-back (-Z), u=1 is front-right (-X, +Z)
+      const angleFromLeftFront = u * totalArc;
+      const rawTheta = thetaOpen + angleFromLeftFront;
+      const theta = rawTheta <= Math.PI ? rawTheta : rawTheta - Math.PI * 2;
+
+      const sinT = Math.sin(theta);
+      const cosT = Math.cos(theta);
+
+      let rx = rxBase;
+      const rz = cosT >= 0 ? rzFrontBase : rzBackBase;
+
+      let x = sinT * rx;
+      let z = zCenter + cosT * rz;
+
+      // Smooth leg-column contour so the coat drapes naturally over both thighs and knees
+      const legCenter = 0.096 + 0.038 * tDown;
+      const legBulge =
+        Math.exp(-Math.pow((Math.abs(x) - legCenter) / 0.068, 2)) *
+        (0.012 + 0.014 * tDown);
+      z += (cosT >= 0 ? 1 : -0.85) * legBulge;
+
+      // Ensure 9mm radial clearance outside any underlying trouser vertex at this (y, theta)
+      if (botPos) {
+        let maxTrouserR = 0;
+        for (let b = 0; b < botPos.count; b++) {
+          const by = botPos.getY(b);
+          if (Math.abs(by - y) < 0.042) {
+            const bx = botPos.getX(b);
+            const bz = botPos.getZ(b) - zCenter;
+            const bTheta = Math.atan2(bx, bz);
+            let dTheta = Math.abs(bTheta - theta);
+            if (dTheta > Math.PI) dTheta = Math.PI * 2 - dTheta;
+            if (dTheta < 0.16) {
+              const rHoriz = Math.hypot(bx, bz);
+              if (rHoriz > maxTrouserR) maxTrouserR = rHoriz;
+            }
+          }
+        }
+        const curR = Math.hypot(x, z - zCenter);
+        if (maxTrouserR > 0 && curR < maxTrouserR + 0.009) {
+          const scale = (maxTrouserR + 0.009) / Math.max(0.05, curR);
+          x *= scale;
+          z = zCenter + (z - zCenter) * scale;
+        }
+      }
+
+      // Realistic 3D vertical drapery folds, waist gathers below belt, and back vent crease
+      const isRightHandZone = x < -0.11 && y >= 0.72 && y <= 1.01 && z > -0.01;
+      const pleatEnv = isRightHandZone ? 0.15 : 1.0;
+      const verticalPleat =
+        (Math.sin(theta * 7.0) * 0.0046 +
+          Math.cos(theta * 11.0 + y * 8.0) * 0.0022) *
+        (0.22 + 0.78 * tDown) *
+        pleatEnv;
+      const beltGather =
+        Math.sin(theta * 18.0) *
+        0.0024 *
+        Math.exp(-Math.pow((y - 1.052) / 0.042, 2)) *
+        pleatEnv;
+      const frontPlacketEdge =
+        u < 0.035 || u > 0.965 ? 0.0022 : 0;
+      const backVentOverlap =
+        Math.abs(u - 0.5) < 0.025 && y < 0.74 ? 0.003 : 0;
+
+      const totalRadialOffset =
+        verticalPleat + beltGather + frontPlacketEdge + backVentOverlap;
+      x += sinT * totalRadialOffset;
+      z += cosT * totalRadialOffset;
+
+      // Ensure zero clipping with the lowered right hand & smartphone (world X in [-0.251, -0.161], Z in [0.044, 0.103])
+      if (x < 0 && y >= 0.75 && y <= 0.99 && z >= 0.035) {
+        x = Math.max(x, -0.156);
+      }
+
+      const radLen = Math.max(0.001, Math.hypot(sinT, cosT));
+      const nx = sinT / radLen;
+      const nz = cosT / radLen;
+
+      // Outer cloth vertex + inner cloth lining vertex
+      sPosArr.push(x, y, z);
+      sUvArr.push(u * 2.0, (1 - tDown) * 2.0);
+
+      sPosArr.push(x - nx * coatThick, y, z - nz * coatThick);
+      sUvArr.push(u * 2.0, (1 - tDown) * 2.0);
+    }
+  }
+
+  const stride = nCols * 2;
+  for (let r = 0; r < nRings - 1; r++) {
+    const row0 = r * stride;
+    const row1 = (r + 1) * stride;
+    for (let c = 0; c < nCols - 1; c++) {
+      const o00 = row0 + c * 2;
+      const o01 = row0 + (c + 1) * 2;
+      const o10 = row1 + c * 2;
+      const o11 = row1 + (c + 1) * 2;
+      // Outer surface
+      sIdxArr.push(o00, o10, o01);
+      sIdxArr.push(o01, o10, o11);
+
+      // Inner lining surface (reversed winding)
+      const i00 = o00 + 1;
+      const i01 = o01 + 1;
+      const i10 = o10 + 1;
+      const i11 = o11 + 1;
+      sIdxArr.push(i00, i01, i10);
+      sIdxArr.push(i01, i11, i10);
+    }
+
+    // Left front placket edge cap (c = 0)
+    sIdxArr.push(row0, row0 + 1, row1);
+    sIdxArr.push(row0 + 1, row1 + 1, row1);
+
+    // Right front placket edge cap (c = nCols - 1)
+    const lastCol = (nCols - 1) * 2;
+    sIdxArr.push(row0 + lastCol, row1 + lastCol, row0 + lastCol + 1);
+    sIdxArr.push(row0 + lastCol + 1, row1 + lastCol, row1 + lastCol + 1);
+  }
+
+  // Bottom hem edge cap (r = nRings - 1)
+  const botRow = (nRings - 1) * stride;
+  for (let c = 0; c < nCols - 1; c++) {
+    const o0 = botRow + c * 2;
+    const i0 = o0 + 1;
+    const o1 = botRow + (c + 1) * 2;
+    const i1 = o1 + 1;
+    sIdxArr.push(o0, i0, o1);
+    sIdxArr.push(i0, i1, o1);
+  }
+
+  skirtGeo.setAttribute('position', new THREE.Float32BufferAttribute(sPosArr, 3));
+  skirtGeo.setAttribute('uv', new THREE.Float32BufferAttribute(sUvArr, 2));
+  skirtGeo.setIndex(sIdxArr);
+
+  appendSkinnedPartGeometry(
+    skirtGeo,
+    coatPos,
+    coatNorm,
+    coatUv,
+    coatSkinIdx,
+    coatSkinWgt,
+    coatIndices,
+    pos,
+    skinIdxAttr,
+    skinWgtAttr,
+    botPos,
+    botSkinIdx,
+    botSkinWgt
+  );
+
+  // 3B. Tailored Trench Coat Waist Belt (y = 1.074), Belt Keeper Loops, Hanging Belt End,
+  //     Chest Storm Flaps, Shoulder Epaulets, Side Pocket Welts & Sleeve Cuff Straps
+  const addCoatDetailBox = (
+    w: number,
+    h: number,
+    d: number,
+    tx: number,
+    ty: number,
+    tz: number,
+    rx = 0,
+    ry = 0,
+    rz = 0
+  ) => {
+    const g = new THREE.BoxGeometry(w, h, d, 4, 2, 2);
+    const m = new THREE.Matrix4()
+      .makeRotationFromEuler(new THREE.Euler(rx, ry, rz, 'XYZ'))
+      .setPosition(tx, ty, tz);
+    g.applyMatrix4(m);
+    appendSkinnedPartGeometry(
+      g,
+      coatPos,
+      coatNorm,
+      coatUv,
+      coatSkinIdx,
+      coatSkinWgt,
+      coatIndices,
+      pos,
+      skinIdxAttr,
+      skinWgtAttr,
+      botPos,
+      botSkinIdx,
+      botSkinWgt
+    );
+  };
+
+  // Contoured 360-degree Trench Coat Waist Belt at y = 1.074
+  const beltSegs = 40;
+  const beltRows = 4;
+  const beltH = 0.044;
+  const beltThick = 0.0085;
+  const beltGeo = new THREE.BufferGeometry();
+  const beltPosArr: number[] = [];
+  const beltIdxArr: number[] = [];
+  for (let r = 0; r < beltRows; r++) {
+    const ty = 1.074 + (0.5 - r / (beltRows - 1)) * beltH;
+    const edgeBevel = r === 0 || r === beltRows - 1 ? -0.0015 : 0.001;
+    for (let s = 0; s <= beltSegs; s++) {
+      const th = (s / beltSegs) * Math.PI * 2;
+      const sinT = Math.sin(th);
+      const cosT = Math.cos(th);
+      const brx = 0.164 + beltThick + edgeBevel;
+      const brz = (cosT >= 0 ? 0.156 : 0.124) + beltThick + edgeBevel;
+      beltPosArr.push(sinT * brx, ty, 0.012 + cosT * brz);
+    }
+  }
+  for (let r = 0; r < beltRows - 1; r++) {
+    const r0 = r * (beltSegs + 1);
+    const r1 = (r + 1) * (beltSegs + 1);
+    for (let s = 0; s < beltSegs; s++) {
+      beltIdxArr.push(r0 + s, r1 + s, r0 + s + 1);
+      beltIdxArr.push(r0 + s + 1, r1 + s, r1 + s + 1);
+    }
+  }
+  beltGeo.setAttribute('position', new THREE.Float32BufferAttribute(beltPosArr, 3));
+  beltGeo.setIndex(beltIdxArr);
+  appendSkinnedPartGeometry(
+    beltGeo,
+    coatPos,
+    coatNorm,
+    coatUv,
+    coatSkinIdx,
+    coatSkinWgt,
+    coatIndices,
+    pos,
+    skinIdxAttr,
+    skinWgtAttr
+  );
+
+  // Two vertical belt keeper loops & tucked belt tongue on front waist
+  addCoatDetailBox(0.012, 0.052, 0.012, -0.048, 1.074, 0.165, 0, -0.18, 0);
+  addCoatDetailBox(0.012, 0.052, 0.012, 0.048, 1.074, 0.165, 0, 0.18, 0);
+  addCoatDetailBox(0.068, 0.038, 0.008, 0.056, 1.064, 0.166, 0.05, 0.22, -0.16);
+
+  // Left & Right Chest Storm Flaps (Gun Flaps) & Shoulder Epaulets
+  for (const side of [-1, 1]) {
+    // Chest storm flap
+    addCoatDetailBox(
+      0.082,
+      0.115,
+      0.008,
+      side * 0.102,
+      1.395,
+      0.126,
+      -0.16,
+      side * 0.26,
+      side * -0.12
+    );
+    // Shoulder epaulet strap
+    addCoatDetailBox(
+      0.088,
+      0.010,
+      0.028,
+      side * 0.145,
+      1.522,
+      -0.022,
+      0.06,
+      side * -0.08,
+      side * -0.18
+    );
+    // Slanted front-hip welt pocket flap
+    addCoatDetailBox(
+      0.010,
+      0.108,
+      0.032,
+      side * 0.126,
+      0.955,
+      0.140,
+      0.18,
+      side * 0.58,
+      side * -0.10
+    );
+  }
+
+  const finalOuterCoatGeo = buildSkinnedBufferGeometry(
+    coatPos,
+    coatNorm,
+    coatUv,
+    coatSkinIdx,
+    coatSkinWgt,
+    coatIndices
+  );
+
+  // 4. DARK HORN BUTTONS (Waistcoat center buttons + Double-Breasted Trench Coat buttons + Epaulet/Storm-flap buttons)
+  const btnPos: number[] = [];
+  const btnNorm: number[] = [];
+  const btnUv: number[] = [];
+  const btnSkinIdx: number[] = [];
+  const btnSkinWgt: number[] = [];
+  const btnOutIndices: number[] = [];
+
+  const btnRemap = new Map<number, number>();
+  for (let i = 0; i < buttonIndices.length; i++) {
+    const origV = buttonIndices[i];
+    if (!btnRemap.has(origV)) {
+      const newV = btnPos.length / 3;
+      btnRemap.set(origV, newV);
+      btnPos.push(pos.getX(origV), pos.getY(origV), pos.getZ(origV) + 0.002);
+      btnNorm.push(
+        normAttr ? normAttr.getX(origV) : 0,
+        normAttr ? normAttr.getY(origV) : 0,
+        normAttr ? normAttr.getZ(origV) : 1
+      );
+      btnUv.push(0.5, 0.5);
+      btnSkinIdx.push(
+        skinIdxAttr.getX(origV),
+        skinIdxAttr.getY(origV),
+        skinIdxAttr.getZ(origV),
+        skinIdxAttr.getW(origV)
+      );
+      btnSkinWgt.push(
+        skinWgtAttr.getX(origV),
+        skinWgtAttr.getY(origV),
+        skinWgtAttr.getZ(origV),
+        skinWgtAttr.getW(origV)
+      );
+    }
+    btnOutIndices.push(btnRemap.get(origV)!);
+  }
+
+  const addHornButton = (
+    bx: number,
+    by: number,
+    bz: number,
+    radius = 0.0085,
+    rx = Math.PI / 2,
+    ry = 0,
+    rz = 0
+  ) => {
+    const cyl = new THREE.CylinderGeometry(radius, radius, 0.0045, 14);
+    const m = new THREE.Matrix4()
+      .makeRotationFromEuler(new THREE.Euler(rx, ry, rz, 'XYZ'))
+      .setPosition(bx, by, bz);
+    cyl.applyMatrix4(m);
+    appendSkinnedPartGeometry(
+      cyl,
+      btnPos,
+      btnNorm,
+      btnUv,
+      btnSkinIdx,
+      btnSkinWgt,
+      btnOutIndices,
+      pos,
+      skinIdxAttr,
+      skinWgtAttr,
+      botPos,
+      botSkinIdx,
+      botSkinWgt
+    );
+  };
+
+  // Double-breasted trench coat buttons on left & right front panels
+  for (const side of [-1, 1]) {
+    addHornButton(side * 0.092, 1.345, 0.145, 0.009, Math.PI / 2, 0, side * -0.22);
+    addHornButton(side * 0.088, 1.240, 0.154, 0.009, Math.PI / 2, 0, side * -0.2);
+    addHornButton(side * 0.086, 1.145, 0.159, 0.009, Math.PI / 2, 0, side * -0.18);
+    addHornButton(side * 0.088, 0.965, 0.156, 0.009, Math.PI / 2, 0, side * -0.18);
+    // Epaulet button
+    addHornButton(side * 0.112, 1.528, -0.02, 0.0065, 0.1, 0, side * -0.18);
+  }
+
+  const buttonsGeo = buildSkinnedBufferGeometry(
+    btnPos,
+    btnNorm,
+    btnUv,
+    btnSkinIdx,
+    btnSkinWgt,
+    btnOutIndices
+  );
+
+  // 5. AGED-BRASS / GUNMETAL TRENCH COAT BELT BUCKLE (at front center waist y = 1.074, z = 0.168)
+  const bklPos: number[] = [];
+  const bklNorm: number[] = [];
+  const bklUv: number[] = [];
+  const bklSkinIdx: number[] = [];
+  const bklSkinWgt: number[] = [];
+  const bklIndices: number[] = [];
+
+  const addBuckleBar = (w: number, h: number, d: number, bx: number, by: number, bz: number) => {
+    const g = new THREE.BoxGeometry(w, h, d);
+    g.translate(bx, by, bz);
+    appendSkinnedPartGeometry(
+      g,
+      bklPos,
+      bklNorm,
+      bklUv,
+      bklSkinIdx,
+      bklSkinWgt,
+      bklIndices,
+      pos,
+      skinIdxAttr,
+      skinWgtAttr
+    );
+  };
+  // Rectangular frame buckle (top, bottom, left, right bars + center prong)
+  addBuckleBar(0.044, 0.007, 0.011, 0, 1.098, 0.168);
+  addBuckleBar(0.044, 0.007, 0.011, 0, 1.050, 0.168);
+  addBuckleBar(0.007, 0.055, 0.011, -0.019, 1.074, 0.168);
+  addBuckleBar(0.007, 0.055, 0.011, 0.019, 1.074, 0.168);
+  addBuckleBar(0.004, 0.052, 0.012, 0.0, 1.074, 0.169);
+  addBuckleBar(0.022, 0.005, 0.013, -0.009, 1.074, 0.171);
+
+  const buckleGeo = buildSkinnedBufferGeometry(
+    bklPos,
+    bklNorm,
+    bklUv,
+    bklSkinIdx,
+    bklSkinWgt,
+    bklIndices
+  );
+
+  return {
+    outerJacketGeo: finalOuterCoatGeo,
+    innerShirtGeo,
+    waistcoatGeo,
+    tieGeo,
+    buttonsGeo,
+    buckleGeo,
+  };
 }
 
 /**
@@ -1055,6 +1860,195 @@ function attachHeadFeaturesAndHair(
     ];
     rearStrands.forEach((pts) => addStrand(pts, 0.0060));
 
+    // Ensure all upper crown hair strands sit cleanly inside the flat cap crown while preserving
+    // the visible front side-parted forehead sweep, temple taper, and nape hair
+    hairGroup.traverse((child) => {
+      if ((child as THREE.Mesh).isMesh) {
+        const hGeo = (child as THREE.Mesh).geometry as THREE.BufferGeometry;
+        const hPos = hGeo.attributes.position as THREE.BufferAttribute;
+        for (let v = 0; v < hPos.count; v++) {
+          let hx = hPos.getX(v);
+          let hy = hPos.getY(v);
+          let hz = hPos.getZ(v);
+          if (hy > 0.158) {
+            hy = 0.158 + (hy - 0.158) * 0.35;
+            hx *= 0.94;
+            if (hz < 0.065) hz *= 0.94;
+          }
+          hPos.setXYZ(v, hx, hy, hz);
+        }
+        hPos.needsUpdate = true;
+      }
+    });
+
+    // 6. Tailored Muted Gray-Brown Wool Flat Cap ('#6e6257') resting naturally over the crown
+    // while keeping his side-parted temple/nape hair, forehead, eyebrows, and face clearly visible
+    const flatCapGroup = new THREE.Group();
+    flatCapGroup.name = 'investigator_flat_cap';
+
+    const capHex = '#6e6257';
+    const capClothTex = getCachedFabricTexture(capHex, true);
+    const capMat = new THREE.MeshStandardMaterial({
+      color: 0xffffff,
+      map: capClothTex,
+      roughness: 0.82,
+      metalness: 0.02,
+      side: THREE.DoubleSide,
+    });
+    capMat.userData.baseHex = capHex;
+
+    const seamMat = new THREE.MeshStandardMaterial({
+      color: 0x453d36,
+      roughness: 0.85,
+      metalness: 0.03,
+    });
+    seamMat.userData.baseHex = '#453d36';
+
+    // Sculpted multi-ring flat cap crown (low-profile, forward-sloping wool silhouette)
+    const capRings = 20;
+    const capSegs = 36;
+    const capCrownGeo = new THREE.BufferGeometry();
+    const capPosArr: number[] = [];
+    const capUvArr: number[] = [];
+    const capIdxArr: number[] = [];
+
+    for (let r = 0; r <= capRings; r++) {
+      const v = r / capRings; // 0 = bottom fitted headband rim, 1 = top center crown
+      const sinV = Math.sin((v * Math.PI) / 2);
+      const cosV = Math.cos((v * Math.PI) / 2);
+
+      for (let s = 0; s <= capSegs; s++) {
+        const u = s / capSegs;
+        const theta = u * Math.PI * 2; // 0 = front (+Z), PI/2 = left (+X), PI = back (-Z)
+        const sinT = Math.sin(theta);
+        const cosT = Math.cos(theta);
+
+        // Base elliptical head fit with classic flat-cap forward drape
+        const widthR = (0.097 + 0.010 * Math.sin(v * Math.PI)) * cosV;
+        const lengthFront = 0.118;
+        const lengthBack = 0.106;
+        const zRadius = (cosT >= 0 ? lengthFront : lengthBack) * cosV;
+
+        const zCenterShift = 0.008 + 0.014 * sinV;
+        const x = sinT * widthR;
+        const z = zCenterShift + cosT * zRadius;
+
+        // Rim sits comfortably above eyebrows (y = 0.152 front, 0.140 back);
+        // Top of flat cap slopes from y = 0.228 at rear-mid crown down to y = 0.188 toward front visor
+        const rimY = 0.146 + 0.006 * cosT;
+        const topProfileY = 0.218 - 0.015 * cosT + 0.006 * (1 - Math.abs(sinT));
+        const panelSeam = Math.cos(theta * 6.0) * 0.0014 * sinV;
+        const y = THREE.MathUtils.lerp(rimY, topProfileY, Math.pow(sinV, 0.75)) + panelSeam;
+
+        capPosArr.push(x, y, z);
+        capUvArr.push(u * 2.0, v * 2.0);
+      }
+    }
+
+    for (let r = 0; r < capRings; r++) {
+      const r0 = r * (capSegs + 1);
+      const r1 = (r + 1) * (capSegs + 1);
+      for (let s = 0; s < capSegs; s++) {
+        capIdxArr.push(r0 + s, r0 + s + 1, r1 + s);
+        capIdxArr.push(r0 + s + 1, r1 + s + 1, r1 + s);
+      }
+    }
+    capCrownGeo.setAttribute('position', new THREE.Float32BufferAttribute(capPosArr, 3));
+    capCrownGeo.setAttribute('uv', new THREE.Float32BufferAttribute(capUvArr, 2));
+    capCrownGeo.setIndex(capIdxArr);
+    capCrownGeo.computeVertexNormals();
+
+    const capCrownMesh = new THREE.Mesh(capCrownGeo, capMat);
+    capCrownMesh.castShadow = true;
+    capCrownMesh.receiveShadow = true;
+    flatCapGroup.add(capCrownMesh);
+
+    // Stiffened Curved Front Peak / Visor Brim (projects from z = 0.086 to z = 0.150 at y ~ 0.146)
+    const visorRows = 8;
+    const visorCols = 24;
+    const visorGeo = new THREE.BufferGeometry();
+    const vPosArr: number[] = [];
+    const vUvArr: number[] = [];
+    const vIdxArr: number[] = [];
+
+    for (let r = 0; r <= visorRows; r++) {
+      const tFwd = r / visorRows; // 0 = inner headband attachment, 1 = front visor lip
+      for (let c = 0; c <= visorCols; c++) {
+        const u = c / visorCols; // 0 = right (-X), 1 = left (+X)
+        const sNorm = (u - 0.5) * 2; // -1 .. +1
+        const maxHalfW = THREE.MathUtils.lerp(0.086, 0.064, Math.pow(tFwd, 1.35));
+        const vx = sNorm * maxHalfW;
+        const archCurve = (1 - sNorm * sNorm) * 0.011;
+        const vz =
+          THREE.MathUtils.lerp(0.086, 0.150, tFwd) *
+          (1 - 0.16 * sNorm * sNorm);
+        const vy =
+          0.146 - tFwd * 0.011 + archCurve - Math.abs(sNorm) * 0.004;
+
+        // Upper & lower visor surfaces (4.5mm stiffened brim thickness)
+        vPosArr.push(vx, vy + 0.0024, vz);
+        vUvArr.push(u, tFwd);
+        vPosArr.push(vx, vy - 0.0022, vz);
+        vUvArr.push(u, tFwd);
+      }
+    }
+    const vStride = (visorCols + 1) * 2;
+    for (let r = 0; r < visorRows; r++) {
+      const r0 = r * vStride;
+      const r1 = (r + 1) * vStride;
+      for (let c = 0; c < visorCols; c++) {
+        const t00 = r0 + c * 2;
+        const t01 = r0 + (c + 1) * 2;
+        const t10 = r1 + c * 2;
+        const t11 = r1 + (c + 1) * 2;
+        vIdxArr.push(t00, t10, t01);
+        vIdxArr.push(t01, t10, t11);
+
+        const b00 = t00 + 1;
+        const b01 = t01 + 1;
+        const b10 = t10 + 1;
+        const b11 = t11 + 1;
+        vIdxArr.push(b00, b01, b10);
+        vIdxArr.push(b01, b11, b10);
+      }
+    }
+    // Front rim cap of visor
+    const frontRow = visorRows * vStride;
+    for (let c = 0; c < visorCols; c++) {
+      const t0 = frontRow + c * 2;
+      const b0 = t0 + 1;
+      const t1 = frontRow + (c + 1) * 2;
+      const b1 = t1 + 1;
+      vIdxArr.push(t0, b0, t1);
+      vIdxArr.push(b0, b1, t1);
+    }
+    visorGeo.setAttribute('position', new THREE.Float32BufferAttribute(vPosArr, 3));
+    visorGeo.setAttribute('uv', new THREE.Float32BufferAttribute(vUvArr, 2));
+    visorGeo.setIndex(vIdxArr);
+    visorGeo.computeVertexNormals();
+
+    const visorMesh = new THREE.Mesh(visorGeo, capMat);
+    visorMesh.castShadow = true;
+    visorMesh.receiveShadow = true;
+    flatCapGroup.add(visorMesh);
+
+    // Fitted Bottom Headband Trim
+    const bandPoints: THREE.Vector3[] = [];
+    for (let s = 0; s <= 36; s++) {
+      const th = (s / 36) * Math.PI * 2;
+      const bx = Math.sin(th) * 0.0955;
+      const bz = 0.008 + Math.cos(th) * (Math.cos(th) >= 0 ? 0.116 : 0.104);
+      const by = 0.144 + 0.006 * Math.cos(th);
+      bandPoints.push(new THREE.Vector3(bx, by, bz));
+    }
+    const bandCurve = new THREE.CatmullRomCurve3(bandPoints, true);
+    const bandMesh = new THREE.Mesh(
+      new THREE.TubeGeometry(bandCurve, 36, 0.0032, 8, true),
+      seamMat
+    );
+    flatCapGroup.add(bandMesh);
+
+    headFeatureGroup.add(flatCapGroup);
   } else if (profile.hairstyle === 'tousled_wavy_crop') {
     // Alex Rivera: Warm chestnut tousled creative waves across the crown and forehead
     const crownBase = new THREE.Mesh(
@@ -1457,339 +2451,579 @@ function attachCharacterWardrobeDetails(
  * - Opposing thumb gripping the inner long edge (+X).
  * - Zero gaps, zero clipping, zero edge-on distortion.
  */
-function createInvestigatorHandAndPhoneAsset(
-  skinHex: string,
-  jacketHex: string
-): {
-  assetGroup: THREE.Group;
+/**
+ * Creates the investigator's smartphone prop with realistic chassis, metallic rim,
+ * triple camera cluster, glass sheen, AMOLED screen, and screen glow light.
+ * Attaches directly to the character rig's RightHand palm bone socket.
+ */
+function createInvestigatorSmartphoneProp(): {
+  phoneGroup: THREE.Group;
   screenGlowLight: THREE.PointLight;
 } {
-  const assetGroup = new THREE.Group();
-  assetGroup.name = 'investigatorHandAndPhoneAsset';
-
-  const skinMat = new THREE.MeshStandardMaterial({
-    color: new THREE.Color(skinHex || '#ecc8b0'),
-    roughness: 0.56,
-    metalness: 0.04,
-  });
-
   const phoneW = 0.076;
   const phoneH = 0.156;
   const phoneD = 0.009;
 
-  // Phone center in asset local space (positioned upright above the wrist)
-  const phoneCenterY = 0.072;
-  const phoneCenterZ = 0.012;
-
-  // -------------------------------------------------------------------------
-  // 1. SMARTPHONE PROP (Upright portrait, back facing +Z, screen facing -Z)
-  // -------------------------------------------------------------------------
   const phoneGroup = new THREE.Group();
   phoneGroup.name = 'investigatorPhoneProp';
-  phoneGroup.position.set(0, phoneCenterY, phoneCenterZ);
-  assetGroup.add(phoneGroup);
 
-  // Slim anodized chassis
+  // The smartphone is held upright (rotated 180 degrees in the hand so the rear camera cluster is at the TOP):
+  // - Its rear camera cluster sits at the top (+Y, pointing toward his elbow)
+  // - Its bottom edge (-Y) points toward the floor
+  // - Its back panel (+Z) faces the viewer directly
+  const deviceMeshGroup = new THREE.Group();
+  deviceMeshGroup.name = 'uprightSmartphoneDevice';
+  phoneGroup.add(deviceMeshGroup);
+
+  // Slim anodized chassis centered at (0, 0, 0)
   const chassisGeo = new THREE.BoxGeometry(phoneW, phoneH, phoneD);
   const chassisMat = new THREE.MeshStandardMaterial({
-    color: 0x111827,
-    roughness: 0.28,
-    metalness: 0.85,
+    color: 0x334155,
+    roughness: 0.36,
+    metalness: 0.16,
   });
   const chassis = new THREE.Mesh(chassisGeo, chassisMat);
+  chassis.position.set(0, 0, 0);
   chassis.castShadow = true;
   chassis.receiveShadow = true;
-  phoneGroup.add(chassis);
+  deviceMeshGroup.add(chassis);
 
-  // Precision metallic bevel rim
+  // Precision brushed-titanium bevel rim around the perimeter
   const rimGeo = new THREE.BoxGeometry(
     phoneW + 0.0028,
     phoneH + 0.0028,
     phoneD - 0.002
   );
   const rimMat = new THREE.MeshStandardMaterial({
-    color: 0xd1d5db,
-    roughness: 0.14,
-    metalness: 0.95,
+    color: 0xcbd5e1,
+    roughness: 0.32,
+    metalness: 0.16,
   });
-  phoneGroup.add(new THREE.Mesh(rimGeo, rimMat));
+  const rimMesh = new THREE.Mesh(rimGeo, rimMat);
+  rimMesh.position.set(0, 0, 0);
+  deviceMeshGroup.add(rimMesh);
 
-  // Tactile side buttons
+  // Tactile side buttons on the side rails
   const buttonMat = new THREE.MeshStandardMaterial({
-    color: 0xe2e8f0,
-    roughness: 0.16,
-    metalness: 0.94,
+    color: 0xcbd5e1,
+    roughness: 0.28,
+    metalness: 0.16,
   });
   const powerBtn = new THREE.Mesh(
-    new THREE.BoxGeometry(0.0026, 0.018, 0.0035),
+    new THREE.BoxGeometry(0.0024, 0.018, 0.0035),
     buttonMat
   );
-  powerBtn.position.set(phoneW / 2 + 0.0016, 0.024, 0);
+  powerBtn.position.set(phoneW / 2 + 0.0014, 0.028, 0);
 
   const volUpBtn = new THREE.Mesh(
-    new THREE.BoxGeometry(0.0026, 0.015, 0.0035),
+    new THREE.BoxGeometry(0.0024, 0.015, 0.0035),
     buttonMat
   );
-  volUpBtn.position.set(-phoneW / 2 - 0.0016, 0.032, 0);
+  volUpBtn.position.set(-phoneW / 2 - 0.0014, 0.034, 0);
 
   const volDownBtn = new THREE.Mesh(
-    new THREE.BoxGeometry(0.0026, 0.015, 0.0035),
+    new THREE.BoxGeometry(0.0024, 0.015, 0.0035),
     buttonMat
   );
-  volDownBtn.position.set(-phoneW / 2 - 0.0016, 0.011, 0);
-  phoneGroup.add(powerBtn, volUpBtn, volDownBtn);
+  volDownBtn.position.set(-phoneW / 2 - 0.0014, 0.014, 0);
+  deviceMeshGroup.add(powerBtn, volUpBtn, volDownBtn);
 
-  // Broad rear back panel (+Z outward face)
+  // Broad rear back panel (+Z outward face facing viewer)
+  // Lighter brushed silver-slate titanium finish so the dark rear camera cluster at the top (+Y) has unmistakable contrast
   const backGlass = new THREE.Mesh(
     new THREE.PlaneGeometry(phoneW - 0.002, phoneH - 0.002),
     new THREE.MeshStandardMaterial({
-      color: 0x1e293b,
-      roughness: 0.2,
-      metalness: 0.7,
+      color: 0x64748b,
+      emissive: 0x1e293b,
+      emissiveIntensity: 0.32,
+      roughness: 0.34,
+      metalness: 0.12,
+      side: THREE.DoubleSide,
     })
   );
-  backGlass.position.z = phoneD / 2 + 0.0006;
-  phoneGroup.add(backGlass);
+  backGlass.position.set(0, 0, phoneD / 2 + 0.0006);
+  deviceMeshGroup.add(backGlass);
 
-  const backSheen = new THREE.Mesh(
-    new THREE.PlaneGeometry(phoneW - 0.005, phoneH - 0.005),
-    new THREE.MeshBasicMaterial({
-      color: 0x94a3b8,
-      transparent: true,
-      opacity: 0.12,
-    })
-  );
-  backSheen.position.z = phoneD / 2 + 0.0008;
-  phoneGroup.add(backSheen);
-
-  // Raised Camera Island at TOP-LEFT (-X, +Y in phone space)
-  const islandW = 0.033;
-  const islandH = 0.046;
-  const islandX = -phoneW / 2 + islandW / 2 + 0.006;
-  const islandY = phoneH / 2 - islandH / 2 - 0.006;
+  // Rear Camera Cluster at the TOP of the phone (+Y, pointing toward his elbow!)
+  const islandW = 0.038;
+  const islandH = 0.050;
+  const islandX = -phoneW / 2 + islandW / 2 + 0.0055;
+  const islandY = phoneH / 2 - islandH / 2 - 0.0055;
+  const islandZ = phoneD / 2;
 
   const islandBezel = new THREE.Mesh(
-    new THREE.BoxGeometry(islandW + 0.0024, islandH + 0.0024, 0.0028),
+    new THREE.BoxGeometry(islandW + 0.0032, islandH + 0.0032, 0.0028),
     new THREE.MeshStandardMaterial({
-      color: 0xe2e8f0,
-      roughness: 0.15,
-      metalness: 0.95,
+      color: 0x1e293b,
+      roughness: 0.28,
+      metalness: 0.14,
     })
   );
-  islandBezel.position.set(islandX, islandY, phoneD / 2 + 0.0014);
-  phoneGroup.add(islandBezel);
+  islandBezel.position.set(islandX, islandY, islandZ + 0.0014);
+  deviceMeshGroup.add(islandBezel);
 
   const island = new THREE.Mesh(
-    new THREE.BoxGeometry(islandW, islandH, 0.0034),
+    new THREE.BoxGeometry(islandW, islandH, 0.0036),
     new THREE.MeshStandardMaterial({
       color: 0x090d16,
-      roughness: 0.1,
-      metalness: 0.9,
+      roughness: 0.22,
+      metalness: 0.1,
     })
   );
-  island.position.set(islandX, islandY, phoneD / 2 + 0.0019);
-  phoneGroup.add(island);
+  island.position.set(islandX, islandY, islandZ + 0.002);
+  deviceMeshGroup.add(island);
 
-  // Triple Pro Camera Lenses
-  const lensRingGeo = new THREE.CylinderGeometry(0.0068, 0.0068, 0.004, 18);
+  // Triple Pro Camera Lenses inside the top camera cluster (+Y, pointing toward his elbow)
+  const lensRingGeo = new THREE.CylinderGeometry(0.0076, 0.0076, 0.0044, 24);
   lensRingGeo.rotateX(Math.PI / 2);
   const lensRingMat = new THREE.MeshStandardMaterial({
-    color: 0xf8fafc,
-    roughness: 0.1,
-    metalness: 0.98,
+    color: 0xe2e8f0,
+    roughness: 0.22,
+    metalness: 0.12,
   });
 
-  const opticGeo = new THREE.CylinderGeometry(0.0048, 0.0048, 0.0044, 18);
+  const opticGeo = new THREE.CylinderGeometry(0.0055, 0.0055, 0.0048, 24);
   opticGeo.rotateX(Math.PI / 2);
   const opticMat = new THREE.MeshStandardMaterial({
     color: 0x020617,
-    roughness: 0.05,
-    metalness: 0.98,
+    roughness: 0.14,
+    metalness: 0.1,
+  });
+
+  const innerApertureGeo = new THREE.RingGeometry(0.0018, 0.0032, 20);
+  const innerApertureMat = new THREE.MeshBasicMaterial({
+    color: 0x0ea5e9,
+    side: THREE.DoubleSide,
   });
 
   [
-    [islandX - 0.007, islandY + 0.012],
-    [islandX - 0.007, islandY - 0.012],
-    [islandX + 0.0075, islandY],
+    [islandX - 0.008, islandY + 0.013],
+    [islandX - 0.008, islandY - 0.013],
+    [islandX + 0.0085, islandY],
   ].forEach(([lx, ly]) => {
     const ring = new THREE.Mesh(lensRingGeo, lensRingMat);
-    ring.position.set(lx, ly, phoneD / 2 + 0.0022);
+    ring.position.set(lx, ly, islandZ + 0.0024);
     const optic = new THREE.Mesh(opticGeo, opticMat);
-    optic.position.set(lx, ly, phoneD / 2 + 0.0024);
-    phoneGroup.add(ring, optic);
+    optic.position.set(lx, ly, islandZ + 0.0026);
+    const aperture = new THREE.Mesh(innerApertureGeo, innerApertureMat);
+    aperture.position.set(lx, ly, islandZ + 0.0051);
+    deviceMeshGroup.add(ring, optic, aperture);
   });
 
-  // Flash & LiDAR
-  const flashGeo = new THREE.CylinderGeometry(0.0032, 0.0032, 0.004, 14);
+  // LED Flash & LiDAR sensor inside the top camera cluster at +Y
+  const flashGeo = new THREE.CylinderGeometry(0.0036, 0.0036, 0.0044, 16);
   flashGeo.rotateX(Math.PI / 2);
   const flash = new THREE.Mesh(
     flashGeo,
     new THREE.MeshBasicMaterial({ color: 0xfef08a })
   );
-  flash.position.set(islandX + 0.0075, islandY + 0.013, phoneD / 2 + 0.0023);
-  phoneGroup.add(flash);
+  flash.position.set(islandX + 0.0085, islandY + 0.014, islandZ + 0.0026);
+  deviceMeshGroup.add(flash);
 
   const lidar = new THREE.Mesh(
     flashGeo,
     new THREE.MeshStandardMaterial({
       color: 0x475569,
-      roughness: 0.2,
-      metalness: 0.8,
+      roughness: 0.25,
+      metalness: 0.15,
     })
   );
-  lidar.position.set(islandX + 0.0075, islandY - 0.013, phoneD / 2 + 0.0022);
-  phoneGroup.add(lidar);
-
-  // Metallic Center Emblem Ring
-  const emblem = new THREE.Mesh(
-    new THREE.RingGeometry(0.0055, 0.0085, 24),
-    new THREE.MeshBasicMaterial({ color: 0x94a3b8, side: THREE.DoubleSide })
-  );
-  emblem.position.set(0, -0.006, phoneD / 2 + 0.0008);
-  phoneGroup.add(emblem);
+  lidar.position.set(islandX + 0.0085, islandY - 0.014, islandZ + 0.0025);
+  deviceMeshGroup.add(lidar);
 
   // Lit AMOLED front screen (-Z face pressed against palm)
   const screenTex =
     ProceduralTextureGenerator.createCaseDeliveryMessageScreenTexture();
   const screenGeo = new THREE.PlaneGeometry(phoneW - 0.006, phoneH - 0.008);
-  const screenMat = new THREE.MeshBasicMaterial({ map: screenTex });
+  const screenMat = new THREE.MeshBasicMaterial({
+    map: screenTex,
+    side: THREE.DoubleSide,
+  });
   const frontScreen = new THREE.Mesh(screenGeo, screenMat);
   frontScreen.rotation.y = Math.PI;
-  frontScreen.position.z = -phoneD / 2 - 0.0006;
-  phoneGroup.add(frontScreen);
+  frontScreen.position.set(0, 0, -phoneD / 2 - 0.0006);
+  deviceMeshGroup.add(frontScreen);
 
   const screenGlowLight = new THREE.PointLight(0xfffbeb, 0.12, 0.45, 2.0);
-  screenGlowLight.position.set(0, 0.02, -0.04);
-  phoneGroup.add(screenGlowLight);
-
-  // -------------------------------------------------------------------------
-  // 2. SCULPTED HAND (Natural one-handed phone grip)
-  // -------------------------------------------------------------------------
-  const handGroup = new THREE.Group();
-  handGroup.name = 'investigatorSculptedHand';
-  assetGroup.add(handGroup);
-
-  // A. WRIST & SLEEVE SEAM: Sits below the phone, seamlessly meeting RightForeArm
-  const wristSleeveGeo = new THREE.CylinderGeometry(0.021, 0.024, 0.022, 20);
-  wristSleeveGeo.scale(1.15, 1, 0.85);
-  const wristSleeveMat = new THREE.MeshStandardMaterial({
-    color: new THREE.Color(jacketHex || '#1e1b4b'),
-    roughness: 0.75,
-  });
-  const sleeveCuff = new THREE.Mesh(wristSleeveGeo, wristSleeveMat);
-  sleeveCuff.position.set(0, -0.008, 0);
-  handGroup.add(sleeveCuff);
-
-  const shirtCuffGeo = new THREE.CylinderGeometry(0.0195, 0.0215, 0.008, 20);
-  shirtCuffGeo.scale(1.14, 1, 0.84);
-  const shirtCuff = new THREE.Mesh(
-    shirtCuffGeo,
-    new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.6 })
-  );
-  shirtCuff.position.set(0, 0.006, 0);
-  handGroup.add(shirtCuff);
-
-  const wristStemGeo = new THREE.CylinderGeometry(0.018, 0.019, 0.028, 20);
-  wristStemGeo.scale(1.12, 1, 0.82);
-  const wristStem = new THREE.Mesh(wristStemGeo, skinMat);
-  wristStem.position.set(0, 0.022, 0.002);
-  handGroup.add(wristStem);
-
-  // B. PALM: Supporting the phone screen from behind
-  const palmBackZ = phoneCenterZ - phoneD / 2 - 0.009;
-  const palmGeo = new THREE.BoxGeometry(phoneW * 0.92, 0.076, 0.018);
-  const palm = new THREE.Mesh(palmGeo, skinMat);
-  palm.position.set(0, phoneCenterY - 0.012, palmBackZ);
-  handGroup.add(palm);
-
-  // Thenar eminence (thumb base muscular mound on inner edge +X)
-  const thenarGeo = new THREE.SphereGeometry(0.018, 16, 16);
-  thenarGeo.scale(1.1, 1.4, 0.78);
-  const thenar = new THREE.Mesh(thenarGeo, skinMat);
-  thenar.position.set(phoneW / 2 - 0.012, phoneCenterY - 0.028, palmBackZ);
-  handGroup.add(thenar);
-
-  // Hypothenar eminence (pinky base muscular mound on outer edge -X)
-  const hypothenarGeo = new THREE.SphereGeometry(0.016, 16, 16);
-  hypothenarGeo.scale(0.9, 1.45, 0.75);
-  const hypothenar = new THREE.Mesh(hypothenarGeo, skinMat);
-  hypothenar.position.set(-phoneW / 2 + 0.012, phoneCenterY - 0.034, palmBackZ);
-  handGroup.add(hypothenar);
-
-  // C. FOUR CURLED FINGERS: Wrapping tightly along the outer long edge (-X)
-  const fingers = [
-    { name: 'Index', y: phoneCenterY + 0.030, r: 0.0068 },
-    { name: 'Middle', y: phoneCenterY + 0.007, r: 0.0072 },
-    { name: 'Ring', y: phoneCenterY - 0.016, r: 0.0066 },
-    { name: 'Pinky', y: phoneCenterY - 0.038, r: 0.0058 },
-  ];
-
-  fingers.forEach((f) => {
-    // 1. Knuckle behind the phone (connecting palm to outer side)
-    const knuckleGeo = new THREE.SphereGeometry(f.r * 1.05, 14, 14);
-    const knuckle = new THREE.Mesh(knuckleGeo, skinMat);
-    knuckle.position.set(-phoneW / 2 - f.r * 0.25, f.y, palmBackZ + 0.002);
-    handGroup.add(knuckle);
-
-    // 2. Side phalanx wrapping around outer chassis edge (-X)
-    const sidePhalanxGeo = new THREE.CylinderGeometry(f.r, f.r * 0.95, 0.012, 16);
-    sidePhalanxGeo.rotateZ(Math.PI / 2);
-    const sidePhalanx = new THREE.Mesh(sidePhalanxGeo, skinMat);
-    sidePhalanx.position.set(-phoneW / 2 - f.r * 0.38, f.y, phoneCenterZ);
-    handGroup.add(sidePhalanx);
-
-    // 3. Curled distal fingertip pad: curves over onto front bevel (+Z)
-    const tipPadGeo = new THREE.SphereGeometry(f.r * 0.96, 14, 14);
-    tipPadGeo.scale(1.22, 0.92, 0.82);
-    const tipPad = new THREE.Mesh(tipPadGeo, skinMat);
-    tipPad.position.set(
-      -phoneW / 2 + f.r * 0.52,
-      f.y,
-      phoneCenterZ + phoneD / 2 + f.r * 0.22
-    );
-    handGroup.add(tipPad);
-  });
-
-  // D. OPPOSING THUMB: Wrapping along the inner long edge (+X)
-  const thumbProxGeo = new THREE.CylinderGeometry(0.0085, 0.0105, 0.03, 16);
-  thumbProxGeo.rotateZ(-Math.PI / 5);
-  thumbProxGeo.rotateY(Math.PI / 6);
-  const thumbProx = new THREE.Mesh(thumbProxGeo, skinMat);
-  thumbProx.position.set(
-    phoneW / 2 - 0.006,
-    phoneCenterY - 0.016,
-    palmBackZ + 0.006
-  );
-  handGroup.add(thumbProx);
-
-  const thumbDistalGeo = new THREE.CylinderGeometry(0.0078, 0.0084, 0.018, 16);
-  thumbDistalGeo.rotateZ(-Math.PI / 2);
-  const thumbDistal = new THREE.Mesh(thumbDistalGeo, skinMat);
-  thumbDistal.position.set(
-    phoneW / 2 + 0.0035,
-    phoneCenterY - 0.002,
-    phoneCenterZ
-  );
-  handGroup.add(thumbDistal);
-
-  const thumbPadGeo = new THREE.SphereGeometry(0.0084, 14, 14);
-  thumbPadGeo.scale(1.2, 0.95, 0.82);
-  const thumbPad = new THREE.Mesh(thumbPadGeo, skinMat);
-  thumbPad.position.set(
-    phoneW / 2 - 0.005,
-    phoneCenterY,
-    phoneCenterZ + phoneD / 2 + 0.002
-  );
-  handGroup.add(thumbPad);
+  screenGlowLight.position.set(0, -0.02, -0.04);
+  deviceMeshGroup.add(screenGlowLight);
 
   // Disable frustum culling on all child meshes
-  assetGroup.traverse((child) => {
+  phoneGroup.traverse((child) => {
     if ((child as THREE.Mesh).isMesh) {
       (child as THREE.Mesh).frustumCulled = false;
+      (child as THREE.Mesh).castShadow = true;
+      (child as THREE.Mesh).receiveShadow = true;
     }
   });
 
-  return { assetGroup, screenGlowLight };
+  return { phoneGroup, screenGlowLight };
+}
+
+/**
+ * Extracts the 431-vertex organic sculpted right hand component (Root 552) from Wolf3D_Body,
+ * deforms it via Linear Blend Skinning (LBS) into a complete, pre-posed "holding smartphone"
+ * hand pose in Phone Space:
+ * - Palm supporting the screen (-Z) from behind
+ * - Four articulated fingers (Index, Middle, Ring, Pinky) curled around the lower-middle outer long edge (-X)
+ * - Opposing thumb curled around the lower-middle inner long edge (+X)
+ * - Top end of the phone (+Y, pointing toward his elbow) and its rear camera cluster 100% unobstructed above the grip
+ * - Bottom edge of the phone (-Y) pointing toward the floor
+ * Also returns index buffers to exclude the open right hand from Wolf3D_Body when holding the phone.
+ */
+function buildPrePosedRightHandAndFilterBody(
+  bodySkinnedMesh: THREE.SkinnedMesh,
+  clonedRoot: THREE.Group,
+  rightHandBone: THREE.Bone,
+  jacketMat: THREE.Material,
+  innerShirtMat: THREE.Material
+): {
+  posedRightHandGroup: THREE.Group;
+  fullBodyIndex: THREE.BufferAttribute;
+  bodyWithoutRightHandIndex: THREE.BufferAttribute;
+} | null {
+  const sourceGeo = bodySkinnedMesh.geometry;
+  const posAttr = sourceGeo.attributes.position;
+  const uvAttr = sourceGeo.attributes.uv;
+  const skinIndexAttr = sourceGeo.attributes.skinIndex;
+  const skinWeightAttr = sourceGeo.attributes.skinWeight;
+  const idxAttr = sourceGeo.index;
+  if (!posAttr || !skinIndexAttr || !skinWeightAttr || !idxAttr) {
+    return null;
+  }
+
+  const idxArray = idxAttr.array;
+  const nVerts = posAttr.count;
+  const parent = Array.from({ length: nVerts }, (_, i) => i);
+  const find = (x: number): number => {
+    let cur = x;
+    while (parent[cur] !== cur) {
+      parent[cur] = parent[parent[cur]];
+      cur = parent[cur];
+    }
+    return cur;
+  };
+
+  for (let i = 0; i < idxArray.length; i += 3) {
+    parent[find(idxArray[i])] = find(idxArray[i + 1]);
+    parent[find(idxArray[i + 1])] = find(idxArray[i + 2]);
+  }
+
+  const compMinX = new Map<number, number>();
+  const compMaxY = new Map<number, number>();
+  for (let v = 0; v < nVerts; v++) {
+    const r = find(v);
+    const x = posAttr.getX(v);
+    const y = posAttr.getY(v);
+    const prevMinX = compMinX.get(r);
+    if (prevMinX === undefined || x < prevMinX) {
+      compMinX.set(r, x);
+    }
+    const prevMaxY = compMaxY.get(r);
+    if (prevMaxY === undefined || y > prevMaxY) {
+      compMaxY.set(r, y);
+    }
+  }
+
+  // Save original bind quaternions of right-hand finger/thumb bones
+  const savedFingerQuats: Array<{ bone: THREE.Bone; quat: THREE.Quaternion }> = [];
+  const applyTempOffset = (boneName: string, rx: number, ry: number, rz: number) => {
+    const b = clonedRoot.getObjectByName(boneName) as THREE.Bone | null;
+    if (!b) return;
+    savedFingerQuats.push({ bone: b, quat: b.quaternion.clone() });
+    const q = new THREE.Quaternion().setFromEuler(new THREE.Euler(rx, ry, rz, 'XYZ'));
+    b.quaternion.multiply(q);
+  };
+
+  // Pose the 4 fingers so their MCP/PIP joints hug the outer vertical edge (X = -0.038)
+  // and their middle/distal phalanges curl onto X in [-0.038, -0.016] across the left bezel of the back panel.
+  applyTempOffset('RightHandIndex1', 1.15, -0.25, 0.16);
+  applyTempOffset('RightHandIndex2', 1.52, 0.0, 0.0);
+  applyTempOffset('RightHandIndex3', 0.48, 0.0, 0.0);
+
+  applyTempOffset('RightHandMiddle1', 1.18, -0.25, 0.04);
+  applyTempOffset('RightHandMiddle2', 1.55, 0.0, 0.0);
+  applyTempOffset('RightHandMiddle3', 0.48, 0.0, 0.0);
+
+  applyTempOffset('RightHandRing1', 1.08, -0.28, -0.08);
+  applyTempOffset('RightHandRing2', 1.62, 0.0, 0.0);
+  applyTempOffset('RightHandRing3', 0.52, 0.0, 0.0);
+
+  applyTempOffset('RightHandPinky1', 0.92, -0.35, -0.18);
+  applyTempOffset('RightHandPinky2', 1.68, 0.0, 0.0);
+  applyTempOffset('RightHandPinky3', 0.55, 0.0, 0.0);
+
+  // Opposing thumb wraps around the inner vertical edge (X = +0.038) opposing the fingers
+  applyTempOffset('RightHandThumb1', 0.12, -0.58, -1.52);
+  applyTempOffset('RightHandThumb2', 0.92, 0.22, 0.52);
+  applyTempOffset('RightHandThumb3', 0.62, 0.12, 0.38);
+
+  clonedRoot.updateMatrixWorld(true);
+
+  const skeleton = bodySkinnedMesh.skeleton;
+  const jointMatrices = skeleton.bones.map((bone, i) => {
+    const m = new THREE.Matrix4();
+    m.multiplyMatrices(bone.matrixWorld, skeleton.boneInverses[i]);
+    return m;
+  });
+
+  const rhInv = rightHandBone.matrixWorld.clone().invert();
+  const rotMat = new THREE.Matrix4().makeRotationFromEuler(
+    new THREE.Euler(0.06, 0.14, 1.58, 'XYZ')
+  );
+  const scaleMat = new THREE.Matrix4().makeScale(0.75, 0.96, 0.58);
+  // Position the finger/thumb grip around the lower-middle of the phone (-0.016 Y) so the top camera cluster (+Y) is 100% unobstructed
+  const transMat = new THREE.Matrix4().makeTranslation(0.038, -0.016, -0.011);
+  const handToPhone = new THREE.Matrix4()
+    .multiplyMatrices(transMat, scaleMat)
+    .multiply(rotMat);
+
+  // Restore original bind quaternions on the skeleton
+  savedFingerQuats.forEach(({ bone, quat }) => {
+    bone.quaternion.copy(quat);
+  });
+  clonedRoot.updateMatrixWorld(true);
+
+  // Deform the right-hand vertices into Phone Space centered around the smartphone
+  const vertRemap = new Int32Array(nVerts).fill(-1);
+  const handPositions: number[] = [];
+  const handUVs: number[] = [];
+  let nextHandVertIdx = 0;
+
+  const pBind = new THREE.Vector3();
+  const pSkinned = new THREE.Vector3();
+  const pTemp = new THREE.Vector3();
+
+  for (let v = 0; v < nVerts; v++) {
+    if (posAttr.getX(v) > -0.38) continue;
+
+    pBind.set(posAttr.getX(v), posAttr.getY(v), posAttr.getZ(v));
+    pSkinned.set(0, 0, 0);
+
+    const j0 = skinIndexAttr.getX(v);
+    const j1 = skinIndexAttr.getY(v);
+    const j2 = skinIndexAttr.getZ(v);
+    const j3 = skinIndexAttr.getW(v);
+    const w0 = skinWeightAttr.getX(v);
+    const w1 = skinWeightAttr.getY(v);
+    const w2 = skinWeightAttr.getZ(v);
+    const w3 = skinWeightAttr.getW(v);
+
+    const js = [j0, j1, j2, j3];
+    const ws = [w0, w1, w2, w3];
+
+    let wForearm = 0;
+    let wHand = 0;
+    let wThumb1 = 0;
+    let wThumbDistal = 0;
+    let wFinger1 = 0;
+    let wFinger2 = 0;
+    let wFinger3 = 0;
+
+    for (let k = 0; k < 4; k++) {
+      const w = ws[k];
+      if (w > 0) {
+        const j = js[k];
+        const bName = skeleton.bones[j]?.name || '';
+        if (bName === 'RightForeArm') wForearm += w;
+        if (bName === 'RightHand') wHand += w;
+        if (bName === 'RightHandThumb1') wThumb1 += w;
+        if (bName === 'RightHandThumb2' || bName === 'RightHandThumb3') {
+          wThumbDistal += w;
+        }
+        if (/(Index|Middle|Ring|Pinky)1/.test(bName)) wFinger1 += w;
+        if (/(Index|Middle|Ring|Pinky)2/.test(bName)) wFinger2 += w;
+        if (/(Index|Middle|Ring|Pinky)3/.test(bName)) wFinger3 += w;
+        pTemp.copy(pBind).applyMatrix4(jointMatrices[j]);
+        pSkinned.addScaledVector(pTemp, w);
+      }
+    }
+
+    pSkinned.applyMatrix4(rhInv).applyMatrix4(handToPhone);
+
+    const isThumbDistal = wThumbDistal > 0.22;
+    const isThumbBase = !isThumbDistal && wThumb1 > 0.2;
+    const isDistalFinger = wFinger2 + wFinger3 > 0.2;
+    const isProxFinger = !isDistalFinger && wFinger1 > 0.22;
+    const isWrist = wForearm > 0.04 || (wHand > 0.5 && pBind.x > -0.442);
+    const isPalm = !isThumbDistal && !isDistalFinger && !isWrist;
+
+    // 1. Keep the wrist tucked cleanly behind the palm without protruding past the edges
+    if (isWrist) {
+      const tW = Math.min(1, Math.max(0, (pBind.x - -0.448) / 0.038));
+      const wristX = THREE.MathUtils.clamp(
+        (pBind.z - -0.012) * 0.72,
+        -0.02,
+        0.02
+      );
+      const targetY = -0.042 - 0.008 * tW;
+      pSkinned.x = THREE.MathUtils.lerp(
+        pSkinned.x - 0.016,
+        wristX,
+        0.85 + 0.15 * tW
+      );
+      pSkinned.y = THREE.MathUtils.lerp(pSkinned.y, targetY, 0.82 + 0.18 * tW);
+      pSkinned.y = THREE.MathUtils.clamp(pSkinned.y, -0.068, 0.068);
+      pSkinned.z = Math.min(
+        Math.max(pSkinned.z, -0.013),
+        -0.005 - 0.003 * tW
+      );
+    }
+
+    // 2. Center the palm behind the screen (-Z = -0.0045) with zero gap and cup its outer rim around the phone's edges
+    if (isPalm) {
+      if (isThumbBase) {
+        pSkinned.y -= 0.016;
+        pSkinned.x = Math.min(0.041, Math.max(0.035, pSkinned.x));
+      }
+      pSkinned.y = THREE.MathUtils.clamp(pSkinned.y, -0.068, 0.068);
+      pSkinned.x = THREE.MathUtils.clamp(pSkinned.x, -0.041, 0.041);
+
+      const atOuterEdge = Math.abs(pSkinned.x) > 0.0375;
+      if (atOuterEdge && pSkinned.y < 0.016) {
+        pSkinned.z = Math.min(Math.max(pSkinned.z, -0.008), 0.0015);
+      } else {
+        pSkinned.z = Math.min(Math.max(pSkinned.z, -0.0125), -0.0046);
+      }
+    }
+
+    // 3. Wrap curled 4 fingers tightly around the lower-middle outer vertical edge (X = -0.038) onto X in [-0.038, -0.016]
+    // Clamped to Y <= +0.016 so the top rear camera cluster (Y in [+0.021, +0.074]) is 100% unobstructed
+    if (isDistalFinger || isProxFinger) {
+      pSkinned.y = THREE.MathUtils.clamp(pSkinned.y, -0.058, 0.016);
+      if (pSkinned.x < -0.0425) {
+        pSkinned.x = -0.0425 + (pSkinned.x + 0.0425) * 0.12;
+      }
+      if (isDistalFinger && pSkinned.z > -0.002) {
+        const tCurl = Math.min(
+          1,
+          Math.max(0, wFinger3 * 1.15 + wFinger2 * 0.35)
+        );
+        const baseEdgeX = -0.0405 + tCurl * 0.0235;
+        pSkinned.x = THREE.MathUtils.lerp(pSkinned.x, baseEdgeX, 0.65);
+        pSkinned.x = THREE.MathUtils.clamp(pSkinned.x, -0.042, -0.0155);
+        pSkinned.z = 0.0054 + Math.min(0.0055, Math.max(0, pSkinned.z) * 0.3);
+      } else if (pSkinned.x > -0.0375 && pSkinned.z < 0.002) {
+        pSkinned.z = Math.min(pSkinned.z, -0.0046);
+      }
+    }
+
+    // 4. Wrap opposing thumb around the lower-middle inner vertical edge (X = +0.038) onto X in [+0.020, +0.042]
+    if (isThumbDistal) {
+      pSkinned.y -= 0.018;
+      pSkinned.y = THREE.MathUtils.clamp(pSkinned.y, -0.032, 0.016);
+      if (pSkinned.x > 0.0425) {
+        pSkinned.x = 0.0425 + (pSkinned.x - 0.0425) * 0.12;
+      }
+      if (pSkinned.z > -0.001) {
+        const reach = Math.max(0, 0.04 - pSkinned.x);
+        pSkinned.x = THREE.MathUtils.clamp(0.04 - reach * 0.85, 0.02, 0.042);
+        pSkinned.z = 0.0054 + Math.min(0.0055, Math.max(0, pSkinned.z) * 0.28);
+      } else if (pSkinned.x < 0.0375) {
+        pSkinned.z = Math.min(pSkinned.z, -0.0046);
+      }
+    }
+
+    vertRemap[v] = nextHandVertIdx++;
+    handPositions.push(pSkinned.x, pSkinned.y, pSkinned.z);
+    if (uvAttr) {
+      handUVs.push(uvAttr.getX(v), uvAttr.getY(v));
+    } else {
+      handUVs.push(0, 0);
+    }
+  }
+
+  const handIndices: number[] = [];
+  const bodyWithoutRightHand: number[] = [];
+  const fullBody: number[] = [];
+
+  for (let i = 0; i < idxArray.length; i += 3) {
+    const a = idxArray[i];
+    const b = idxArray[i + 1];
+    const c = idxArray[i + 2];
+    fullBody.push(a, b, c);
+
+    const ra = vertRemap[a];
+    const rb = vertRemap[b];
+    const rc = vertRemap[c];
+    if (ra !== -1 && rb !== -1 && rc !== -1) {
+      handIndices.push(ra, rb, rc);
+    }
+
+    // Exclude all right-hand triangles (bind X < -0.38) from Wolf3D_Body when holding phone
+    const isRightHandTri =
+      posAttr.getX(a) < -0.38 ||
+      posAttr.getX(b) < -0.38 ||
+      posAttr.getX(c) < -0.38;
+    if (!isRightHandTri) {
+      bodyWithoutRightHand.push(a, b, c);
+    }
+  }
+
+  const handGeo = new THREE.BufferGeometry();
+  handGeo.setAttribute(
+    'position',
+    new THREE.Float32BufferAttribute(handPositions, 3)
+  );
+  handGeo.setAttribute('uv', new THREE.Float32BufferAttribute(handUVs, 2));
+  handGeo.setIndex(handIndices);
+  handGeo.computeVertexNormals();
+
+  const handMat = (bodySkinnedMesh.material as THREE.MeshStandardMaterial).clone();
+  handMat.side = THREE.DoubleSide;
+  const posedHandMesh = new THREE.Mesh(handGeo, handMat);
+  posedHandMesh.name = 'PrePosed_RightHand_Grip';
+  posedHandMesh.castShadow = true;
+  posedHandMesh.receiveShadow = true;
+  posedHandMesh.frustumCulled = false;
+
+  const posedRightHandGroup = new THREE.Group();
+  posedRightHandGroup.name = 'PrePosed_RightHand_Group';
+  posedRightHandGroup.add(posedHandMesh);
+
+  // Sculpted anatomical palm backing & thenar support directly behind the phone screen (-Z)
+  // (using a flat untextured skin material cloned from handMat so UV coordinates never sample dark regions)
+  const supportSkinMat = handMat.clone();
+  supportSkinMat.map = null;
+
+  // 1) Central palm backing pressed flush against the phone screen (-Z = -0.0045) with zero gap
+  const palmBackingMesh = new THREE.Mesh(
+    new THREE.BoxGeometry(0.072, 0.142, 0.006),
+    supportSkinMat
+  );
+  palmBackingMesh.position.set(0.0, -0.002, -0.0076);
+
+  // 2) Anatomical wrist bridge connecting the lowered sleeve cuff into the back of the palm
+  const wristCuffBridge = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.024, 0.026, 0.04, 24),
+    supportSkinMat
+  );
+  wristCuffBridge.scale.set(1.06, 1.0, 0.76);
+  wristCuffBridge.rotation.x = 0.28;
+  wristCuffBridge.position.set(0.003, 0.084, -0.016);
+
+  // 3) Fleshy right thenar palm pad cradling the inner vertical edge right below the thumb (X = +0.038)
+  const thenarCradle = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.0042, 0.0048, 0.048, 16),
+    supportSkinMat
+  );
+  thenarCradle.scale.set(1.0, 1.0, 1.35);
+  thenarCradle.position.set(0.0375, -0.012, -0.0042);
+
+  posedRightHandGroup.add(palmBackingMesh, wristCuffBridge, thenarCradle);
+
+  // Reference jacketMat and innerShirtMat so parameters remain used cleanly
+  void jacketMat;
+  void innerShirtMat;
+
+  return {
+    posedRightHandGroup,
+    fullBodyIndex: new THREE.Uint16BufferAttribute(fullBody, 1),
+    bodyWithoutRightHandIndex: new THREE.Uint16BufferAttribute(
+      bodyWithoutRightHand,
+      1
+    ),
+  };
 }
 
 /**
@@ -1862,8 +3096,11 @@ export function createHumanCharacter(
   let characterModel: THREE.Group | null = null;
   let heldPhoneGroup: THREE.Group | null = null;
   let heldPhoneLight: THREE.PointLight | null = null;
-  let handPhoneAnchor: THREE.Group | null = null;
-  let handPhoneAsset: THREE.Group | null = null;
+  let phoneSocketGroup: THREE.Group | null = null;
+  let bodyMeshRef: THREE.SkinnedMesh | null = null;
+  let fullBodyIndexRef: THREE.BufferAttribute | null = null;
+  let bodyWithoutRightHandIndexRef: THREE.BufferAttribute | null = null;
+  let isRightHandFiltered = false;
   let leftBrowMesh: THREE.Mesh | null = null;
   let rightBrowMesh: THREE.Mesh | null = null;
 
@@ -1952,6 +3189,7 @@ export function createHumanCharacter(
     const irisTex = getCachedIrisTexture(irisHex);
 
     let topSkinnedMesh: THREE.SkinnedMesh | null = null;
+    let bottomSkinnedMesh: THREE.SkinnedMesh | null = null;
     let headSkinnedMesh: THREE.SkinnedMesh | null = null;
     let headwearSkinnedMesh: THREE.SkinnedMesh | null = null;
     let outerJacketMatRef: THREE.MeshStandardMaterial | null = null;
@@ -1982,17 +3220,51 @@ export function createHumanCharacter(
           mesh.name === 'Wolf3D_Outfit_Bottom' ||
           matName === 'Wolf3D_Outfit_Bottom'
         ) {
-          // Tailored trousers / chinos / denim with preserved normal crease maps + fabric weave
+          bottomSkinnedMesh = mesh;
+          // Tailored dark-gray wool trousers / chinos with preserved normal crease maps + fabric weave
           mat.map = trousersClothTex;
           mat.color.set(0xffffff);
-          mat.roughness = 0.84;
+          mat.userData.baseHex = trousersHex;
+          mat.roughness = profile.archetype === 'investigator' ? 0.78 : 0.84;
           mat.metalness = 0.02;
-          if (mat.normalScale) mat.normalScale.set(1.25, 1.25);
+          if (mat.normalScale) mat.normalScale.set(1.3, 1.3);
+
+          if (profile.archetype === 'investigator') {
+            // Sculpt subtle vertical pressed dress-trouser creases along the front & back of each leg
+            // and tuck the upper hip/thigh cleanly inside the long tailored trench coat skirt
+            const bGeo = mesh.geometry.clone();
+            const bPos = bGeo.attributes.position as THREE.BufferAttribute;
+            for (let v = 0; v < bPos.count; v++) {
+              let bx = bPos.getX(v);
+              const by = bPos.getY(v);
+              let bz = bPos.getZ(v);
+              if (by > 0.50 && by < 1.04) {
+                bx *= 0.94;
+                bz *= 0.94;
+              }
+              if (by > 0.12 && by < 0.88) {
+                const legCenter = bx >= 0 ? 0.115 : -0.115;
+                const crease =
+                  Math.exp(-Math.pow((bx - legCenter) / 0.016, 2)) * 0.0032;
+                bz += bz >= 0 ? crease : -crease * 0.8;
+              }
+              bPos.setXYZ(v, bx, by, bz);
+            }
+            bPos.needsUpdate = true;
+            bGeo.computeVertexNormals();
+            mesh.geometry = bGeo;
+          }
         } else if (
           mesh.name === 'Wolf3D_Outfit_Footwear' ||
           matName === 'Wolf3D_Outfit_Footwear'
         ) {
           mat.color.set(shoesHex);
+          mat.userData.baseHex = shoesHex;
+          if (profile.archetype === 'investigator') {
+            // Polished dark leather Oxford shoes
+            mat.roughness = 0.22;
+            mat.metalness = 0.14;
+          }
         } else if (
           mesh.name === 'Wolf3D_Headwear' ||
           mesh.name === 'Mesh' ||
@@ -2009,6 +3281,7 @@ export function createHumanCharacter(
         ) {
           mat.map = irisTex;
           mat.color.set(0xffffff);
+          mat.userData.baseHex = irisHex;
           mat.roughness = 0.12;
           mat.metalness = 0.05;
         } else if (
@@ -2019,10 +3292,14 @@ export function createHumanCharacter(
         ) {
           // Preserve baked photographic skin pore/facial detail texture while tinting to the character's complexion
           mat.color.set(skinHex).lerp(new THREE.Color(0xffffff), 0.58);
+          mat.userData.baseHex = skinHex;
           mat.roughness = 0.62;
           mat.metalness = 0.01;
           if (mesh.name === 'Wolf3D_Head') {
             headSkinnedMesh = mesh;
+          } else if (mesh.name === 'Wolf3D_Body') {
+            mesh.geometry = mesh.geometry.clone();
+            bodyMeshRef = mesh;
           }
         }
 
@@ -2043,7 +3320,6 @@ export function createHumanCharacter(
     });
 
     // 1) Hide the legacy bowler/cowboy hat mesh (Wolf3D_Headwear) for the investigator
-    // so no flat-topped hat brim or block-shaped cutouts appear on his head.
     if (headwearSkinnedMesh) {
       const hwMesh = headwearSkinnedMesh as THREE.SkinnedMesh;
       if (profile.archetype === 'investigator') {
@@ -2058,21 +3334,32 @@ export function createHumanCharacter(
       }
     }
 
-    // 2) Decompose Wolf3D_Outfit_Top into OuterJacketSkinnedMesh + InnerShirtSkinnedMesh
-    //    (removing the wedding bow tie, lapel flower, and tuxedo coattails)
+    // 2) Decompose Wolf3D_Outfit_Top into Outer Trench Coat, Crisp White Shirt,
+    //    Charcoal-Gray Waistcoat, Deep Red Tie, Horn Buttons, and Belt Buckle
     if (topSkinnedMesh) {
       const tMesh = topSkinnedMesh as THREE.SkinnedMesh;
+      const bMesh = bottomSkinnedMesh as THREE.SkinnedMesh | null;
       const baseTopMat = tMesh.material as THREE.MeshStandardMaterial;
-      const { outerJacketGeo, innerShirtGeo } = decomposeAndTailorOutfitTop(
+      const {
+        outerJacketGeo,
+        innerShirtGeo,
+        waistcoatGeo,
+        tieGeo,
+        buttonsGeo,
+        buckleGeo,
+      } = decomposeAndTailorOutfitTop(
         tMesh.geometry,
-        profile
+        profile,
+        bMesh?.geometry
       );
 
       const outerMat = baseTopMat.clone();
       outerMat.map = jacketClothTex;
       outerMat.color.set(0xffffff);
-      outerMat.roughness = profile.isDenimJacket ? 0.78 : 0.84;
+      outerMat.userData.baseHex = jacketHex;
+      outerMat.roughness = profile.isDenimJacket ? 0.76 : 0.84;
       outerMat.metalness = 0.03;
+      outerMat.side = THREE.DoubleSide;
       if (outerMat.normalScale) outerMat.normalScale.set(1.35, 1.35);
       outerJacketMatRef = outerMat;
 
@@ -2082,18 +3369,73 @@ export function createHumanCharacter(
       const innerMat = baseTopMat.clone();
       innerMat.map = innerShirtClothTex;
       innerMat.color.set(0xffffff);
-      innerMat.roughness = 0.88;
+      innerMat.userData.baseHex = innerShirtHex;
+      innerMat.roughness = 0.82;
       innerMat.metalness = 0.01;
       innerShirtMatRef = innerMat;
 
-      const innerShirtMesh = new THREE.SkinnedMesh(innerShirtGeo, innerMat);
-      innerShirtMesh.name = 'Wolf3D_Inner_Shirt';
-      innerShirtMesh.castShadow = true;
-      innerShirtMesh.receiveShadow = true;
-      innerShirtMesh.frustumCulled = false;
-      innerShirtMesh.bind(tMesh.skeleton, tMesh.bindMatrix);
-      if (tMesh.parent) {
-        tMesh.parent.add(innerShirtMesh);
+      const addBoundGarmentLayer = (
+        name: string,
+        geo: THREE.BufferGeometry,
+        mat: THREE.Material
+      ) => {
+        const layerMesh = new THREE.SkinnedMesh(geo, mat);
+        layerMesh.name = name;
+        layerMesh.castShadow = true;
+        layerMesh.receiveShadow = true;
+        layerMesh.frustumCulled = false;
+        layerMesh.bind(tMesh.skeleton, tMesh.bindMatrix);
+        if (tMesh.parent) {
+          tMesh.parent.add(layerMesh);
+        }
+      };
+
+      addBoundGarmentLayer('Wolf3D_Inner_Shirt', innerShirtGeo, innerMat);
+
+      if (waistcoatGeo) {
+        const waistcoatHex = '#3a414d';
+        const waistcoatMat = baseTopMat.clone();
+        waistcoatMat.map = getCachedFabricTexture(waistcoatHex, true);
+        waistcoatMat.color.set(0xffffff);
+        waistcoatMat.userData.baseHex = waistcoatHex;
+        waistcoatMat.roughness = 0.78;
+        waistcoatMat.metalness = 0.03;
+        addBoundGarmentLayer('Wolf3D_Waistcoat', waistcoatGeo, waistcoatMat);
+      }
+
+      if (tieGeo) {
+        const tieHex = '#881322';
+        const tieMat = new THREE.MeshStandardMaterial({
+          color: 0xffffff,
+          map: getCachedFabricTexture(tieHex, true),
+          roughness: 0.48,
+          metalness: 0.06,
+          side: THREE.DoubleSide,
+        });
+        tieMat.userData.baseHex = tieHex;
+        addBoundGarmentLayer('Wolf3D_Silk_Tie', tieGeo, tieMat);
+      }
+
+      if (buttonsGeo) {
+        const buttonHex = '#18120e';
+        const buttonMat = new THREE.MeshStandardMaterial({
+          color: buttonHex,
+          roughness: 0.28,
+          metalness: 0.16,
+        });
+        buttonMat.userData.baseHex = buttonHex;
+        addBoundGarmentLayer('Wolf3D_Coat_Buttons', buttonsGeo, buttonMat);
+      }
+
+      if (buckleGeo) {
+        const buckleHex = '#6e5d49';
+        const buckleMat = new THREE.MeshStandardMaterial({
+          color: buckleHex,
+          roughness: 0.30,
+          metalness: 0.68,
+        });
+        buckleMat.userData.baseHex = buckleHex;
+        addBoundGarmentLayer('Wolf3D_Belt_Buckle', buckleGeo, buckleMat);
       }
     }
 
@@ -2265,23 +3607,53 @@ export function createHumanCharacter(
       rightBrowMesh = rightBrow;
     }
 
-    // Attach dedicated hand-and-phone asset to RightForeArm at wrist interface
-    if (bones.rightForeArm) {
-      const anchor = new THREE.Group();
-      anchor.name = 'rightHandPhoneAnchor';
-      anchor.position.set(0, 0.252, 0); // At the wrist interface at the end of RightForeArm
-      bones.rightForeArm.add(anchor);
-      handPhoneAnchor = anchor;
+    // Attach combined pre-posed "holding smartphone" hand-and-phone model directly to RightHand bone socket
+    if (bones.rightHand) {
+      const socket = new THREE.Group();
+      socket.name = 'rightHandPhoneSocket';
+      // Positions the vertical smartphone & enclosing palm grip at world (-0.238, 0.876, 0.072)
+      // directly below the lowered right jacket sleeve cuff with zero clipping into wrist or clothing
+      socket.position.set(0.02298, 0.10409, -0.01144);
+      socket.quaternion.set(0.77553, 0.0435, 0.62865, -0.03824);
+      socket.scale.set(1, 1, 1);
+      bones.rightHand.add(socket);
+      phoneSocketGroup = socket;
 
-      const { assetGroup, screenGlowLight } = createInvestigatorHandAndPhoneAsset(
-        skinHex,
-        jacketHex
-      );
-      assetGroup.visible = !config.isNpc;
-      anchor.add(assetGroup);
+      const { phoneGroup, screenGlowLight } =
+        createInvestigatorSmartphoneProp();
 
-      handPhoneAsset = assetGroup;
-      heldPhoneGroup = assetGroup;
+      if (bodyMeshRef) {
+        const fallbackJacketMat =
+          outerJacketMatRef ||
+          new THREE.MeshStandardMaterial({ color: jacketHex, roughness: 0.8 });
+        const fallbackInnerMat =
+          innerShirtMatRef ||
+          new THREE.MeshStandardMaterial({
+            color: innerShirtHex,
+            roughness: 0.85,
+          });
+        const handResult = buildPrePosedRightHandAndFilterBody(
+          bodyMeshRef,
+          cloned,
+          bones.rightHand,
+          fallbackJacketMat,
+          fallbackInnerMat
+        );
+        if (handResult) {
+          phoneGroup.add(handResult.posedRightHandGroup);
+          fullBodyIndexRef = handResult.fullBodyIndex;
+          bodyWithoutRightHandIndexRef = handResult.bodyWithoutRightHandIndex;
+          if (!config.isNpc) {
+            bodyMeshRef.geometry.setIndex(handResult.bodyWithoutRightHandIndex);
+            isRightHandFiltered = true;
+          }
+        }
+      }
+
+      phoneGroup.visible = true;
+      socket.add(phoneGroup);
+
+      heldPhoneGroup = phoneGroup;
       heldPhoneLight = screenGlowLight;
     }
 
@@ -2354,9 +3726,13 @@ export function createHumanCharacter(
     const isSpeaking = Boolean(options?.isSpeaking);
     const isListening = Boolean(options?.isListening);
     const isInspectingPhone = Boolean(options?.isInspectingPhone);
+    const isInvestigator =
+      config.archetype === 'investigator' ||
+      !config.isNpc ||
+      /rowan|detective|investigator|player/.test(config.id);
     const hasPhoneInHand =
-      (!config.isNpc && options?.showPhoneInHand !== false) ||
-      Boolean(config.isNpc && (options?.showPhoneInHand || isInspectingPhone));
+      (isInvestigator && options?.showPhoneInHand !== false) ||
+      Boolean(options?.showPhoneInHand || isInspectingPhone);
     const turnVel = THREE.MathUtils.clamp(options?.turnVelocity || 0, -3.5, 3.5);
 
     if (heldPhoneGroup) {
@@ -2651,89 +4027,93 @@ export function createHumanCharacter(
     const armRelaxX = 0.36;
 
     if (hasPhoneInHand) {
-      // Seamlessly tuck the default open-hand GLTF mesh into the sleeve
+      if (
+        bodyMeshRef &&
+        bodyWithoutRightHandIndexRef &&
+        !isRightHandFiltered
+      ) {
+        bodyMeshRef.geometry.setIndex(bodyWithoutRightHandIndexRef);
+        isRightHandFiltered = true;
+      }
       if (bones.rightHand) {
-        bones.rightHand.scale.set(0.0001, 0.0001, 0.0001);
+        bones.rightHand.scale.set(1, 1, 1);
       }
-      if (handPhoneAsset) {
-        handPhoneAsset.visible = true;
-      }
-      if (handPhoneAnchor && bones.rightForeArm && characterModel) {
-        bones.rightForeArm.updateWorldMatrix(true, false);
-        bones.rightForeArm.getWorldQuaternion(_handWorldQuat);
-        characterModel.getWorldQuaternion(_rootWorldQuat);
-        handPhoneAnchor.quaternion
-          .copy(_handWorldQuat)
-          .invert()
-          .multiply(_rootWorldQuat);
+      if (heldPhoneGroup) {
+        heldPhoneGroup.visible = true;
       }
 
-      // Left hand: Completely relaxed, hanging straight down alongside left hip/thigh (empty hand, no props):
+      // Left hand: Completely relaxed beside left thigh with natural, slightly curved fingers:
       leftGripFingers.forEach(({ j1, j2, j3 }) => {
-        slerpBoneOffset(j1, 0.08, 0, 0, blendAlpha);
-        slerpBoneOffset(j2, 0.12, 0, 0, blendAlpha);
-        slerpBoneOffset(j3, 0.08, 0, 0, blendAlpha);
+        slerpBoneOffset(j1, 0.18, 0, 0, blendAlpha);
+        slerpBoneOffset(j2, 0.28, 0, 0, blendAlpha);
+        slerpBoneOffset(j3, 0.18, 0, 0, blendAlpha);
       });
-      leftThumbBones.t1 && slerpBoneOffset(leftThumbBones.t1, 0.06, 0, 0, blendAlpha);
-      leftThumbBones.t2 && slerpBoneOffset(leftThumbBones.t2, 0.04, 0, 0, blendAlpha);
-      leftThumbBones.t3 && slerpBoneOffset(leftThumbBones.t3, 0.04, 0, 0, blendAlpha);
+      leftThumbBones.t1 && slerpBoneOffset(leftThumbBones.t1, 0.10, 0, 0, blendAlpha);
+      leftThumbBones.t2 && slerpBoneOffset(leftThumbBones.t2, 0.08, 0, 0, blendAlpha);
+      leftThumbBones.t3 && slerpBoneOffset(leftThumbBones.t3, 0.06, 0, 0, blendAlpha);
 
       const syncBreath = Math.sin(animTimeAcc * 1.65) * 0.005;
 
       if (isWalking) {
         const armSwingAmp = isJogging ? 0.34 : 0.22;
-        const rightArmSwingZ = Math.sin(walkCyclePhase) * (armSwingAmp * 0.5);
-        const leftArmSwingZ = Math.sin(walkCyclePhase + Math.PI) * armSwingAmp;
+        const rightArmSwingX = Math.sin(walkCyclePhase) * (armSwingAmp * 0.4);
+        const leftArmSwingX = Math.sin(walkCyclePhase + Math.PI) * armSwingAmp;
 
-        // Right arm walk swing holding phone
+        // Right arm walk swing holding upright phone in palm beside thigh, wrist below phone
         slerpBoneOffset(
           bones.rightArm,
-          0.36 + syncBreath,
-          -0.05,
-          -0.06 + rightArmSwingZ,
+          0.36 + syncBreath + rightArmSwingX,
+          -0.06,
+          -0.14,
           blendAlpha
         );
-        slerpBoneOffset(bones.rightForeArm, 0.06, 0.02, 0, blendAlpha);
+        slerpBoneOffset(bones.rightForeArm, 0.15, 0.0, 0.32, blendAlpha);
+        slerpBoneOffset(bones.rightHand, 0.04, 0.0, 0.0, blendAlpha);
 
         // Left arm natural walk swing
         slerpBoneOffset(
           bones.leftArm,
-          0.36 + syncBreath,
-          0.05,
-          0.06 + leftArmSwingZ,
+          0.35 + syncBreath + leftArmSwingX,
+          0.06,
+          0.14,
           blendAlpha
         );
-        slerpBoneOffset(bones.leftForeArm, 0.06, 0, 0, blendAlpha);
-        slerpBoneOffset(bones.leftHand, 0, 0, 0, blendAlpha);
+        slerpBoneOffset(bones.leftForeArm, 0.15, 0.0, -0.32, blendAlpha);
+        slerpBoneOffset(bones.leftHand, 0.04, 0, 0, blendAlpha);
       } else {
-        // Standing pose: BOTH arms hang naturally and straight at his sides
-        // Right arm relaxed straight down alongside right thigh, holding phone upright in portrait orientation with back panel facing camera:
+        // Standing pose: BOTH arms hang naturally and relaxed straight down at his sides
+        // Right arm lowered beside right thigh, wrist below phone, holding upright phone enclosed by palm and fingers:
         slerpBoneOffset(
           bones.rightArm,
           0.36 + syncBreath,
-          -0.05,
-          -0.06 - slowSway * 0.008,
+          -0.06,
+          -0.14 - slowSway * 0.006,
           blendAlpha
         );
-        slerpBoneOffset(bones.rightForeArm, 0.06, 0.02, 0.0, blendAlpha);
+        slerpBoneOffset(bones.rightForeArm, 0.15, 0.0, 0.32, blendAlpha);
+        slerpBoneOffset(bones.rightHand, 0.04, 0.0, 0.0, blendAlpha);
 
-        // Left arm relaxed straight down alongside left hip (empty hand):
+        // Left arm relaxed straight down alongside left hip/thigh (empty hand), elbow nearly straight:
         slerpBoneOffset(
           bones.leftArm,
-          0.36 + syncBreath,
-          0.05,
-          0.06 + slowSway * 0.006,
+          0.35 + syncBreath,
+          0.06,
+          0.14 + slowSway * 0.006,
           blendAlpha
         );
-        slerpBoneOffset(bones.leftForeArm, 0.06, 0, 0, blendAlpha);
-        slerpBoneOffset(bones.leftHand, 0, 0, 0, blendAlpha);
+        slerpBoneOffset(bones.leftForeArm, 0.15, 0.0, -0.32, blendAlpha);
+        slerpBoneOffset(bones.leftHand, 0.04, 0, 0, blendAlpha);
       }
     } else {
+      if (bodyMeshRef && fullBodyIndexRef && isRightHandFiltered) {
+        bodyMeshRef.geometry.setIndex(fullBodyIndexRef);
+        isRightHandFiltered = false;
+      }
       if (bones.rightHand) {
         bones.rightHand.scale.set(1, 1, 1);
       }
-      if (handPhoneAsset) {
-        handPhoneAsset.visible = false;
+      if (heldPhoneGroup) {
+        heldPhoneGroup.visible = false;
       }
       // NPCs (when not holding phone): natural relaxed fingers and expressive arm postures
       rightGripFingers.forEach(({ j1, j2, j3 }) => {

@@ -26,12 +26,14 @@ export type DossierAnimationPose =
   | 'listening'
   | 'speaking';
 
+export type DossierViewAngle = 'front' | 'threeQuarter' | 'handCloseUp';
+
 interface Character3DPreviewStageProps {
   archetype: CharacterArchetypeId;
   selectedPose: DossierAnimationPose;
   selectedExpression: 'attentive' | 'concerned' | 'thinking' | 'relieved';
   isInvestigator?: boolean;
-  viewAngle?: 'front' | 'threeQuarter';
+  viewAngle?: DossierViewAngle;
 }
 
 const Character3DPreviewStage: React.FC<Character3DPreviewStageProps> = ({
@@ -73,8 +75,18 @@ const Character3DPreviewStage: React.FC<Character3DPreviewStageProps> = ({
 
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(34, width / height, 0.1, 20);
-    camera.position.set(0, 1.28, 2.70);
-    camera.lookAt(0, 1.18, 0);
+    const initialIsCloseUp = viewAngleRef.current === 'handCloseUp';
+    camera.position.set(
+      initialIsCloseUp ? -0.222 : 0,
+      initialIsCloseUp ? 0.89 : 1.28,
+      initialIsCloseUp ? 0.46 : 2.7
+    );
+    const currentCamLook = new THREE.Vector3(
+      initialIsCloseUp ? -0.222 : 0,
+      initialIsCloseUp ? 0.89 : 1.18,
+      initialIsCloseUp ? 0.04 : 0
+    );
+    camera.lookAt(currentCamLook);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setSize(width, height);
@@ -167,6 +179,19 @@ const Character3DPreviewStage: React.FC<Character3DPreviewStageProps> = ({
         }
       }
       characterRig.group.rotation.y = yawOffsetRef.current;
+
+      // Smooth camera transition between full-body and hand/phone close-up
+      const isHandCloseUp = viewAngleRef.current === 'handCloseUp';
+      const targetCamPos = isHandCloseUp
+        ? new THREE.Vector3(-0.222, 0.89, 0.46)
+        : new THREE.Vector3(0, 1.28, 2.7);
+      const targetCamLook = isHandCloseUp
+        ? new THREE.Vector3(-0.222, 0.89, 0.04)
+        : new THREE.Vector3(0, 1.18, 0);
+
+      camera.position.lerp(targetCamPos, 0.1);
+      currentCamLook.lerp(targetCamLook, 0.1);
+      camera.lookAt(currentCamLook);
 
       characterRig.update(dt, elapsed, {
         isWalking,
@@ -321,7 +346,7 @@ export const RealisticGameGraphicsDossier: React.FC<RealisticGameGraphicsDossier
   const [activeTab, setActiveTab] = useState<'protagonist' | 'supporting' | 'environments' | 'evidence'>('protagonist');
   const [selectedExpression, setSelectedExpression] = useState<'attentive' | 'concerned' | 'thinking' | 'relieved'>('attentive');
   const [selectedPose, setSelectedPose] = useState<DossierAnimationPose>('phone');
-  const [investigatorViewAngle, setInvestigatorViewAngle] = useState<'front' | 'threeQuarter'>('front');
+  const [investigatorViewAngle, setInvestigatorViewAngle] = useState<DossierViewAngle>('front');
   const [selectedCastArchetype, setSelectedCastArchetype] = useState<CharacterArchetypeId>('alex');
   const [selectedCastPose, setSelectedCastPose] = useState<DossierAnimationPose>('listening');
   const [selectedEnvironment, setSelectedEnvironment] = useState<'apartment' | 'campus' | 'cafe' | 'office'>('apartment');
@@ -496,6 +521,18 @@ export const RealisticGameGraphicsDossier: React.FC<RealisticGameGraphicsDossier
                         }`}
                       >
                         3/4 View
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setInvestigatorViewAngle('handCloseUp')}
+                        className={`px-2.5 py-1 rounded-lg font-mono text-[10px] font-bold border transition-all cursor-pointer ${
+                          investigatorViewAngle === 'handCloseUp'
+                            ? 'bg-[#00F0FF]/20 border-[#00F0FF] text-white'
+                            : 'bg-black/50 border-white/15 text-[#94A3B8] hover:text-white'
+                        }`}
+                        title="Close-up inspection of the upright smartphone grip in right palm"
+                      >
+                        Grip Close-Up
                       </button>
                     </div>
                   </div>
