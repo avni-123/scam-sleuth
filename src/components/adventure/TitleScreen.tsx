@@ -36,6 +36,15 @@ import {
   PixelSettingsGearIcon,
   PixelQuitIcon,
   PixelMagnifierIcon,
+  PixelPhoneIcon,
+  PixelQrIcon,
+  PixelKeycardIcon,
+  PixelAudioTapeIcon,
+  PixelNotebookIcon,
+  PixelMessageIcon,
+  PixelCameraIcon,
+  PixelUsbDriveIcon,
+  PixelFloppyDiskIcon,
 } from './PixelIcons';
 
 interface TitleScreenProps {
@@ -390,7 +399,7 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
   );
 
   return (
-    <div className="relative w-full h-[100dvh] overflow-hidden bg-[#081426] text-[#F2F5FA] select-none font-sans flex flex-col justify-between">
+    <div className="relative w-full min-h-[100dvh] overflow-x-hidden overflow-y-auto bg-[#081426] text-[#F2F5FA] select-none font-sans flex flex-col justify-between pt-[max(0.6rem,env(safe-area-inset-top))] pb-[max(0.6rem,env(safe-area-inset-bottom))] pl-[max(0.85rem,env(safe-area-inset-left))] pr-[max(0.85rem,env(safe-area-inset-right))]">
       {/* =====================================================================
           1. FULL-SCREEN CINEMATIC RAINY APARTMENT & DETECTIVE DESK ARTWORK
       ===================================================================== */}
@@ -456,78 +465,64 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
           </div>
         )}
 
-        {/* =================================================================
-            SUBTLE PIXEL-ART CLUES & DECORATIVE ACCENTS NEAR SCREEN EDGES
-        ================================================================= */}
-        {/* Safe-Margin Corner Pixel Reticles */}
+        {/* Safe-Margin Corner Pixel Reticles & Subtle Edge Pixel-Art Clues */}
         <div
           aria-hidden="true"
-          className="hidden sm:block absolute top-3 left-3 lg:top-5 lg:left-5 w-4 h-4 border-t-2 border-l-2 border-[#39BDF7]/35"
+          className="hidden sm:block absolute top-3 left-3 lg:top-5 lg:left-5 w-5 h-5 border-t-2 border-l-2 border-[#39BDF7]/50"
         />
         <div
           aria-hidden="true"
-          className="hidden sm:block absolute top-3 right-3 lg:top-5 lg:right-5 w-4 h-4 border-t-2 border-r-2 border-[#F05A9D]/35"
+          className="hidden sm:block absolute top-3 right-3 lg:top-5 lg:right-5 w-5 h-5 border-t-2 border-r-2 border-[#F05A9D]/50"
         />
         <div
           aria-hidden="true"
-          className="hidden sm:block absolute bottom-3 left-3 lg:bottom-5 lg:left-5 w-4 h-4 border-b-2 border-l-2 border-[#F05A9D]/35"
+          className="hidden sm:block absolute bottom-3 left-3 lg:bottom-5 lg:left-5 w-5 h-5 border-b-2 border-l-2 border-[#F05A9D]/50"
         />
         <div
           aria-hidden="true"
-          className="hidden sm:block absolute bottom-3 right-3 lg:bottom-5 lg:right-5 w-4 h-4 border-b-2 border-r-2 border-[#39BDF7]/35"
+          className="hidden sm:block absolute bottom-3 right-3 lg:bottom-5 lg:right-5 w-5 h-5 border-b-2 border-r-2 border-[#39BDF7]/50"
         />
 
-        {/* Left Edge Pixel-Art Clue Trace Accent (Visible on Laptop/Desktop) */}
+        {/* Subtle Edge Decorative Pixel-Art Accents (Tablet/Desktop) */}
         <div
           aria-hidden="true"
-          className="hidden lg:flex flex-col items-center gap-3 absolute left-6 xl:left-10 top-1/2 -translate-y-1/2 opacity-55"
+          className="hidden md:flex flex-col items-center gap-3 absolute left-4 lg:left-6 top-1/2 -translate-y-1/2 opacity-40"
         >
-          <span className="w-1.5 h-1.5 bg-[#39BDF7] shadow-[0_0_6px_#39BDF7]" />
-          <div className="w-[2px] h-16 bg-gradient-to-b from-[#39BDF7]/70 via-[#F05A9D]/40 to-transparent" />
-          <div className="p-1.5 text-[#39BDF7] drop-shadow-[0_0_8px_rgba(57,189,247,0.7)]">
-            <PixelMagnifierIcon className="w-5 h-5" />
-          </div>
-          <span className="font-pixel text-[8px] tracking-[0.2em] text-[#39BDF7]/80 uppercase [writing-mode:vertical-rl] rotate-180">
-            CLUE TRACE // {foundCluesCount}/{totalCluesInCurrent} LOGGED
-          </span>
-          <div className="w-[2px] h-16 bg-gradient-to-t from-[#F05A9D]/70 via-[#39BDF7]/40 to-transparent" />
-          <span className="w-1.5 h-1.5 bg-[#F05A9D] shadow-[0_0_6px_#F05A9D]" />
+          <PixelFloppyDiskIcon className="w-4 h-4 text-[#39BDF7]" />
+          <div className="w-[1px] h-16 bg-gradient-to-b from-[#39BDF7] via-[#F05A9D] to-transparent" />
+          <PixelNotebookIcon className="w-4 h-4 text-[#F05A9D]" />
+          <div className="w-[1px] h-16 bg-gradient-to-b from-[#F05A9D] via-[#39BDF7] to-transparent" />
+          <PixelUsbDriveIcon className="w-4 h-4 text-[#39BDF7]" />
         </div>
 
-        {/* Right Edge Pixel-Art Case Signal Accent (Visible on Laptop/Desktop) */}
         <div
           aria-hidden="true"
-          className="hidden lg:flex flex-col items-center gap-3 absolute right-6 xl:right-10 top-1/2 -translate-y-1/2 opacity-55"
+          className="hidden md:flex flex-col items-center gap-3 absolute right-4 lg:right-6 top-1/2 -translate-y-1/2 opacity-40"
         >
-          <span className="w-1.5 h-1.5 bg-[#F05A9D] shadow-[0_0_6px_#F05A9D]" />
-          <div className="w-[2px] h-16 bg-gradient-to-b from-[#F05A9D]/70 via-[#39BDF7]/40 to-transparent" />
-          <div className="p-1.5 text-[#F05A9D] drop-shadow-[0_0_8px_rgba(240,90,157,0.7)]">
-            <PixelCaseFolderIcon className="w-5 h-5" />
-          </div>
-          <span className="font-pixel text-[8px] tracking-[0.2em] text-[#F05A9D]/80 uppercase [writing-mode:vertical-rl]">
-            CASE 0{currentActiveIndex + 1} // CH.{resolvedChapterNum} ACTIVE
-          </span>
-          <div className="w-[2px] h-16 bg-gradient-to-t from-[#39BDF7]/70 via-[#F05A9D]/40 to-transparent" />
-          <span className="w-1.5 h-1.5 bg-[#39BDF7] shadow-[0_0_6px_#39BDF7]" />
+          <PixelCameraIcon className="w-4 h-4 text-[#F05A9D]" />
+          <div className="w-[1px] h-16 bg-gradient-to-b from-[#F05A9D] via-[#39BDF7] to-transparent" />
+          <PixelMessageIcon className="w-4 h-4 text-[#39BDF7]" />
+          <div className="w-[1px] h-16 bg-gradient-to-b from-[#39BDF7] via-[#F05A9D] to-transparent" />
+          <PixelKeycardIcon className="w-4 h-4 text-[#F05A9D]" />
         </div>
       </div>
 
       {/* =====================================================================
-          2. TOP AMBIENT TERMINAL HEADER (Safe Margins & Compact on Phones)
+          2. TOP AMBIENT TERMINAL HEADER (Archive, FX Toggle & 3D Dossier)
       ===================================================================== */}
-      <header className="relative z-10 w-full max-w-7xl mx-auto px-3 sm:px-8 lg:px-12 pt-3 sm:pt-5 lg:pt-6 shrink-0 flex flex-wrap sm:flex-nowrap items-center justify-between gap-2 text-xs font-mono text-[#F2F5FA]">
-        <div className="px-2 py-1 sm:px-3.5 sm:py-1.5 bg-[#060D1A]/90 border-2 border-[#0E2445] shadow-[2px_2px_0_0_#02050A] inline-flex items-center gap-1.5 sm:gap-2 min-w-0">
-          <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-[#F05A9D] shadow-[0_0_6px_#F05A9D] shrink-0" />
-          <span className="font-pixel text-[8.5px] sm:text-[10px] lg:text-[11px] leading-none text-[#F05A9D] tracking-wider uppercase truncate">
+      <header className="relative z-10 w-full max-w-[1400px] mx-auto px-2 sm:px-6 lg:px-12 pt-1 sm:pt-2.5 lg:pt-4 shrink-0 flex items-center justify-between gap-2 font-mono text-[#F2F5FA]">
+        <div className="flex items-center gap-2 sm:gap-2.5 min-w-0 drop-shadow-[0_2px_4px_rgba(2,6,18,0.95)]">
+          <span className="w-2 h-2 sm:w-2.5 sm:h-2.5 bg-[#F05A9D] shadow-[0_0_8px_#F05A9D] shrink-0" />
+          <span className="font-pixel text-[10px] sm:text-xs lg:text-[13px] text-[#F05A9D] tracking-wider uppercase truncate">
             GLASSHOUSE ARCHIVE
           </span>
-          <span aria-hidden="true" className="hidden md:inline text-slate-600">·</span>
-          <span className="hidden md:inline font-mono text-[10px] lg:text-xs leading-none text-[#39BDF7] shrink-0">
+          <span aria-hidden="true" className="hidden sm:inline text-slate-500">·</span>
+          <span className="hidden sm:inline font-mono text-[11px] sm:text-xs lg:text-sm text-[#39BDF7] shrink-0">
             10 CASES // 30 CHAPTERS
           </span>
         </div>
 
-        <div className="inline-flex items-center gap-1.5 sm:gap-2 shrink-0 ml-auto">
+        <div className="flex items-center gap-2 sm:gap-3.5 shrink-0">
           {onUpdateSettings && (
             <button
               type="button"
@@ -535,10 +530,10 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
                 soundEngine.playGtaMenuHover();
                 onUpdateSettings({ reducedMotion: !reducedMotion });
               }}
-              className="pixel-btn inline-flex items-center justify-center px-2 py-1 sm:px-3 sm:py-1.5 text-[8.5px] sm:text-[10px] lg:text-[11px] leading-none font-pixel text-[#F2F5FA] hover:text-[#39BDF7] whitespace-nowrap cursor-pointer"
+              className="px-2 py-1 text-[10px] sm:text-xs lg:text-[13px] font-pixel text-[#F2F5FA]/90 hover:text-[#39BDF7] focus-visible:text-[#39BDF7] drop-shadow-[0_2px_4px_rgba(2,6,18,0.95)] cursor-pointer transition-colors"
               title="Toggle Reduced Motion / Pixel FX"
             >
-              FX: {reducedMotion ? 'MINIMAL' : 'ACTIVE'}
+              [FX: {reducedMotion ? 'MINIMAL' : 'ACTIVE'}]
             </button>
           )}
           {onOpenArtDossier && (
@@ -548,131 +543,284 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
                 soundEngine.playGtaMenuSelect();
                 onOpenArtDossier();
               }}
-              className="pixel-btn inline-flex items-center justify-center px-2 py-1 sm:px-3 sm:py-1.5 text-[8.5px] sm:text-[10px] lg:text-[11px] leading-none font-pixel text-[#39BDF7] hover:text-white whitespace-nowrap cursor-pointer"
+              className="px-2 py-1 text-[10px] sm:text-xs lg:text-[13px] font-pixel text-[#39BDF7] hover:text-[#F05A9D] focus-visible:text-[#F05A9D] drop-shadow-[0_2px_4px_rgba(2,6,18,0.95)] cursor-pointer transition-colors"
               title="Open 3D Character Dossier"
             >
-              3D DOSSIER
+              [3D DOSSIER]
             </button>
           )}
         </div>
       </header>
 
       {/* =====================================================================
-          3. CENTER FOCAL GROUP: SCALED NEON TITLE & TEXT-ONLY VERTICAL MENU
+          3. RESPONSIVE 3-COLUMN FOCAL STAGE (Left Clues · Center Focal Group · Right Case)
       ===================================================================== */}
       <main
-        className={`relative z-10 flex-1 flex flex-col items-center justify-center px-4 sm:px-8 py-2 sm:py-4 my-auto transition-opacity duration-500 ${
+        className={`relative z-10 flex-1 w-full max-w-[1400px] mx-auto px-2 sm:px-6 lg:px-12 py-2 sm:py-4 lg:py-6 grid grid-cols-1 lg:grid-cols-[1fr_auto_1fr] items-center gap-4 lg:gap-10 xl:gap-14 transition-opacity duration-500 ${
           entered ? 'opacity-100' : 'opacity-0'
         }`}
       >
-        {/* Scam Sleuth Floating Neon Title Lockup */}
-        <div className="mb-3 sm:mb-5 lg:mb-7">
-          <ScamSleuthLogo reducedMotion={reducedMotion} />
-        </div>
-
-        {/* Centered Vertical List of Text-Only Menu Options (Generous Invisible Touch Targets, No Boxes) */}
-        <nav
-          aria-label="Main Menu"
-          className="w-full max-w-lg mx-auto flex flex-col items-center gap-0.5 sm:gap-1.5 lg:gap-2.5"
+        {/* LEFT COLUMN (Desktop/Laptop): Subtle Pixel-Art Clues & Detective-Board Markings */}
+        <aside
+          aria-hidden="true"
+          className="hidden lg:flex flex-col items-end justify-center text-right gap-5 xl:gap-7 pr-2 xl:pr-6 opacity-80 pointer-events-none select-none drop-shadow-[0_2px_4px_rgba(2,6,18,0.95)]"
         >
-          {menuOptions.map((item, idx) => {
-            const isSelected = selectedIndex === idx;
-            const IconComp = item.icon;
+          {/* Evidence Pin 01: Spoofed SMS Phone */}
+          <div className="flex items-start justify-end gap-3.5">
+            <div className="space-y-1">
+              <div className="flex items-center justify-end gap-2 text-[#39BDF7]">
+                <PixelPhoneIcon className="w-5 h-5 shrink-0" />
+                <span className="font-pixel text-[11px] xl:text-xs tracking-[0.16em] uppercase">
+                  EVIDENCE PIN // 01
+                </span>
+              </div>
+              <p className="font-mono text-xs xl:text-[13px] text-[#F2F5FA]/95 uppercase tracking-wider">
+                SPOOFED SENDER HEADER
+              </p>
+              <p className="font-mono text-[11px] text-[#39BDF7]/90">
+                TRACE: SECTOR 04 · ACTIVE
+              </p>
+            </div>
+            <div className="flex flex-col items-center mt-1">
+              <span className="w-2.5 h-2.5 bg-[#F05A9D] shadow-[0_0_8px_#F05A9D]" />
+              <div className="w-[2px] h-11 xl:h-14 bg-gradient-to-b from-[#F05A9D]/80 to-[#39BDF7]/50" />
+            </div>
+          </div>
 
-            return (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => {
-                  setSelectedIndex(idx);
-                  handleActivateMenuOption(idx);
-                }}
-                onMouseEnter={() => {
-                  if (selectedIndex !== idx) {
-                    soundEngine.playGtaMenuHover();
+          {/* Evidence Pin 02: QR Phishing Sticker */}
+          <div className="flex items-start justify-end gap-3.5 pr-6">
+            <div className="space-y-1">
+              <div className="flex items-center justify-end gap-2 text-[#F05A9D]">
+                <PixelQrIcon className="w-5 h-5 shrink-0" />
+                <span className="font-pixel text-[11px] xl:text-xs tracking-[0.16em] uppercase">
+                  BOARD MARK // 02
+                </span>
+              </div>
+              <p className="font-mono text-xs xl:text-[13px] text-[#F2F5FA]/95 uppercase tracking-wider">
+                LOOKALIKE URL THREAD
+              </p>
+              <p className="font-mono text-[11px] text-[#F05A9D]/90">
+                LINKED TO GLASSHOUSE
+              </p>
+            </div>
+            <div className="flex flex-col items-center mt-1">
+              <span className="w-2.5 h-2.5 bg-[#39BDF7] shadow-[0_0_8px_#39BDF7]" />
+              <div className="w-[2px] h-11 xl:h-14 bg-gradient-to-b from-[#39BDF7]/80 to-[#F05A9D]/50" />
+            </div>
+          </div>
+
+          {/* Evidence Pin 03: Verified Clue Log */}
+          <div className="flex items-start justify-end gap-3.5">
+            <div className="space-y-1">
+              <div className="flex items-center justify-end gap-2 text-[#39BDF7]">
+                <PixelMagnifierIcon className="w-5 h-5 shrink-0" />
+                <span className="font-pixel text-[11px] xl:text-xs tracking-[0.16em] uppercase">
+                  CLUE LOG // {foundCluesCount}/{totalCluesInCurrent} VERIFIED
+                </span>
+              </div>
+              <p className="font-mono text-xs xl:text-[13px] text-[#F2F5FA]/95 uppercase tracking-wider">
+                {totalCluesLoggedAcrossCampaign} TOTAL CLUES FILED
+              </p>
+            </div>
+            <div className="flex flex-col items-center mt-1">
+              <span className="w-2.5 h-2.5 bg-[#F05A9D] shadow-[0_0_8px_#F05A9D]" />
+            </div>
+          </div>
+        </aside>
+
+        {/* CENTER COLUMN: Confidently Scaled Focal Group (Title + Subtitle + Vertical Menu) */}
+        <div className="flex flex-col items-center justify-center min-w-0">
+          {/* Scam Sleuth Floating Neon Title Lockup */}
+          <div className="mb-3 sm:mb-5 lg:mb-7 shrink-0">
+            <ScamSleuthLogo reducedMotion={reducedMotion} />
+          </div>
+
+          {/* Compact Active Case Line for Phone/Tablet (Hidden on Desktop where Side Columns show) */}
+          <div
+            aria-hidden="true"
+            className="lg:hidden mb-2.5 sm:mb-4 flex items-center justify-center gap-2 font-mono text-[10px] sm:text-xs text-[#39BDF7] uppercase tracking-wider drop-shadow-[0_2px_4px_rgba(2,6,18,0.95)]"
+          >
+            <span className="text-[#F05A9D] font-pixel">CASE 0{currentActiveIndex + 1}</span>
+            <span className="text-slate-500">·</span>
+            <span className="truncate max-w-[195px] sm:max-w-[320px] text-[#F2F5FA]/90">
+              {getCleanLevelTitle(currentLevel.title)}
+            </span>
+            <span className="text-slate-500">·</span>
+            <span>CH {resolvedChapterNum}/3</span>
+          </div>
+
+          {/* Centered Vertical List of All 6 Text-Only Menu Options (Generous Invisible Touch Targets, No Boxes) */}
+          <nav
+            aria-label="Main Menu"
+            className="w-full max-w-xl mx-auto flex flex-col items-center gap-1 sm:gap-2 lg:gap-2.5 shrink-0"
+          >
+            {menuOptions.map((item, idx) => {
+              const isSelected = selectedIndex === idx;
+              const IconComp = item.icon;
+
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => {
                     setSelectedIndex(idx);
-                  }
-                }}
-                onFocus={() => {
-                  if (selectedIndex !== idx) {
-                    soundEngine.playGtaMenuHover();
-                    setSelectedIndex(idx);
-                  }
-                }}
-                onTouchStart={() => {
-                  if (selectedIndex !== idx) {
-                    setSelectedIndex(idx);
-                  }
-                }}
-                className="group relative min-h-[40px] sm:min-h-[46px] lg:min-h-[52px] px-6 py-1 sm:py-1.5 inline-flex flex-col items-center justify-center bg-transparent border-0 outline-none cursor-pointer select-none transition-all duration-150"
-              >
-                <div className="inline-flex items-center justify-center gap-2.5 sm:gap-3.5">
-                  {/* Small Pixel Cursor (Preserves Center Alignment) */}
+                    handleActivateMenuOption(idx);
+                  }}
+                  onMouseEnter={() => {
+                    if (selectedIndex !== idx) {
+                      soundEngine.playGtaMenuHover();
+                      setSelectedIndex(idx);
+                    }
+                  }}
+                  onFocus={() => {
+                    if (selectedIndex !== idx) {
+                      soundEngine.playGtaMenuHover();
+                      setSelectedIndex(idx);
+                    }
+                  }}
+                  onTouchStart={() => {
+                    if (selectedIndex !== idx) {
+                      setSelectedIndex(idx);
+                    }
+                  }}
+                  className="group relative min-h-[42px] sm:min-h-[46px] lg:min-h-[52px] w-full max-w-[340px] sm:max-w-[440px] px-6 py-1 inline-flex flex-col items-center justify-center bg-transparent border-0 outline-none cursor-pointer select-none transition-all duration-150"
+                >
+                  <div className="inline-flex items-center justify-center gap-3 sm:gap-4">
+                    {/* Small Pixel Cursor (Preserves Center Alignment) */}
+                    <span
+                      aria-hidden="true"
+                      className={`font-pixel text-xs sm:text-sm lg:text-base leading-none transition-opacity duration-150 ${
+                        isSelected
+                          ? 'opacity-100 text-[#F05A9D] drop-shadow-[0_0_8px_rgba(240,90,157,0.95)]'
+                          : 'opacity-0'
+                      }`}
+                    >
+                      ►
+                    </span>
+
+                    {/* Pixel Icon */}
+                    <IconComp
+                      className={`w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 shrink-0 transition-all duration-150 ${
+                        isSelected
+                          ? 'text-[#F05A9D] drop-shadow-[0_0_10px_rgba(240,90,157,0.95)] scale-110'
+                          : 'text-[#39BDF7]/90 group-hover:text-[#39BDF7] drop-shadow-[0_2px_4px_rgba(2,6,18,0.95)]'
+                      }`}
+                    />
+
+                    {/* Option Label */}
+                    <span
+                      className={`font-pixel text-[15px] sm:text-lg md:text-xl lg:text-2xl xl:text-[26px] uppercase tracking-[0.15em] whitespace-nowrap transition-all duration-150 ${
+                        isSelected
+                          ? 'text-[#39BDF7] font-bold drop-shadow-[0_0_16px_rgba(57,189,247,0.95)]'
+                          : 'text-[#F2F5FA] group-hover:text-[#39BDF7] drop-shadow-[0_2px_4px_rgba(2,6,18,0.95)]'
+                      }`}
+                    >
+                      {item.shortLabel}
+                    </span>
+
+                    {/* Keyboard Shortcut */}
+                    <span
+                      className={`font-pixel text-[11px] sm:text-xs md:text-sm lg:text-base tracking-wider transition-all duration-150 ${
+                        isSelected
+                          ? 'text-[#F05A9D] drop-shadow-[0_0_8px_rgba(240,90,157,0.95)]'
+                          : 'text-[#39BDF7]/80 group-hover:text-[#F05A9D] drop-shadow-[0_2px_4px_rgba(2,6,18,0.95)]'
+                      }`}
+                    >
+                      [{item.hotkey}]
+                    </span>
+                  </div>
+
+                  {/* Thin Neon Underline for Selected Option Only */}
                   <span
                     aria-hidden="true"
-                    className={`font-pixel text-xs sm:text-sm lg:text-base leading-none transition-opacity duration-150 ${
+                    className={`mt-1 sm:mt-1.5 h-[2px] transition-all duration-150 ${
                       isSelected
-                        ? 'opacity-100 text-[#F05A9D] drop-shadow-[0_0_8px_rgba(240,90,157,0.9)]'
-                        : 'opacity-0'
-                    }`}
-                  >
-                    ►
-                  </span>
-
-                  {/* Pixel Icon */}
-                  <IconComp
-                    className={`w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 shrink-0 transition-all duration-150 ${
-                      isSelected
-                        ? 'text-[#F05A9D] drop-shadow-[0_0_10px_rgba(240,90,157,0.9)] scale-110'
-                        : 'text-[#39BDF7]/90 group-hover:text-[#39BDF7] drop-shadow-[0_2px_4px_rgba(2,6,18,0.95)]'
+                        ? 'w-48 sm:w-64 lg:w-72 bg-gradient-to-r from-[#39BDF7] via-[#F05A9D] to-[#39BDF7] shadow-[0_0_10px_#39BDF7]'
+                        : 'w-0 bg-transparent'
                     }`}
                   />
+                </button>
+              );
+            })}
+          </nav>
+        </div>
 
-                  {/* Option Label */}
-                  <span
-                    className={`font-pixel text-sm sm:text-base md:text-lg lg:text-xl xl:text-2xl uppercase tracking-[0.14em] transition-all duration-150 ${
-                      isSelected
-                        ? 'text-[#39BDF7] font-bold drop-shadow-[0_0_12px_rgba(57,189,247,0.95)]'
-                        : 'text-[#F2F5FA] group-hover:text-[#39BDF7] drop-shadow-[0_2px_4px_rgba(2,6,18,0.95)]'
-                    }`}
-                  >
-                    {item.shortLabel}
-                  </span>
+        {/* RIGHT COLUMN (Desktop/Laptop): Active Case Clues & Forensic Schematic Markings */}
+        <aside
+          aria-hidden="true"
+          className="hidden lg:flex flex-col items-start justify-center text-left gap-5 xl:gap-7 pl-2 xl:pl-6 opacity-80 pointer-events-none select-none drop-shadow-[0_2px_4px_rgba(2,6,18,0.95)]"
+        >
+          {/* Case Node A: Active Case Dossier */}
+          <div className="flex items-start gap-3.5">
+            <div className="flex flex-col items-center mt-1">
+              <span className="w-2.5 h-2.5 bg-[#39BDF7] shadow-[0_0_8px_#39BDF7]" />
+              <div className="w-[2px] h-11 xl:h-14 bg-gradient-to-b from-[#39BDF7]/80 to-[#F05A9D]/50" />
+            </div>
+            <div className="space-y-1">
+              <div className="flex items-center gap-2 text-[#F05A9D]">
+                <PixelCaseFolderIcon className="w-5 h-5 shrink-0" />
+                <span className="font-pixel text-[11px] xl:text-xs tracking-[0.16em] uppercase">
+                  INCIDENT // CASE 0{currentActiveIndex + 1}
+                </span>
+              </div>
+              <p className="font-mono text-xs xl:text-[13px] text-[#F2F5FA]/95 uppercase tracking-wider truncate max-w-[230px]">
+                {getCleanLevelTitle(currentLevel.title)}
+              </p>
+              <p className="font-mono text-[11px] text-[#39BDF7]/90 uppercase">
+                {currentLevel.locationName}
+              </p>
+            </div>
+          </div>
 
-                  {/* Keyboard Shortcut */}
-                  <span
-                    className={`font-pixel text-[10px] sm:text-xs lg:text-sm tracking-wider transition-all duration-150 ${
-                      isSelected
-                        ? 'text-[#F05A9D] drop-shadow-[0_0_8px_rgba(240,90,157,0.9)]'
-                        : 'text-[#39BDF7]/75 group-hover:text-[#F05A9D] drop-shadow-[0_2px_4px_rgba(2,6,18,0.95)]'
-                    }`}
-                  >
-                    [{item.hotkey}]
-                  </span>
-                </div>
+          {/* Case Node B: Audio Wiretap / Forensic Phase */}
+          <div className="flex items-start gap-3.5 pl-6">
+            <div className="flex flex-col items-center mt-1">
+              <span className="w-2.5 h-2.5 bg-[#F05A9D] shadow-[0_0_8px_#F05A9D]" />
+              <div className="w-[2px] h-11 xl:h-14 bg-gradient-to-b from-[#F05A9D]/80 to-[#39BDF7]/50" />
+            </div>
+            <div className="space-y-1">
+              <div className="flex items-center gap-2 text-[#39BDF7]">
+                <PixelAudioTapeIcon className="w-5 h-5 shrink-0" />
+                <span className="font-pixel text-[11px] xl:text-xs tracking-[0.16em] uppercase">
+                  PHASE // CH. 0{resolvedChapterNum}/03
+                </span>
+              </div>
+              <p className="font-mono text-xs xl:text-[13px] text-[#F2F5FA]/95 uppercase tracking-wider">
+                FORENSIC SWEEP ACTIVE
+              </p>
+              <p className="font-mono text-[11px] text-[#F05A9D]/90">
+                {completedCount}/{totalLevels} CASES CLOSED
+              </p>
+            </div>
+          </div>
 
-                {/* Thin Neon Underline for Selected Option Only */}
-                <span
-                  aria-hidden="true"
-                  className={`mt-1 sm:mt-1.5 h-[2px] transition-all duration-150 ${
-                    isSelected
-                      ? 'w-full bg-gradient-to-r from-[#39BDF7] via-[#F05A9D] to-[#39BDF7] shadow-[0_0_10px_#39BDF7]'
-                      : 'w-0 bg-transparent'
-                  }`}
-                />
-              </button>
-            );
-          })}
-        </nav>
+          {/* Case Node C: Next Badge Protocol */}
+          <div className="flex items-start gap-3.5">
+            <div className="flex flex-col items-center mt-1">
+              <span className="w-2.5 h-2.5 bg-[#39BDF7] shadow-[0_0_8px_#39BDF7]" />
+            </div>
+            <div className="space-y-1">
+              <div className="flex items-center gap-2 text-[#F05A9D]">
+                <PixelBadgeIcon className="w-5 h-5 shrink-0" />
+                <span className="font-pixel text-[11px] xl:text-xs tracking-[0.16em] uppercase">
+                  BADGE PROTOCOL
+                </span>
+              </div>
+              <p className="font-mono text-xs xl:text-[13px] text-[#F2F5FA]/95 uppercase tracking-wider truncate max-w-[230px]">
+                {latestAchievement.badgeName}
+              </p>
+            </div>
+          </div>
+        </aside>
       </main>
 
       {/* =====================================================================
-          4. BOTTOM BAR: COMPACT PLAYER PORTRAIT & LATEST ACHIEVEMENT
+          4. BOTTOM BAR: COMPACT BOX-FREE PLAYER PROGRESS & NEXT ACHIEVEMENT
       ===================================================================== */}
-      <footer className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-8 lg:px-12 pb-3 sm:pb-5 lg:pb-6 pt-1 shrink-0 flex flex-row items-center justify-between gap-2 sm:gap-4 text-xs">
-        {/* Left: Detective Avatar & Status in Pixel Frame */}
-        <div className="flex items-center gap-2.5 sm:gap-3 px-2.5 py-1 sm:px-3.5 sm:py-1.5 bg-[#060D1A]/90 border-2 border-[#0E2445] shadow-[2px_2px_0_0_#02050A] min-w-0">
-          <div className="w-7 h-7 sm:w-9 sm:h-9 border-2 border-[#39BDF7] bg-[#081426] shrink-0 overflow-hidden">
+      <footer className="relative z-10 w-full max-w-[1400px] mx-auto px-2 sm:px-6 lg:px-12 pb-1 sm:pb-2.5 lg:pb-4 shrink-0 flex flex-row items-center justify-between gap-3 text-xs drop-shadow-[0_2px_4px_rgba(2,6,18,0.95)]">
+        {/* Left: Compact Box-Free Player Progress Readout */}
+        <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+          <div className="w-7 h-7 sm:w-8 sm:h-8 lg:w-9 lg:h-9 border border-[#39BDF7]/75 bg-[#081426]/85 shrink-0 overflow-hidden">
             {portraitLoaded ? (
               <img
                 src={detectivePortraitImg}
@@ -682,55 +830,53 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
                 className="w-full h-full object-cover object-top"
               />
             ) : (
-              <div className="w-full h-full flex items-center justify-center font-pixel text-[9px] sm:text-[10px] text-[#39BDF7]">
+              <div className="w-full h-full flex items-center justify-center font-pixel text-[9px] text-[#39BDF7]">
                 RV
               </div>
             )}
           </div>
-          <div className="min-w-0">
+          <div className="min-w-0 leading-tight">
             <div className="flex items-center gap-1.5 sm:gap-2">
-              <span className="font-pixel text-[9px] sm:text-[10px] lg:text-[11px] text-[#F2F5FA] truncate">
+              <span className="font-pixel text-[9.5px] sm:text-xs lg:text-[13px] text-[#F2F5FA] truncate">
                 ROWAN VANCE
               </span>
-              <span className="hidden md:inline text-slate-600">·</span>
-              <span className="hidden md:inline font-mono text-[10px] lg:text-xs text-[#39BDF7] truncate">
+              <span className="hidden md:inline text-slate-500">·</span>
+              <span className="hidden md:inline font-mono text-xs lg:text-[13px] text-[#39BDF7] truncate">
                 {investigatorRank}
               </span>
             </div>
-            <div className="font-mono text-[9px] sm:text-[10px] lg:text-[11px] text-[#94A3B8] truncate">
+            <div className="font-mono text-[9px] sm:text-[11px] lg:text-xs text-[#94A3B8] truncate">
               {completedCount}/{totalLevels} CASES<span className="hidden sm:inline"> SOLVED</span> · {totalCluesLoggedAcrossCampaign} CLUES
             </div>
           </div>
         </div>
 
-        {/* Right: Latest Collectible Badge Preview */}
+        {/* Right: Compact Box-Free Next Achievement Target Readout */}
         <button
           type="button"
           onClick={() => {
             soundEngine.playGtaMenuSelect();
             setActiveSubModal('achievements');
           }}
-          className="pixel-btn px-2.5 py-1 sm:px-3.5 sm:py-1.5 flex items-center gap-2 sm:gap-2.5 text-left cursor-pointer shrink-0"
+          className="group flex items-center gap-2 sm:gap-2.5 text-right cursor-pointer shrink-0 leading-tight bg-transparent border-0 outline-none"
           title="Inspect All 10 Investigator Badges"
         >
-          <div
-            className={`w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center shrink-0 border-2 ${
-              latestAchievement.earned
-                ? 'bg-emerald-500/20 border-emerald-400 text-emerald-300'
-                : 'bg-[#F05A9D]/20 border-[#F05A9D] text-[#F05A9D]'
-            }`}
-          >
-            <PixelBadgeIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-          </div>
           <div className="min-w-0">
-            <div className="font-pixel text-[8px] sm:text-[8.5px] lg:text-[9.5px] text-[#F05A9D] uppercase truncate">
-              {latestAchievement.earned ? 'LATEST BADGE' : 'NEXT TARGET'}
+            <div className="font-pixel text-[8px] sm:text-[10px] lg:text-[11px] text-[#F05A9D] uppercase truncate">
+              {latestAchievement.earned ? 'LATEST BADGE' : 'NEXT BADGE TARGET'}
               <span className="hidden sm:inline"> · {latestAchievement.caseLabel}</span>
             </div>
-            <div className="font-pixel text-[9px] sm:text-[10px] lg:text-[11px] text-[#F2F5FA] truncate max-w-[120px] sm:max-w-none">
+            <div className="font-pixel text-[9.5px] sm:text-xs lg:text-[13px] text-[#F2F5FA] group-hover:text-[#39BDF7] transition-colors truncate max-w-[140px] sm:max-w-none">
               {latestAchievement.badgeName}
             </div>
           </div>
+          <PixelBadgeIcon
+            className={`w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 shrink-0 transition-transform group-hover:scale-110 ${
+              latestAchievement.earned
+                ? 'text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.7)]'
+                : 'text-[#F05A9D] drop-shadow-[0_0_8px_rgba(240,90,157,0.7)]'
+            }`}
+          />
         </button>
       </footer>
 
