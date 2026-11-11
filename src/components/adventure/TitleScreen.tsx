@@ -390,7 +390,7 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
   );
 
   return (
-    <div className="relative w-full min-h-[100dvh] h-[100dvh] overflow-y-auto overflow-x-hidden bg-[#081426] text-[#F2F5FA] select-none font-sans flex flex-col justify-between">
+    <div className="relative w-full h-[100dvh] overflow-hidden bg-[#081426] text-[#F2F5FA] select-none font-sans flex flex-col justify-between">
       {/* =====================================================================
           1. FULL-SCREEN CINEMATIC RAINY APARTMENT & DETECTIVE DESK ARTWORK
       ===================================================================== */}
@@ -515,19 +515,19 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
       {/* =====================================================================
           2. TOP AMBIENT TERMINAL HEADER (Safe Margins & Compact on Phones)
       ===================================================================== */}
-      <header className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-8 lg:px-12 pt-3 sm:pt-5 lg:pt-6 shrink-0 flex items-center justify-between gap-2 text-xs font-mono text-[#F2F5FA]">
-        <div className="px-2.5 py-1 sm:px-3.5 sm:py-1.5 bg-[#060D1A]/90 border-2 border-[#0E2445] shadow-[2px_2px_0_0_#02050A] flex items-center gap-2 min-w-0">
-          <span className="w-2 h-2 bg-[#F05A9D] shadow-[0_0_6px_#F05A9D] shrink-0" />
-          <span className="font-pixel text-[9px] sm:text-[10px] lg:text-[11px] text-[#F05A9D] tracking-wider uppercase truncate">
+      <header className="relative z-10 w-full max-w-7xl mx-auto px-3 sm:px-8 lg:px-12 pt-3 sm:pt-5 lg:pt-6 shrink-0 flex flex-wrap sm:flex-nowrap items-center justify-between gap-2 text-xs font-mono text-[#F2F5FA]">
+        <div className="px-2 py-1 sm:px-3.5 sm:py-1.5 bg-[#060D1A]/90 border-2 border-[#0E2445] shadow-[2px_2px_0_0_#02050A] inline-flex items-center gap-1.5 sm:gap-2 min-w-0">
+          <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-[#F05A9D] shadow-[0_0_6px_#F05A9D] shrink-0" />
+          <span className="font-pixel text-[8.5px] sm:text-[10px] lg:text-[11px] leading-none text-[#F05A9D] tracking-wider uppercase truncate">
             GLASSHOUSE ARCHIVE
           </span>
-          <span aria-hidden="true" className="hidden sm:inline text-slate-600">·</span>
-          <span className="hidden sm:inline font-mono text-[10px] lg:text-xs text-[#39BDF7] shrink-0">
+          <span aria-hidden="true" className="hidden md:inline text-slate-600">·</span>
+          <span className="hidden md:inline font-mono text-[10px] lg:text-xs leading-none text-[#39BDF7] shrink-0">
             10 CASES // 30 CHAPTERS
           </span>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="inline-flex items-center gap-1.5 sm:gap-2 shrink-0 ml-auto">
           {onUpdateSettings && (
             <button
               type="button"
@@ -535,10 +535,23 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
                 soundEngine.playGtaMenuHover();
                 onUpdateSettings({ reducedMotion: !reducedMotion });
               }}
-              className="pixel-btn px-2.5 py-1 sm:px-3 sm:py-1.5 text-[9px] sm:text-[10px] lg:text-[11px] font-pixel text-[#F2F5FA] hover:text-[#39BDF7] cursor-pointer"
+              className="pixel-btn inline-flex items-center justify-center px-2 py-1 sm:px-3 sm:py-1.5 text-[8.5px] sm:text-[10px] lg:text-[11px] leading-none font-pixel text-[#F2F5FA] hover:text-[#39BDF7] whitespace-nowrap cursor-pointer"
               title="Toggle Reduced Motion / Pixel FX"
             >
               FX: {reducedMotion ? 'MINIMAL' : 'ACTIVE'}
+            </button>
+          )}
+          {onOpenArtDossier && (
+            <button
+              type="button"
+              onClick={() => {
+                soundEngine.playGtaMenuSelect();
+                onOpenArtDossier();
+              }}
+              className="pixel-btn inline-flex items-center justify-center px-2 py-1 sm:px-3 sm:py-1.5 text-[8.5px] sm:text-[10px] lg:text-[11px] leading-none font-pixel text-[#39BDF7] hover:text-white whitespace-nowrap cursor-pointer"
+              title="Open 3D Character Dossier"
+            >
+              3D DOSSIER
             </button>
           )}
         </div>
