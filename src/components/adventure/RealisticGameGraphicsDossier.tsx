@@ -74,15 +74,24 @@ const Character3DPreviewStage: React.FC<Character3DPreviewStageProps> = ({
     const height = container.clientHeight || 540;
 
     const scene = new THREE.Scene();
+    scene.background = null;
     const camera = new THREE.PerspectiveCamera(28, width / height, 0.1, 25);
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    const renderer = new THREE.WebGLRenderer({
+      antialias: true,
+      alpha: true,
+      premultipliedAlpha: false,
+      powerPreference: 'high-performance',
+    });
+    renderer.setClearColor(0x000000, 0);
+    renderer.setClearAlpha(0);
     renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.14;
+    renderer.domElement.style.backgroundColor = 'transparent';
     container.innerHTML = '';
     container.appendChild(renderer.domElement);
 
@@ -102,22 +111,12 @@ const Character3DPreviewStage: React.FC<Character3DPreviewStageProps> = ({
     fillLight.position.set(-1.3, 1.2, 1.6);
     scene.add(fillLight);
 
-    const floorGeo = new THREE.CircleGeometry(0.75, 48);
-    const floorMat = new THREE.MeshStandardMaterial({
-      color: 0x081426,
-      roughness: 0.85,
-      metalness: 0.15,
-    });
-    const floorMesh = new THREE.Mesh(floorGeo, floorMat);
-    floorMesh.rotation.x = -Math.PI / 2;
-    floorMesh.receiveShadow = true;
-    scene.add(floorMesh);
-
-    const ringGeo = new THREE.RingGeometry(0.68, 0.72, 48);
+    // Glowing cyan ground accent ring marking character pedestal (100% transparent center)
+    const ringGeo = new THREE.RingGeometry(0.52, 0.56, 48);
     const ringMat = new THREE.MeshBasicMaterial({
       color: 0x39bdf7,
       transparent: true,
-      opacity: 0.45,
+      opacity: 0.5,
       side: THREE.DoubleSide,
     });
     const ringMesh = new THREE.Mesh(ringGeo, ringMat);
@@ -135,34 +134,61 @@ const Character3DPreviewStage: React.FC<Character3DPreviewStageProps> = ({
     });
     scene.add(characterRig.group);
 
-    // Responsive full-body bounds framing
-    const closeUpCamPos = new THREE.Vector3(-0.24, 1.02, 0.52);
-    const closeUpCamLook = new THREE.Vector3(-0.24, 1.02, 0.04);
+    // Responsive miniature full-body bounds framing (80–85% of visible frame height)
+    const closeUpCamPos = new THREE.Vector3(-0.24, 0.96, 0.48);
+    const closeUpCamLook = new THREE.Vector3(-0.24, 0.90, 0.05);
 
     const computeFullBodyFraming = (aspectRatio: number) => {
       characterRig.group.updateMatrixWorld(true);
-      const bbox = new THREE.Box3().setFromObject(characterRig.group);
+      const bbox = new THREE.Box3();
 
-      const minY = Number.isFinite(bbox.min.y) ? Math.min(0, bbox.min.y) : 0;
-      const maxY = Number.isFinite(bbox.max.y) ? Math.max(1.82, bbox.max.y) : 1.84;
-      const minX = Number.isFinite(bbox.min.x) ? Math.min(-0.46, bbox.min.x) : -0.46;
-      const maxX = Number.isFinite(bbox.max.x) ? Math.max(0.46, bbox.max.x) : 0.46;
+      let hasGeometry = false;
+      characterRig.group.traverse((child) => {
+        if ((child as THREE.Mesh).isMesh && child.name !== 'targetHighlightRing') {
+          const mesh = child as THREE.Mesh;
+          if (mesh.geometry) {
+            if (!mesh.geometry.boundingBox) {
+              mesh.geometry.computeBoundingBox();
+            }
+            if (mesh.geometry.boundingBox) {
+              const childBox = mesh.geometry.boundingBox.clone().applyMatrix4(mesh.matrixWorld);
+              bbox.union(childBox);
+              hasGeometry = true;
+            }
+          }
+        }
+      });
 
-      const charHeight = Math.max(1.5, maxY - minY);
-      const charWidth = Math.max(0.7, maxX - minX);
-      const centerY = minY + charHeight * 0.5; // Centers full body vertically (~0.92m)
+      // True physical bounds: soles of shoes are on floor (y = 0.00), top of flat cap crown is at y = 1.88
+      const rawMinY = hasGeometry && Number.isFinite(bbox.min.y) ? bbox.min.y : 0;
+      const rawMaxY = hasGeometry && Number.isFinite(bbox.max.y) ? bbox.max.y : 1.88;
+      const rawMinX = hasGeometry && Number.isFinite(bbox.min.x) ? bbox.min.x : -0.44;
+      const rawMaxX = hasGeometry && Number.isFinite(bbox.max.x) ? bbox.max.x : 0.44;
 
-      // Clear headroom above top of cap and footroom beneath shoes:
-      // ~25% vertical padding ensures cap and shoes have clean space
-      // ~22% horizontal padding ensures coat hem, hands, phone, and elbows never clip
-      const paddedHeight = charHeight * 1.25;
-      const paddedWidth = charWidth * 1.22;
+      const minY = Math.min(0.0, rawMinY);
+      const maxY = Math.max(1.88, rawMaxY);
+      const minX = Math.min(-0.44, rawMinX);
+      const maxX = Math.max(0.44, rawMaxX);
+
+      const charHeight = Math.max(1.70, maxY - minY);
+      const charWidth = Math.max(0.80, maxX - minX);
+
+      // Center vertically exactly in the middle between the soles of his shoes (y = 0.00) and top of cap (y = 1.88)
+      const centerY = minY + charHeight * 0.50;
+
+      // Miniature full-body framing reduced by ~30% for comfortable clearance:
+      // Character occupies ~58% of visible frame height with generous ~21% headroom and ~21% footroom
+      const targetHeightFraction = 0.58;
+      const targetWidthFraction = 0.55;
 
       const fovRad = THREE.MathUtils.degToRad(camera.fov);
       const tanHalfFov = Math.tan(fovRad * 0.5);
 
-      const distY = (paddedHeight * 0.5) / tanHalfFov;
-      const distX = (paddedWidth * 0.5) / (tanHalfFov * Math.max(0.1, aspectRatio));
+      // Distance required so complete figure occupies ~58% of viewport height (30% reduction in size)
+      const distY = (charHeight * 0.5) / (targetHeightFraction * tanHalfFov);
+
+      // Distance required so full width fits with generous margin on smaller/narrow screens
+      const distX = (charWidth * 0.5) / (targetWidthFraction * tanHalfFov * Math.max(0.1, aspectRatio));
 
       const dist = Math.max(distY, distX);
 
@@ -180,12 +206,21 @@ const Character3DPreviewStage: React.FC<Character3DPreviewStageProps> = ({
     camera.lookAt(currentCamLook);
 
     let frameId = 0;
+    let frameCount = 0;
     const clock = new THREE.Clock();
 
     const animate = () => {
       frameId = requestAnimationFrame(animate);
       const dt = Math.min(clock.getDelta(), 0.05);
       const elapsed = clock.getElapsedTime();
+
+      // Refresh framing during initial load ticks as 3D model geometry resolves
+      if (frameCount < 90) {
+        frameCount++;
+        if (frameCount % 6 === 0) {
+          fullBodyFraming = computeFullBodyFraming(camera.aspect);
+        }
+      }
 
       const pose = poseRef.current;
       const expr = exprRef.current;
@@ -283,7 +318,7 @@ const Character3DPreviewStage: React.FC<Character3DPreviewStageProps> = ({
       onPointerLeave={() => {
         isDraggingRef.current = false;
       }}
-      className="relative z-10 my-1 w-full h-[480px] sm:h-[540px] md:h-[580px] lg:h-[620px] flex items-center justify-center cursor-grab active:cursor-grabbing"
+      className="relative z-10 my-1 w-full h-[500px] sm:h-[560px] md:h-[620px] lg:h-[660px] flex items-center justify-center cursor-grab active:cursor-grabbing bg-transparent"
       title="Drag horizontally to rotate the 3D character model 360°"
     />
   );
@@ -393,10 +428,10 @@ export const RealisticGameGraphicsDossier: React.FC<RealisticGameGraphicsDossier
     SUPPORTING_CAST_PROFILES[0];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/95 backdrop-blur-xl animate-fade-in pointer-events-auto select-none">
-      <div className="w-full max-w-6xl max-h-[92vh] bg-[#070E22] border-2 border-sky-500/30 rounded-3xl shadow-[0_0_60px_rgba(0,0,0,0.9)] flex flex-col overflow-hidden text-[#F8FAFC]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-[#081426]/30 backdrop-blur-sm animate-fade-in pointer-events-auto select-none">
+      <div className="w-full max-w-6xl max-h-[92vh] bg-[#081426]/20 backdrop-blur-md border-2 border-[#39BDF7]/40 rounded-3xl shadow-[0_0_50px_rgba(8,20,38,0.5),0_0_24px_rgba(57,189,247,0.2)] flex flex-col overflow-hidden text-[#F8FAFC]">
         {/* Top Header Bar */}
-        <header className="px-6 py-4 border-b border-sky-500/20 flex items-center justify-between bg-[#04091A]">
+        <header className="px-6 py-4 border-b border-[#39BDF7]/20 flex items-center justify-between bg-[#081426]/40 backdrop-blur-sm">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-2xl bg-pink-500/20 border border-pink-400/50 text-pink-300 flex items-center justify-center shadow-[0_0_15px_rgba(236,72,153,0.3)]">
               <Camera className="w-5 h-5" />
@@ -429,7 +464,7 @@ export const RealisticGameGraphicsDossier: React.FC<RealisticGameGraphicsDossier
         </header>
 
         {/* Tab Selector Strip */}
-        <div className="flex items-center gap-2 px-6 py-3 bg-[#09122B] border-b border-sky-500/20 overflow-x-auto text-xs font-heading font-bold">
+        <div className="flex items-center gap-2 px-6 py-3 bg-[#081426]/30 border-b border-[#39BDF7]/20 overflow-x-auto text-xs font-heading font-bold backdrop-blur-sm">
           <button
             type="button"
             onClick={() => setActiveTab('protagonist')}
@@ -493,10 +528,7 @@ export const RealisticGameGraphicsDossier: React.FC<RealisticGameGraphicsDossier
               {/* 3D Character Turnaround & Action Preview Stage */}
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
                 {/* Left: Interactive 3D Model Render Window */}
-                <div className="lg:col-span-7 bg-[#050A16] border-2 border-[#39BDF7]/30 rounded-3xl p-4 sm:p-5 relative flex flex-col items-center justify-between min-h-[520px] sm:min-h-[560px] lg:min-h-[640px] shadow-2xl overflow-hidden">
-                  {/* Subtle Studio Backdrop Lighting */}
-                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-slate-800/40 via-[#070D1E] to-[#040812] pointer-events-none" />
-
+                <div className="lg:col-span-7 bg-transparent border-2 border-[#39BDF7]/40 rounded-3xl p-4 sm:p-5 relative flex flex-col items-center justify-between min-h-[580px] sm:min-h-[640px] lg:min-h-[720px] shadow-[0_0_24px_rgba(57,189,247,0.12)] overflow-hidden">
                   {/* Character State Indicator */}
                   <div className="relative z-10 w-full flex items-center justify-between gap-2">
                     <span className="px-3 py-1 rounded-full bg-black/60 border border-white/15 font-mono text-xs text-white/90">
@@ -551,7 +583,7 @@ export const RealisticGameGraphicsDossier: React.FC<RealisticGameGraphicsDossier
 
                   {/* Character Model Scale & Stats Strip */}
                   <div className="relative z-10 w-full pt-3 border-t border-white/10 flex items-center justify-between text-[11px] font-mono text-[#94A3B8]">
-                    <span>Height: 178 cm · Full Body Framing · Drag to Orbit 360°</span>
+                    <span>Height: 178 cm · Miniature Preview Model · Drag to Orbit 360°</span>
                     <span className="text-emerald-400">Mood: {selectedExpression.toUpperCase()} · Active 3D Rig</span>
                   </div>
                 </div>
@@ -693,8 +725,7 @@ export const RealisticGameGraphicsDossier: React.FC<RealisticGameGraphicsDossier
 
               {/* Interactive 3D Supporting Character Inspector */}
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-                <div className="lg:col-span-7 bg-[#050A16] border-2 border-[#39BDF7]/30 rounded-3xl p-4 sm:p-6 relative flex flex-col items-center justify-between min-h-[580px] sm:min-h-[640px] lg:min-h-[720px] shadow-2xl overflow-hidden">
-                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-slate-800/40 via-[#070D1E] to-[#040812] pointer-events-none" />
+                <div className="lg:col-span-7 bg-transparent border-2 border-[#39BDF7]/40 rounded-3xl p-4 sm:p-6 relative flex flex-col items-center justify-between min-h-[580px] sm:min-h-[640px] lg:min-h-[720px] shadow-[0_0_24px_rgba(57,189,247,0.12)] overflow-hidden">
 
                   <div className="relative z-10 w-full flex items-center justify-between">
                     <span className="px-3 py-1 rounded-full bg-black/60 border border-white/15 font-mono text-xs text-white/90">

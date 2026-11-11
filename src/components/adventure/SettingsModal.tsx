@@ -9,7 +9,6 @@ import {
   RotateCcw,
   Unlock,
   Sparkles,
-  ALargeSmall,
   Home,
   Keyboard,
   BookOpen,
@@ -17,6 +16,7 @@ import {
 } from 'lucide-react';
 import { AdventureLevel, GameSettings } from '../../types/adventure';
 import { soundEngine } from '../../utils/proceduralAudio';
+import { PixelSettingsGearIcon } from './PixelIcons';
 
 interface SettingsModalProps {
   settings: GameSettings;
@@ -40,25 +40,31 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   activeChapterNum = 1,
 }) => {
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in pointer-events-auto">
-      <div className="w-full max-w-2xl bg-[#091124] border-2 border-[#00F0FF]/50 rounded-3xl p-5 sm:p-7 shadow-[0_0_50px_rgba(0,240,255,0.22)] relative text-white space-y-5 max-h-[92vh] overflow-y-auto">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#081426]/90 backdrop-blur-md animate-fade-in pointer-events-auto">
+      <div className="w-full max-w-2xl pixel-panel border-4 border-[#0D1C34] p-5 sm:p-7 relative text-[#F2F5FA] space-y-5 max-h-[92vh] overflow-y-auto animate-block-reveal rounded-none shadow-[0_20px_50px_rgba(2,6,23,0.95),0_0_24px_rgba(57,189,247,0.2)]">
+        {/* Pixel Corner Pins */}
+        <div className="absolute top-1.5 left-1.5 w-2 h-2 bg-[#39BDF7] pointer-events-none" />
+        <div className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#F05A9D] pointer-events-none" />
+        <div className="absolute bottom-1.5 left-1.5 w-2 h-2 bg-[#F05A9D] pointer-events-none" />
+        <div className="absolute bottom-1.5 right-1.5 w-2 h-2 bg-[#39BDF7] pointer-events-none" />
+
         {/* Header */}
-        <div className="flex items-center justify-between pb-3 border-b border-white/10">
+        <div className="flex items-center justify-between pb-3 border-b-2 border-[#1B2F4D]">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-[#00F0FF]/15 border border-[#00F0FF]/40 flex items-center justify-center text-[#00F0FF]">
-              <SettingsIcon className="w-5 h-5" />
+            <div className="w-10 h-10 pixel-slot flex items-center justify-center text-[#39BDF7] rounded-none shrink-0">
+              <PixelSettingsGearIcon className="w-6 h-6 text-[#39BDF7]" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="font-mono text-xs font-bold text-[#00F0FF] uppercase tracking-wider">
-                  PAUSE & SETTINGS
+                <span className="font-pixel text-[11px] text-[#39BDF7] uppercase tracking-wider">
+                  SYS // PAUSE & SETTINGS
                 </span>
-                <span className="px-1.5 py-0.5 rounded bg-white/10 border border-white/15 font-mono text-[10px] text-[#E2E8F0]">
-                  ESC
+                <span className="px-1.5 py-0.5 font-pixel text-[9px] bg-[#0B1A33] border border-[#39BDF7]/40 text-[#39BDF7]">
+                  [ESC]
                 </span>
               </div>
-              <h2 className="font-heading font-black text-lg text-white">
-                Case Overview, Controls & Accessibility
+              <h2 className="font-pixel text-sm sm:text-base text-[#F2F5FA] tracking-wide mt-0.5">
+                INVESTIGATOR PREFERENCES
               </h2>
             </div>
           </div>
@@ -68,38 +74,38 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               <button
                 type="button"
                 onClick={onReturnToMenu}
-                className="px-3.5 py-2 rounded-xl bg-pink-500/20 hover:bg-pink-500/30 border border-pink-400/50 text-pink-200 font-heading font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap shrink-0"
+                className="pixel-btn px-3 py-1.5 text-xs text-[#F05A9D] border border-[#F05A9D]/50 hover:border-[#F05A9D] hover:bg-[#F05A9D]/15 flex items-center gap-1.5 cursor-pointer rounded-none uppercase font-pixel text-[10px]"
                 title="Return to Home Screen"
               >
-                <Home className="w-4 h-4" />
-                <span>Home</span>
+                <Home className="w-3.5 h-3.5" />
+                <span>HOME</span>
               </button>
             )}
 
             <button
               type="button"
               onClick={onClose}
-              className="p-2 rounded-xl text-[#94A3B8] hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+              className="pixel-btn p-2 text-slate-400 hover:text-[#39BDF7] hover:border-[#39BDF7] cursor-pointer rounded-none"
               title="Close Settings"
             >
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4" />
             </button>
           </div>
         </div>
 
-        {/* Current Case Story & Full 3-Chapter List (Moved from HUD into Pause/Settings & Journal) */}
+        {/* Current Case Story & Chapter Slots */}
         {currentLevel && (
-          <div className="p-4 rounded-2xl bg-[#0C1736] border border-pink-400/35 space-y-2.5">
+          <div className="p-4 pixel-slot border-2 border-[#F05A9D]/40 space-y-2.5 rounded-none relative">
             <div className="flex items-center justify-between gap-2">
-              <span className="font-mono text-xs font-bold text-pink-300 flex items-center gap-1.5 uppercase">
+              <span className="font-pixel text-[11px] text-[#F05A9D] flex items-center gap-1.5 uppercase">
                 <BookOpen className="w-3.5 h-3.5" />
                 <span>{currentLevel.title} · {currentLevel.locationName}</span>
               </span>
-              <span className="font-mono text-[11px] text-[#00F0FF] font-bold">
-                Chapter {activeChapterNum} of 3
+              <span className="font-pixel text-[10px] text-[#39BDF7] px-2 py-0.5 bg-[#081426] border border-[#39BDF7]/40">
+                PHASE 0{activeChapterNum} / 03
               </span>
             </div>
-            <p className="text-xs text-slate-200 leading-relaxed">
+            <p className="text-xs text-slate-200 leading-relaxed font-sans">
               {currentLevel.environmentDescription} {currentLevel.objective}
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">
@@ -108,16 +114,16 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 return (
                   <div
                     key={ch.number}
-                    className={`p-2.5 rounded-xl border text-xs ${
+                    className={`p-2.5 border text-xs rounded-none ${
                       isCurrent
-                        ? 'bg-pink-500/18 border-pink-400 text-[#F8FAFC]'
-                        : 'bg-[#070E22] border-sky-500/20 text-slate-300'
+                        ? 'pixel-slot-active text-[#F2F5FA]'
+                        : 'pixel-slot text-slate-300'
                     }`}
                   >
-                    <span className="font-mono text-[10px] text-pink-300 font-bold block uppercase">
-                      Chapter {ch.number} · {ch.phase}
+                    <span className="font-pixel text-[9px] text-[#F05A9D] block uppercase">
+                      CHAPTER {ch.number} · {ch.phase}
                     </span>
-                    <span className="font-heading font-bold block mt-0.5">{ch.title}</span>
+                    <span className="font-heading font-bold block mt-0.5 text-xs">{ch.title}</span>
                     <p className="text-[11px] text-slate-300 mt-1 leading-snug">{ch.summary}</p>
                   </div>
                 );
@@ -126,72 +132,76 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           </div>
         )}
 
-        {/* Full Control List Reference */}
-        <div className="p-4 rounded-2xl bg-[#0C1736] border border-sky-500/25 space-y-2.5">
-          <div className="flex items-center gap-2 text-xs font-mono font-bold text-[#00F0FF] uppercase tracking-wider">
-            <Keyboard className="w-4 h-4" />
-            <span>Full Controls Reference</span>
+        {/* Full Control List Reference as Inventory Tiles */}
+        <div className="p-4 pixel-panel border-2 border-[#39BDF7]/30 space-y-2.5 rounded-none">
+          <div className="flex items-center gap-2 text-xs font-pixel text-[#39BDF7] uppercase tracking-wider">
+            <Keyboard className="w-3.5 h-3.5" />
+            <span>HOTKEY & CONTROL MATRIX</span>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs font-mono">
-            <div className="p-2 rounded-xl bg-[#070E22] border border-sky-500/20">
-              <span className="text-pink-300 font-bold block">WASD / Arrows</span>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+            <div className="p-2 pixel-slot rounded-none">
+              <span className="text-[#F05A9D] font-pixel text-[10px] block">WASD / ARROWS</span>
               <span className="text-slate-300 text-[11px]">Move Investigator</span>
             </div>
-            <div className="p-2 rounded-xl bg-[#070E22] border border-sky-500/20">
-              <span className="text-pink-300 font-bold block">E Key</span>
-              <span className="text-slate-300 text-[11px]">Interact / Inspect</span>
+            <div className="p-2 pixel-slot rounded-none">
+              <span className="text-[#39BDF7] font-pixel text-[10px] block">E KEY</span>
+              <span className="text-slate-300 text-[11px]">Inspect / Interact</span>
             </div>
-            <div className="p-2 rounded-xl bg-[#070E22] border border-sky-500/20">
-              <span className="text-pink-300 font-bold block">Q Key</span>
-              <span className="text-slate-300 text-[11px]">Inspect Clues</span>
+            <div className="p-2 pixel-slot rounded-none">
+              <span className="text-[#39BDF7] font-pixel text-[10px] block">Q KEY</span>
+              <span className="text-slate-300 text-[11px]">Evidence Scan</span>
             </div>
-            <div className="p-2 rounded-xl bg-[#070E22] border border-sky-500/20">
-              <span className="text-[#F8FAFC] font-bold block">J Key</span>
+            <div className="p-2 pixel-slot rounded-none">
+              <span className="text-[#F05A9D] font-pixel text-[10px] block">J KEY</span>
               <span className="text-slate-300 text-[11px]">Case Journal</span>
             </div>
-            <div className="p-2 rounded-xl bg-[#070E22] border border-sky-500/20">
-              <span className="text-[#F8FAFC] font-bold block">Mouse</span>
-              <span className="text-slate-300 text-[11px]">Look Around</span>
+            <div className="p-2 pixel-slot rounded-none">
+              <span className="text-[#F2F5FA] font-pixel text-[10px] block">MOUSE</span>
+              <span className="text-slate-300 text-[11px]">Camera Pan</span>
             </div>
-            <div className="p-2 rounded-xl bg-[#070E22] border border-sky-500/20">
-              <span className="text-[#F8FAFC] font-bold block">Shift</span>
-              <span className="text-slate-300 text-[11px]">Move Faster</span>
+            <div className="p-2 pixel-slot rounded-none">
+              <span className="text-[#F2F5FA] font-pixel text-[10px] block">SHIFT</span>
+              <span className="text-slate-300 text-[11px]">Sprint Move</span>
             </div>
-            <div className="p-2 rounded-xl bg-[#070E22] border border-sky-500/20">
-              <span className="text-[#F8FAFC] font-bold block">V Key</span>
+            <div className="p-2 pixel-slot rounded-none">
+              <span className="text-[#39BDF7] font-pixel text-[10px] block">V KEY</span>
               <span className="text-slate-300 text-[11px]">1st / 3rd Person</span>
             </div>
-            <div className="p-2 rounded-xl bg-[#070E22] border border-sky-500/20">
-              <span className="text-[#00F0FF] font-bold block">T Key</span>
-              <span className="text-slate-300 text-[11px]">Talk to Person</span>
+            <div className="p-2 pixel-slot rounded-none">
+              <span className="text-[#F05A9D] font-pixel text-[10px] block">T KEY</span>
+              <span className="text-slate-300 text-[11px]">Interrogate</span>
             </div>
-            <div className="p-2 rounded-xl bg-[#070E22] border border-sky-500/20">
-              <span className="text-[#00F0FF] font-bold block">P Key</span>
-              <span className="text-slate-300 text-[11px]">Show / Hide Phone</span>
+            <div className="p-2 pixel-slot rounded-none">
+              <span className="text-[#39BDF7] font-pixel text-[10px] block">P KEY</span>
+              <span className="text-slate-300 text-[11px]">Phone Device</span>
             </div>
-            <div className="p-2 rounded-xl bg-[#070E22] border border-sky-500/20">
-              <span className="text-pink-300 font-bold block">H Key</span>
-              <span className="text-slate-300 text-[11px]">Hide / Show Panel</span>
+            <div className="p-2 pixel-slot rounded-none">
+              <span className="text-[#F05A9D] font-pixel text-[10px] block">H KEY</span>
+              <span className="text-slate-300 text-[11px]">Toggle HUD</span>
             </div>
-            <div className="p-2 rounded-xl bg-[#070E22] border border-sky-500/20">
-              <span className="text-[#00F0FF] font-bold block">ESC Key</span>
-              <span className="text-slate-300 text-[11px]">Pause / Settings</span>
+            <div className="p-2 pixel-slot rounded-none">
+              <span className="text-[#39BDF7] font-pixel text-[10px] block">1-7 NUM</span>
+              <span className="text-slate-300 text-[11px]">Quick Slot Nav</span>
+            </div>
+            <div className="p-2 pixel-slot rounded-none">
+              <span className="text-[#F05A9D] font-pixel text-[10px] block">ESC KEY</span>
+              <span className="text-slate-300 text-[11px]">Pause Menu</span>
             </div>
           </div>
         </div>
 
-        {/* Setting Options */}
+        {/* Setting Options Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {/* Camera View Mode (3rd Person / 1st Person) */}
-          <div className="p-3.5 rounded-2xl bg-[#0E1A38] border border-white/10 flex items-center justify-between gap-3">
+          <div className="p-3 pixel-slot rounded-none flex items-center justify-between gap-3">
             <div className="flex items-center gap-2.5">
-              <Video className="w-4 h-4 text-[#38BDF8] shrink-0" />
+              <Video className="w-4 h-4 text-[#39BDF7] shrink-0" />
               <div>
-                <span className="font-heading font-bold text-xs text-white block">
-                  Camera Perspective
+                <span className="font-pixel text-[11px] text-[#F2F5FA] block">
+                  CAMERA PERSPECTIVE
                 </span>
                 <span className="text-[11px] text-[#94A3B8] block">
-                  1st-person or 3rd-person view
+                  1st-person or 3rd-person
                 </span>
               </div>
             </div>
@@ -199,26 +209,26 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             <button
               type="button"
               onClick={() => onUpdateSettings({ isFirstPerson: !settings.isFirstPerson })}
-              className={`px-3 py-1.5 rounded-xl font-mono text-xs font-bold transition-all cursor-pointer border shrink-0 ${
+              className={`pixel-btn px-3 py-1 font-pixel text-[10px] transition-all cursor-pointer rounded-none border shrink-0 ${
                 settings.isFirstPerson
-                  ? 'bg-[#00F0FF] text-[#070D1E] border-white'
-                  : 'bg-pink-500 text-white border-pink-400'
+                  ? 'bg-[#39BDF7] text-[#081426] border-[#39BDF7]'
+                  : 'bg-[#F05A9D] text-white border-[#F05A9D]'
               }`}
             >
-              {settings.isFirstPerson ? '1st Person' : '3rd Person'}
+              {settings.isFirstPerson ? '1ST PERS' : '3RD PERS'}
             </button>
           </div>
 
           {/* Voice Audio for Characters and Investigator */}
-          <div className="p-3.5 rounded-2xl bg-[#0E1A38] border border-white/10 flex items-center justify-between gap-3">
+          <div className="p-3 pixel-slot rounded-none flex items-center justify-between gap-3">
             <div className="flex items-center gap-2.5">
-              <Volume2 className="w-4 h-4 text-[#00F0FF] shrink-0" />
+              <Volume2 className="w-4 h-4 text-[#39BDF7] shrink-0" />
               <div>
-                <span className="font-heading font-bold text-xs text-white block">
-                  Character & Detective Voices
+                <span className="font-pixel text-[11px] text-[#F2F5FA] block">
+                  DETECTIVE VOICES
                 </span>
                 <span className="text-[11px] text-[#94A3B8] block">
-                  Audios spoken when on manual
+                  Dialogue speech synthesis
                 </span>
               </div>
             </div>
@@ -230,26 +240,26 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   voiceAudioEnabled: settings.voiceAudioEnabled === false ? true : false,
                 })
               }
-              className={`px-3 py-1.5 rounded-xl font-mono text-xs font-bold transition-all cursor-pointer border shrink-0 ${
+              className={`pixel-btn px-3 py-1 font-pixel text-[10px] transition-all cursor-pointer rounded-none border shrink-0 ${
                 settings.voiceAudioEnabled !== false
-                  ? 'bg-[#00F0FF] text-[#070D1E] border-white'
-                  : 'bg-[#1C2541] text-[#94A3B8] border-white/20'
+                  ? 'bg-[#39BDF7] text-[#081426] border-[#39BDF7]'
+                  : 'bg-[#0B1A33] text-[#94A3B8] border-[#1B2F4D]'
               }`}
             >
-              {settings.voiceAudioEnabled !== false ? 'ON' : 'OFF'}
+              {settings.voiceAudioEnabled !== false ? 'ENABLED' : 'OFF'}
             </button>
           </div>
 
           {/* Dialogue Subtitles */}
-          <div className="p-3.5 rounded-2xl bg-[#0E1A38] border border-white/10 flex items-center justify-between gap-3">
+          <div className="p-3 pixel-slot rounded-none flex items-center justify-between gap-3">
             <div className="flex items-center gap-2.5">
-              <Type className="w-4 h-4 text-emerald-400 shrink-0" />
+              <Type className="w-4 h-4 text-[#39BDF7] shrink-0" />
               <div>
-                <span className="font-heading font-bold text-xs text-white block">
-                  Dialogue Subtitles
+                <span className="font-pixel text-[11px] text-[#F2F5FA] block">
+                  CASE SUBTITLES
                 </span>
                 <span className="text-[11px] text-[#94A3B8] block">
-                  Show speaker subtitles
+                  Display speech captions
                 </span>
               </div>
             </div>
@@ -257,26 +267,26 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             <button
               type="button"
               onClick={() => onUpdateSettings({ subtitlesEnabled: !settings.subtitlesEnabled })}
-              className={`px-3 py-1.5 rounded-xl font-mono text-xs font-bold transition-all cursor-pointer border shrink-0 ${
+              className={`pixel-btn px-3 py-1 font-pixel text-[10px] transition-all cursor-pointer rounded-none border shrink-0 ${
                 settings.subtitlesEnabled
-                  ? 'bg-emerald-400 text-[#070D1E] border-emerald-300'
-                  : 'bg-[#1C2541] text-[#94A3B8] border-white/20'
+                  ? 'bg-[#39BDF7] text-[#081426] border-[#39BDF7]'
+                  : 'bg-[#0B1A33] text-[#94A3B8] border-[#1B2F4D]'
               }`}
             >
-              {settings.subtitlesEnabled ? 'ON' : 'OFF'}
+              {settings.subtitlesEnabled ? 'ENABLED' : 'OFF'}
             </button>
           </div>
 
           {/* Subtitle Auto-Advance */}
-          <div className="p-3.5 rounded-2xl bg-[#0E1A38] border border-white/10 flex items-center justify-between gap-3">
+          <div className="p-3 pixel-slot rounded-none flex items-center justify-between gap-3">
             <div className="flex items-center gap-2.5">
-              <Type className="w-4 h-4 text-emerald-400 shrink-0" />
+              <Type className="w-4 h-4 text-[#F05A9D] shrink-0" />
               <div>
-                <span className="font-heading font-bold text-xs text-white block">
-                  Auto-Advance Subtitles
+                <span className="font-pixel text-[11px] text-[#F2F5FA] block">
+                  AUTO-ADVANCE
                 </span>
                 <span className="text-[11px] text-[#94A3B8] block">
-                  Advance dialogue automatically
+                  Step text automatically
                 </span>
               </div>
             </div>
@@ -288,10 +298,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   subtitleAutoAdvance: !settings.subtitleAutoAdvance,
                 })
               }
-              className={`px-3 py-1.5 rounded-xl font-mono text-xs font-bold transition-all cursor-pointer border shrink-0 ${
+              className={`pixel-btn px-3 py-1 font-pixel text-[10px] transition-all cursor-pointer rounded-none border shrink-0 ${
                 settings.subtitleAutoAdvance
-                  ? 'bg-emerald-400 text-[#070D1E] border-emerald-300'
-                  : 'bg-[#1C2541] text-[#94A3B8] border-white/20'
+                  ? 'bg-[#F05A9D] text-white border-[#F05A9D]'
+                  : 'bg-[#0B1A33] text-[#94A3B8] border-[#1B2F4D]'
               }`}
             >
               {settings.subtitleAutoAdvance ? 'AUTO' : 'MANUAL'}
@@ -299,15 +309,15 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           </div>
 
           {/* Subtitle Size */}
-          <div className="p-3.5 rounded-2xl bg-[#0E1A38] border border-white/10 flex items-center justify-between gap-3">
+          <div className="p-3 pixel-slot rounded-none flex items-center justify-between gap-3">
             <div className="flex items-center gap-2.5">
-              <Type className="w-4 h-4 text-emerald-400 shrink-0" />
+              <Type className="w-4 h-4 text-[#39BDF7] shrink-0" />
               <div>
-                <span className="font-heading font-bold text-xs text-white block">
-                  Subtitle Text Size
+                <span className="font-pixel text-[11px] text-[#F2F5FA] block">
+                  CAPTION SIZE
                 </span>
                 <span className="text-[11px] text-[#94A3B8] block">
-                  Adjust subtitle readability
+                  Adjust readability scale
                 </span>
               </div>
             </div>
@@ -318,10 +328,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   key={size}
                   type="button"
                   onClick={() => onUpdateSettings({ subtitleSize: size })}
-                  className={`px-2.5 py-1 rounded-lg font-mono text-[11px] font-bold transition-all cursor-pointer border ${
+                  className={`pixel-btn px-2 py-0.5 font-pixel text-[9px] transition-all cursor-pointer rounded-none border ${
                     (settings.subtitleSize || 'normal') === size
-                      ? 'bg-emerald-400 text-[#070D1E] border-emerald-300'
-                      : 'bg-[#1C2541] text-[#94A3B8] border-white/10 hover:text-white'
+                      ? 'bg-[#39BDF7] text-[#081426] border-[#39BDF7]'
+                      : 'bg-[#0B1A33] text-slate-300 border-[#1B2F4D] hover:text-white'
                   }`}
                 >
                   {size === 'extra-large' ? 'XL' : size === 'large' ? 'LG' : 'MD'}
@@ -330,48 +340,16 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             </div>
           </div>
 
-          {/* Subtitle Background Opacity */}
-          <div className="p-3.5 rounded-2xl bg-[#0E1A38] border border-white/10 flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2.5">
-              <Type className="w-4 h-4 text-emerald-400 shrink-0" />
-              <div>
-                <span className="font-heading font-bold text-xs text-white block">
-                  Subtitle Background Opacity
-                </span>
-                <span className="text-[11px] text-[#94A3B8] block">
-                  Translucent or solid backdrop
-                </span>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-1.5 shrink-0">
-              {(['translucent', 'dark', 'solid'] as const).map((op) => (
-                <button
-                  key={op}
-                  type="button"
-                  onClick={() => onUpdateSettings({ subtitleOpacity: op })}
-                  className={`px-2 py-1 rounded-lg font-mono text-[11px] font-bold transition-all cursor-pointer border capitalize ${
-                    (settings.subtitleOpacity || 'dark') === op
-                      ? 'bg-emerald-400 text-[#070D1E] border-emerald-300'
-                      : 'bg-[#1C2541] text-[#94A3B8] border-white/10 hover:text-white'
-                  }`}
-                >
-                  {op}
-                </button>
-              ))}
-            </div>
-          </div>
-
           {/* Reduced Motion */}
-          <div className="p-3.5 rounded-2xl bg-[#0E1A38] border border-white/10 flex items-center justify-between gap-3">
+          <div className="p-3 pixel-slot rounded-none flex items-center justify-between gap-3">
             <div className="flex items-center gap-2.5">
-              <Sparkles className="w-4 h-4 text-purple-400 shrink-0" />
+              <Sparkles className="w-4 h-4 text-[#F05A9D] shrink-0" />
               <div>
-                <span className="font-heading font-bold text-xs text-white block">
-                  Reduced Motion
+                <span className="font-pixel text-[11px] text-[#F2F5FA] block">
+                  REDUCED MOTION
                 </span>
                 <span className="text-[11px] text-[#94A3B8] block">
-                  Minimize camera bobbing
+                  Disable camera sway & flicker
                 </span>
               </div>
             </div>
@@ -379,10 +357,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             <button
               type="button"
               onClick={() => onUpdateSettings({ reducedMotion: !settings.reducedMotion })}
-              className={`px-3 py-1.5 rounded-xl font-mono text-xs font-bold transition-all cursor-pointer border shrink-0 ${
+              className={`pixel-btn px-3 py-1 font-pixel text-[10px] transition-all cursor-pointer rounded-none border shrink-0 ${
                 settings.reducedMotion
-                  ? 'bg-purple-400 text-[#070D1E] border-purple-300'
-                  : 'bg-[#1C2541] text-[#94A3B8] border-white/20'
+                  ? 'bg-[#F05A9D] text-white border-[#F05A9D]'
+                  : 'bg-[#0B1A33] text-[#94A3B8] border-[#1B2F4D]'
               }`}
             >
               {settings.reducedMotion ? 'ON' : 'OFF'}
@@ -390,15 +368,15 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           </div>
 
           {/* High Contrast */}
-          <div className="p-3.5 rounded-2xl bg-[#0E1A38] border border-white/10 flex items-center justify-between gap-3">
+          <div className="p-3 pixel-slot rounded-none flex items-center justify-between gap-3">
             <div className="flex items-center gap-2.5">
-              <Contrast className="w-4 h-4 text-[#00F0FF] shrink-0" />
+              <Contrast className="w-4 h-4 text-[#39BDF7] shrink-0" />
               <div>
-                <span className="font-heading font-bold text-xs text-white block">
-                  High Contrast Borders
+                <span className="font-pixel text-[11px] text-[#F2F5FA] block">
+                  HIGH CONTRAST
                 </span>
                 <span className="text-[11px] text-[#94A3B8] block">
-                  Stronger UI outlines
+                  Enhanced pixel borders
                 </span>
               </div>
             </div>
@@ -406,10 +384,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             <button
               type="button"
               onClick={() => onUpdateSettings({ highContrast: !settings.highContrast })}
-              className={`px-3 py-1.5 rounded-xl font-mono text-xs font-bold transition-all cursor-pointer border shrink-0 ${
+              className={`pixel-btn px-3 py-1 font-pixel text-[10px] transition-all cursor-pointer rounded-none border shrink-0 ${
                 settings.highContrast
-                  ? 'bg-[#00F0FF] text-[#070D1E] border-white'
-                  : 'bg-[#1C2541] text-[#94A3B8] border-white/20'
+                  ? 'bg-[#39BDF7] text-[#081426] border-[#39BDF7]'
+                  : 'bg-[#0B1A33] text-[#94A3B8] border-[#1B2F4D]'
               }`}
             >
               {settings.highContrast ? 'ON' : 'OFF'}
@@ -417,14 +395,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           </div>
 
           {/* Camera Sensitivity */}
-          <div className="p-3.5 rounded-2xl bg-[#0E1A38] border border-white/10 space-y-1.5">
+          <div className="p-3 pixel-slot rounded-none space-y-1.5">
             <div className="flex items-center justify-between text-xs">
-              <span className="font-heading font-bold text-white flex items-center gap-1.5">
-                <Sliders className="w-3.5 h-3.5 text-[#00F0FF]" />
-                <span>Camera Sensitivity</span>
+              <span className="font-pixel text-[10px] text-[#F2F5FA] flex items-center gap-1.5">
+                <Sliders className="w-3 h-3 text-[#39BDF7]" />
+                <span>AIM SENSITIVITY</span>
               </span>
-              <span className="font-mono text-xs font-bold text-[#00F0FF]">
-                {settings.mouseSensitivity.toFixed(1)}x
+              <span className="font-pixel text-[10px] text-[#39BDF7]">
+                {settings.mouseSensitivity.toFixed(1)}X
               </span>
             </div>
             <input
@@ -434,21 +412,21 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               step="0.1"
               value={settings.mouseSensitivity}
               onChange={(e) => onUpdateSettings({ mouseSensitivity: parseFloat(e.target.value) })}
-              className="w-full accent-[#00F0FF] cursor-pointer"
+              className="w-full accent-[#39BDF7] cursor-pointer"
             />
           </div>
         </div>
 
-        {/* Sound Volume */}
-        <div className="p-3.5 rounded-2xl bg-[#0E1A38] border border-white/10 space-y-1.5">
+        {/* Master Sound Volume */}
+        <div className="p-3.5 pixel-slot rounded-none space-y-1.5">
           <div className="flex items-center justify-between text-xs">
             <div className="flex items-center gap-2">
-              <Volume2 className="w-4 h-4 text-pink-400" />
-              <span className="font-heading font-bold text-white">
-                Sound & Audio Volume
+              <Volume2 className="w-4 h-4 text-[#F05A9D]" />
+              <span className="font-pixel text-[11px] text-[#F2F5FA]">
+                SFX & FOLEY VOLUME
               </span>
             </div>
-            <span className="font-mono text-xs font-bold text-pink-300">
+            <span className="font-pixel text-xs text-[#F05A9D]">
               {Math.round(settings.soundVolume * 100)}%
             </span>
           </div>
@@ -464,17 +442,17 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               onUpdateSettings({ soundVolume: vol });
               soundEngine.setVolume(vol);
             }}
-            className="w-full accent-pink-500 cursor-pointer"
+            className="w-full accent-[#F05A9D] cursor-pointer"
           />
         </div>
 
         {/* Atmospheric Room Tone & Hum Volume */}
-        <div className="p-3.5 rounded-2xl bg-[#0E1A38] border border-white/10 space-y-1.5">
+        <div className="p-3.5 pixel-slot rounded-none space-y-1.5">
           <div className="flex items-center justify-between text-xs">
             <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-[#00F0FF]" />
-              <span className="font-heading font-bold text-white">
-                Atmospheric Ambience (Room Tone & Hum)
+              <Sparkles className="w-4 h-4 text-[#39BDF7]" />
+              <span className="font-pixel text-[11px] text-[#F2F5FA]">
+                CYBER CITY AMBIENCE
               </span>
             </div>
             <div className="flex items-center gap-2">
@@ -485,15 +463,15 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     ambientAudioEnabled: settings.ambientAudioEnabled === false ? true : false,
                   })
                 }
-                className={`px-2 py-0.5 rounded-md font-mono text-[10px] font-bold border cursor-pointer ${
+                className={`pixel-btn px-2 py-0.5 font-pixel text-[9px] border cursor-pointer rounded-none ${
                   settings.ambientAudioEnabled !== false
-                    ? 'bg-[#00F0FF]/20 text-[#00F0FF] border-[#00F0FF]/40'
-                    : 'bg-white/5 text-slate-400 border-white/10'
+                    ? 'bg-[#39BDF7]/20 text-[#39BDF7] border-[#39BDF7]/60'
+                    : 'bg-[#081426] text-slate-400 border-[#1B2F4D]'
                 }`}
               >
-                {settings.ambientAudioEnabled !== false ? 'ENABLED' : 'MUTED'}
+                {settings.ambientAudioEnabled !== false ? 'ACTIVE' : 'MUTED'}
               </button>
-              <span className="font-mono text-xs font-bold text-[#00F0FF]">
+              <span className="font-pixel text-xs text-[#39BDF7]">
                 {Math.round((settings.ambientVolume ?? 0.65) * 100)}%
               </span>
             </div>
@@ -510,41 +488,41 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               onUpdateSettings({ ambientVolume: ambVol });
               soundEngine.setAmbientVolume(ambVol);
             }}
-            className="w-full accent-[#00F0FF] cursor-pointer"
+            className="w-full accent-[#39BDF7] cursor-pointer"
           />
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between pt-3 border-t border-white/10 gap-2 flex-wrap">
+        <div className="flex items-center justify-between pt-3 border-t-2 border-[#1B2F4D] gap-2 flex-wrap">
           <div className="flex items-center gap-3 flex-wrap">
             {onReturnToMenu && (
               <button
                 type="button"
                 onClick={onReturnToMenu}
-                className="px-3.5 py-2 rounded-xl bg-pink-500/20 hover:bg-pink-500/30 border border-pink-400/50 text-xs font-mono font-bold text-pink-200 flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap shrink-0"
+                className="pixel-btn px-3.5 py-2 text-xs font-pixel text-[#F05A9D] border border-[#F05A9D]/50 hover:border-[#F05A9D] flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap shrink-0 rounded-none uppercase"
               >
                 <Home className="w-3.5 h-3.5" />
-                <span>Home</span>
+                <span>RETURN TO TITLE</span>
               </button>
             )}
             {onResetProgress && (
               <button
                 type="button"
                 onClick={onResetProgress}
-                className="text-xs font-mono text-red-400 hover:text-red-300 flex items-center gap-1 cursor-pointer"
+                className="font-pixel text-[10px] text-red-400 hover:text-red-300 flex items-center gap-1 cursor-pointer hover:underline"
               >
-                <RotateCcw className="w-3.5 h-3.5" />
-                <span>Restart from Level 1</span>
+                <RotateCcw className="w-3 h-3" />
+                <span>RESET ALL PROGRESS</span>
               </button>
             )}
             {onUnlockAllLevels && (
               <button
                 type="button"
                 onClick={onUnlockAllLevels}
-                className="text-xs font-mono text-pink-300 hover:text-pink-200 flex items-center gap-1 cursor-pointer"
+                className="font-pixel text-[10px] text-[#F05A9D] hover:text-pink-300 flex items-center gap-1 cursor-pointer hover:underline"
               >
-                <Unlock className="w-3.5 h-3.5" />
-                <span>Unlock All 10 Levels</span>
+                <Unlock className="w-3 h-3" />
+                <span>UNLOCK ALL 10 CASES</span>
               </button>
             )}
           </div>
@@ -552,12 +530,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="px-5 py-2.5 rounded-xl bg-[#00F0FF] hover:bg-[#38BDF8] text-[#070D1E] font-heading font-black text-xs transition-colors cursor-pointer shadow-[0_0_16px_rgba(0,240,255,0.28)]"
+            className="pixel-btn-action px-5 py-2 text-[#081426] font-pixel text-xs tracking-wider cursor-pointer rounded-none flex items-center gap-2"
           >
-            RESUME GAME (ESC)
+            <span>RESUME [ESC]</span>
           </button>
         </div>
       </div>
     </div>
   );
 };
+

@@ -231,33 +231,33 @@ export const MissionHud: React.FC<MissionHudProps> = ({
           <div className="w-1 h-1 pointer-events-none" />
         ) : (
           <div
-            className={`pointer-events-auto bg-[#060D20]/92 border ${
-              settings.highContrast ? 'border-white' : 'border-sky-500/25'
-            } rounded-2xl px-3.5 py-2.5 backdrop-blur-md shadow-[0_12px_32px_rgba(2,6,23,0.85)] ${
+            className={`pointer-events-auto pixel-panel border-2 ${
+              settings.highContrast ? 'border-white' : 'border-[#1B2F4D]'
+            } rounded-none px-3.5 py-2.5 shadow-[0_12px_32px_rgba(2,6,23,0.85)] ${
               isPanelCollapsed ? 'w-auto' : 'w-full max-w-[310px] sm:max-w-[335px]'
             } transition-all`}
           >
             {/* Compact Header Row: Chapter Progress Indicator + Collapse Button (Shortcut: H) */}
             <div className="flex items-center justify-between gap-2">
-              <span className="px-2 py-0.5 rounded-md bg-pink-500/15 border border-pink-400/45 text-pink-300 font-mono text-[11px] font-bold tracking-wide">
-                Chapter {activeChapter.number} of 3 — {shortPhaseName}
+              <span className="px-2 py-0.5 rounded-none bg-[#F05A9D]/15 border border-[#F05A9D]/50 text-[#F05A9D] font-pixel text-[9px] uppercase tracking-wide">
+                CH {activeChapter.number}/3 // {shortPhaseName}
               </span>
 
               <div className="flex items-center gap-1">
                 <button
                   type="button"
                   onClick={() => setIsPanelCollapsed((prev) => !prev)}
-                  className="px-2 py-0.5 rounded-lg bg-[#0B1630] hover:bg-[#13244A] border border-sky-500/25 text-slate-200 hover:text-white transition-colors cursor-pointer flex items-center gap-1.5 text-[11px] font-mono"
+                  className="pixel-btn px-2 py-0.5 rounded-none text-slate-200 hover:text-[#39BDF7] transition-colors cursor-pointer flex items-center gap-1.5 text-[10px] font-pixel"
                   title={isPanelCollapsed ? 'Show Case Panel (Press H)' : 'Hide Case Panel (Press H)'}
                 >
-                  <span>{isPanelCollapsed ? 'Show' : 'Hide'}</span>
-                  <span className="px-1.5 py-0.2 rounded bg-pink-500/20 border border-pink-400/45 text-pink-300 text-[10px] font-bold">
-                    H
+                  <span>{isPanelCollapsed ? 'EXPAND' : 'HIDE'}</span>
+                  <span className="px-1 py-0.2 bg-[#F05A9D]/20 border border-[#F05A9D]/40 text-[#F05A9D] text-[8px] font-bold">
+                    [H]
                   </span>
                   {isPanelCollapsed ? (
-                    <ChevronDown className="w-3.5 h-3.5" />
+                    <ChevronDown className="w-3 h-3" />
                   ) : (
-                    <ChevronUp className="w-3.5 h-3.5" />
+                    <ChevronUp className="w-3 h-3" />
                   )}
                 </button>
 
@@ -267,7 +267,7 @@ export const MissionHud: React.FC<MissionHudProps> = ({
                     setIsPanelCollapsed(true);
                     setIsHideChipHidden(true);
                   }}
-                  className="px-1.5 py-0.5 rounded-lg bg-[#0B1630] hover:bg-rose-500/20 border border-sky-500/20 hover:border-rose-400/40 text-slate-400 hover:text-rose-200 transition-colors cursor-pointer text-[11px] font-mono"
+                  className="pixel-btn px-1.5 py-0.5 rounded-none text-slate-400 hover:text-[#F05A9D] transition-colors cursor-pointer text-[10px] font-pixel"
                   title="Hide this bar completely (Shift + H, press H to restore)"
                 >
                   ×
@@ -277,40 +277,40 @@ export const MissionHud: React.FC<MissionHudProps> = ({
 
             {/* Level Title (Only when expanded so collapsed state stays ultra-compact) */}
             {!isPanelCollapsed && (
-              <h2 className="font-heading font-bold text-xs sm:text-sm text-white leading-snug mt-1 truncate">
+              <h2 className="font-pixel text-xs text-[#F2F5FA] leading-snug mt-1.5 truncate">
                 {level.title}
               </h2>
             )}
 
           {/* Collapsible Body: Only Short Objective, Clue Progress, and Current-Chapter Action */}
           {!isPanelCollapsed && (
-            <div className="mt-2 pt-2 border-t border-sky-500/20 space-y-2">
-              <p className="text-xs text-slate-100 leading-snug">
-                <span className="text-[#38BDF8] font-semibold">Objective: </span>
+            <div className="mt-2 pt-2 border-t border-[#1B2F4D] space-y-2">
+              <p className="text-xs text-slate-100 leading-snug font-sans">
+                <span className="text-[#39BDF7] font-pixel text-[10px]">OBJECTIVE: </span>
                 {currentObjectiveText}
               </p>
 
               {/* Clue Progress Bar & Counter */}
               <div className="space-y-1">
-                <div className="flex items-center justify-between text-[11px] font-mono">
+                <div className="flex items-center justify-between text-[10px] font-pixel">
                   <span className="text-slate-300 flex items-center gap-1">
-                    <Sparkles className="w-3 h-3 text-pink-400" />
-                    <span>Clue progress:</span>
+                    <Sparkles className="w-3 h-3 text-[#F05A9D]" />
+                    <span>EVIDENCE:</span>
                   </span>
                   <span
                     className={`font-bold tabular-nums ${
-                      foundCount >= totalClues ? 'text-emerald-300' : 'text-pink-300'
+                      foundCount >= totalClues ? 'text-[#39BDF7]' : 'text-[#F05A9D]'
                     }`}
                   >
-                    {foundCount}/{totalClues} clues found
+                    {foundCount}/{totalClues} CLUES
                   </span>
                 </div>
-                <div className="w-full h-1.5 bg-[#0B1630] rounded-full overflow-hidden border border-sky-500/15">
+                <div className="w-full h-2 bg-[#081426] rounded-none overflow-hidden border border-[#1B2F4D] p-0.2">
                   <div
-                    className={`h-full transition-all duration-300 rounded-full ${
+                    className={`h-full transition-all duration-300 rounded-none ${
                       foundCount >= totalClues
-                        ? 'bg-emerald-400'
-                        : 'bg-gradient-to-r from-[#F05A9D] via-pink-400 to-[#39BDF7]'
+                        ? 'bg-[#39BDF7]'
+                        : 'bg-gradient-to-r from-[#F05A9D] to-[#39BDF7]'
                     }`}
                     style={{
                       width: `${Math.min(100, (foundCount / Math.max(1, totalClues)) * 100)}%`,
@@ -319,20 +319,20 @@ export const MissionHud: React.FC<MissionHudProps> = ({
                 </div>
               </div>
 
-              {/* Current Chapter Action ONLY (Never shows Chapter 3 decision early in Chapter 1) */}
+              {/* Current Chapter Action ONLY */}
               <div className="pt-1 flex flex-col gap-1.5">
                 {onOpenChapterQuestion && (
                   <button
                     type="button"
                     onClick={onOpenChapterQuestion}
-                    className="w-full px-3 py-1.5 rounded-xl bg-[#081426] hover:bg-[#0B1A33] border border-[#39BDF7]/50 text-[#39BDF7] hover:text-white font-mono text-xs font-semibold flex items-center justify-between transition-colors cursor-pointer"
+                    className="pixel-btn w-full px-3 py-1.5 rounded-none text-[#39BDF7] hover:text-white font-pixel text-[10px] flex items-center justify-between transition-colors cursor-pointer"
                   >
                     <span className="flex items-center gap-1.5">
-                      <Search className="w-3.5 h-3.5 text-[#F05A9D]" />
-                      <span>Press Q to inspect clues</span>
+                      <Search className="w-3 h-3 text-[#F05A9D]" />
+                      <span>INSPECT CLUES</span>
                     </span>
-                    <span className="px-1.5 py-0.5 rounded bg-[#F05A9D]/20 border border-[#F05A9D]/40 text-[10px] text-[#F05A9D] font-bold">
-                      Q
+                    <span className="px-1.5 py-0.2 rounded-none bg-[#F05A9D]/20 border border-[#F05A9D]/40 text-[9px] text-[#F05A9D] font-bold">
+                      [Q]
                     </span>
                   </button>
                 )}
@@ -342,9 +342,9 @@ export const MissionHud: React.FC<MissionHudProps> = ({
                   <button
                     type="button"
                     onClick={onTriggerDecision}
-                    className="w-full px-3 py-2 rounded-xl bg-[#39BDF7] hover:bg-sky-300 text-slate-950 font-heading font-bold text-xs flex items-center justify-between transition-colors cursor-pointer shadow-[0_0_18px_rgba(57,189,247,0.3)]"
+                    className="pixel-btn-action w-full px-3 py-1.5 rounded-none text-[#081426] font-pixel text-[10px] flex items-center justify-between transition-colors cursor-pointer"
                   >
-                    <span>Make Case Decision (4 Options)</span>
+                    <span>MAKE CASE DECISION</span>
                     <ChevronRight className="w-4 h-4" />
                   </button>
                 )}
@@ -355,15 +355,15 @@ export const MissionHud: React.FC<MissionHudProps> = ({
         )}
 
         {/* CENTER-TOP: Clear, Single-Line Current Objective Banner */}
-        <div className="pointer-events-auto mx-auto hidden lg:flex items-center gap-2.5 px-4 py-2 rounded-2xl bg-[#081426]/95 border border-[#39BDF7]/40 shadow-[0_12px_32px_rgba(2,6,23,0.85)] backdrop-blur-md max-w-lg">
-          <div className="w-6 h-6 rounded-lg bg-[#39BDF7]/15 border border-[#39BDF7]/40 flex items-center justify-center text-[#39BDF7] shrink-0">
+        <div className="pointer-events-auto mx-auto hidden lg:flex items-center gap-2.5 px-4 py-2 rounded-none pixel-panel border-2 border-[#39BDF7]/40 shadow-[0_12px_32px_rgba(2,6,23,0.85)] max-w-lg">
+          <div className="w-6 h-6 rounded-none bg-[#39BDF7]/15 border border-[#39BDF7]/40 flex items-center justify-center text-[#39BDF7] shrink-0 font-pixel text-[10px]">
             <Target className="w-3.5 h-3.5" />
           </div>
           <div className="min-w-0">
-            <span className="block font-mono text-[10px] text-pink-300 uppercase tracking-wider font-bold">
-              Current Objective · {foundCount}/{totalClues} clues found
+            <span className="block font-pixel text-[9px] text-[#F05A9D] uppercase tracking-wider">
+              MISSION // {foundCount}/{totalClues} CLUES FOUND
             </span>
-            <span className="block font-heading font-semibold text-xs sm:text-sm text-white truncate">
+            <span className="block font-sans font-semibold text-xs text-[#F2F5FA] truncate">
               {currentObjectiveText}
             </span>
           </div>
@@ -375,26 +375,22 @@ export const MissionHud: React.FC<MissionHudProps> = ({
             <button
               type="button"
               onClick={onReplayOpeningStory}
-              className="px-3 py-2 rounded-xl bg-[#060D20]/92 hover:bg-[#101F42] border border-pink-400/45 text-pink-300 hover:text-white transition-all shadow-lg flex items-center gap-1.5 cursor-pointer backdrop-blur-md"
+              className="pixel-btn px-3 py-1.5 rounded-none text-[#F05A9D] border border-[#F05A9D]/45 hover:border-[#F05A9D] transition-all flex items-center gap-1.5 cursor-pointer font-pixel text-[10px]"
               title="Replay Pre-Investigation Opening Story"
             >
-              <Film className="w-4 h-4 text-pink-400" />
-              <span className="hidden sm:inline font-mono text-xs font-semibold">
-                Opening Story
-              </span>
+              <Film className="w-3.5 h-3.5 text-[#F05A9D]" />
+              <span className="hidden sm:inline">STORY</span>
             </button>
           )}
 
           <button
             type="button"
             onClick={onOpenJournal}
-            className="px-3 py-2 rounded-xl bg-[#060D20]/92 hover:bg-[#101F42] border border-sky-500/30 text-slate-100 hover:text-white transition-all shadow-lg flex items-center gap-1.5 cursor-pointer backdrop-blur-md"
+            className="pixel-btn px-3 py-1.5 rounded-none text-[#39BDF7] border border-[#39BDF7]/45 hover:border-[#39BDF7] transition-all flex items-center gap-1.5 cursor-pointer font-pixel text-[10px]"
             title="Open Case Journal & Full Chapter List (J)"
           >
-            <BookOpen className="w-4 h-4 text-[#00F0FF]" />
-            <span className="font-mono text-xs font-semibold">
-              Journal ({foundCount}/{totalClues})
-            </span>
+            <BookOpen className="w-3.5 h-3.5 text-[#39BDF7]" />
+            <span>JOURNAL [{foundCount}/{totalClues}]</span>
           </button>
         </div>
       </div>
@@ -480,46 +476,46 @@ export const MissionHud: React.FC<MissionHudProps> = ({
             <button
               type="button"
               onClick={onTriggerDecision}
-              className="px-5 py-2.5 rounded-2xl bg-[#39BDF7] hover:bg-sky-300 text-slate-950 font-heading font-black text-xs sm:text-sm uppercase tracking-wide shadow-[0_0_25px_rgba(57,189,247,0.45)] transition-all flex items-center gap-2 cursor-pointer"
+              className="pixel-btn-action px-5 py-2 rounded-none text-[#081426] font-pixel text-xs uppercase tracking-wide transition-all flex items-center gap-2 cursor-pointer shadow-[0_0_20px_rgba(57,189,247,0.5)]"
             >
               <CheckCircle2 className="w-4 h-4" />
-              <span>Chapter 3: Make Your Decision (4 Options)</span>
+              <span>CHAPTER 03 // MAKE CASE DECISION</span>
               <ChevronRight className="w-4 h-4" />
             </button>
           )}
 
           {/* Simplified, High-Contrast Bottom Control Strip */}
-          <div className="hidden md:flex items-center gap-3 px-4 py-2 rounded-xl bg-[#081426]/95 border border-[#39BDF7]/25 text-xs font-mono text-[#F2F5FA] backdrop-blur-md shadow-[0_8px_28px_rgba(2,6,23,0.85)]">
+          <div className="hidden md:flex items-center gap-2.5 px-3.5 py-1.5 rounded-none pixel-panel border-2 border-[#1B2F4D] text-xs font-pixel text-[#F2F5FA] shadow-[0_8px_28px_rgba(2,6,23,0.85)]">
             <span>
-              <strong className="text-white">WASD</strong> Move
+              <strong className="text-[#39BDF7]">[WASD]</strong> MOVE
             </span>
-            <span className="text-slate-500">·</span>
+            <span className="text-[#1B2F4D]">|</span>
             <span>
-              <strong className="text-[#F05A9D]">E</strong> Inspect Clue
+              <strong className="text-[#F05A9D]">[E]</strong> INSPECT
             </span>
-            <span className="text-slate-500">·</span>
+            <span className="text-[#1B2F4D]">|</span>
             <span>
-              <strong className="text-[#39BDF7]">T</strong> Talk
+              <strong className="text-[#39BDF7]">[T]</strong> TALK
             </span>
-            <span className="text-slate-500">·</span>
+            <span className="text-[#1B2F4D]">|</span>
             <span>
-              <strong className="text-[#39BDF7]">P</strong> Phone
+              <strong className="text-[#39BDF7]">[P]</strong> PHONE
             </span>
-            <span className="text-slate-500">·</span>
+            <span className="text-[#1B2F4D]">|</span>
             <span>
-              <strong className="text-pink-300">Q</strong> Case Clues
+              <strong className="text-[#F05A9D]">[Q]</strong> CLUES
             </span>
-            <span className="text-slate-500">·</span>
+            <span className="text-[#1B2F4D]">|</span>
             <span>
-              <strong className="text-pink-300">H</strong> Hide Panel
+              <strong className="text-[#F05A9D]">[H]</strong> HUD
             </span>
-            <span className="text-slate-500">·</span>
+            <span className="text-[#1B2F4D]">|</span>
             <span>
-              <strong className="text-[#38BDF8]">J</strong> Journal
+              <strong className="text-[#39BDF7]">[J]</strong> JOURNAL
             </span>
-            <span className="text-slate-500">·</span>
+            <span className="text-[#1B2F4D]">|</span>
             <span>
-              <strong className="text-slate-300">ESC</strong> Settings
+              <strong className="text-slate-300">[ESC]</strong> PAUSE
             </span>
           </div>
         </div>

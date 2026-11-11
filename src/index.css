@@ -7,6 +7,7 @@
     --font-mono: 'JetBrains Mono', monospace;
     --font-typewriter: 'Courier Prime', monospace;
     --font-editorial: 'Bodoni Moda', 'Cormorant Garamond', Georgia, serif;
+    --font-pixel: 'Silkscreen', 'Press Start 2P', monospace;
   }
 
   body {
@@ -31,6 +32,10 @@
 
   .font-editorial {
     font-family: var(--font-editorial);
+  }
+
+  .font-pixel {
+    font-family: var(--font-pixel);
   }
 }
 
@@ -191,3 +196,524 @@ body.gameplay-cursor-none * {
   cursor: none !important;
 }
 
+/* Cyber Detective Scanlines Overlay */
+.sleuth-scanlines {
+  background: linear-gradient(
+    rgba(18, 26, 46, 0) 50%,
+    rgba(2, 6, 14, 0.42) 50%
+  );
+  background-size: 100% 3px;
+}
+
+/* Occasional subtle light flicker for suspenseful atmospheric tension */
+@keyframes sleuthFlicker {
+  0%, 100% { opacity: 1; }
+  32% { opacity: 1; }
+  32.4% { opacity: 0.84; }
+  32.8% { opacity: 1; }
+  68% { opacity: 1; }
+  68.3% { opacity: 0.88; }
+  68.6% { opacity: 1; }
+  85% { opacity: 1; }
+  85.2% { opacity: 0.82; }
+  85.5% { opacity: 1; }
+}
+
+.animate-sleuth-flicker {
+  animation: sleuthFlicker 11s infinite ease-in-out;
+}
+
+/* Restrained case active selection pulse */
+@keyframes casePulse {
+  0%, 100% {
+    box-shadow: 0 0 0 1px rgba(240, 90, 157, 0.4), 0 4px 20px rgba(8, 20, 38, 0.65), 0 0 12px rgba(240, 90, 157, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 0 1.5px rgba(240, 90, 157, 0.75), 0 4px 26px rgba(8, 20, 38, 0.8), 0 0 22px rgba(240, 90, 157, 0.45);
+  }
+}
+
+.animate-case-pulse {
+  animation: casePulse 2.6s ease-in-out infinite;
+}
+
+/* Slight signal glitch / interference on important alerts */
+@keyframes alertGlitch {
+  0%, 100% {
+    transform: translate(0);
+    text-shadow: 0 0 14px rgba(240, 90, 157, 0.6);
+  }
+  20% {
+    transform: translate(-1px, 0.5px);
+    text-shadow: -1px 0 #39BDF7, 1px 0 #F05A9D;
+  }
+  40% {
+    transform: translate(1px, -0.5px);
+    text-shadow: 1px 0 #39BDF7, -1px 0 #F05A9D;
+  }
+  60% {
+    transform: translate(-0.5px, 0);
+    text-shadow: -0.5px 0 #39BDF7, 0.5px 0 #F05A9D;
+  }
+  80% {
+    transform: translate(0.5px, 0.5px);
+    text-shadow: 0 0 14px rgba(240, 90, 157, 0.6);
+  }
+}
+
+.hover-alert-glitch:hover {
+  animation: alertGlitch 0.32s ease-in-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-sleuth-flicker,
+  .animate-case-pulse,
+  .hover-alert-glitch:hover,
+  .animate-block-reveal {
+    animation: none !important;
+  }
+}
+
+/* =====================================================================
+   BLOCKY PIXEL-INSPIRED CYBER-DETECTIVE UI UTILITIES
+===================================================================== */
+
+/* Pixel Panel with Chunky Beveled Edges */
+.pixel-panel {
+  border: 3px solid #0D1D38;
+  background-color: #081426;
+  box-shadow:
+    inset 2px 2px 0 0 #1B3560,
+    inset -2px -2px 0 0 #03070E,
+    0 8px 32px rgba(1, 4, 10, 0.85);
+}
+
+.pixel-panel-cyan {
+  border: 3px solid #39BDF7;
+  background-color: #081426;
+  box-shadow:
+    inset 2px 2px 0 0 #7DD3FC,
+    inset -2px -2px 0 0 #0E355C,
+    0 0 20px rgba(57, 189, 247, 0.4);
+}
+
+.pixel-panel-pink {
+  border: 3px solid #F05A9D;
+  background-color: #081426;
+  box-shadow:
+    inset 2px 2px 0 0 #F9A8D4,
+    inset -2px -2px 0 0 #5B1338,
+    0 0 20px rgba(240, 90, 157, 0.45);
+}
+
+/* Collectible Detective Inventory Slot Tile */
+.pixel-slot {
+  border: 3px solid #0E1F3B;
+  background-color: #040914;
+  box-shadow:
+    inset 2px 2px 0 0 #020409,
+    inset -2px -2px 0 0 #152E56;
+  transition: all 0.08s steps(2);
+}
+
+.pixel-slot:hover {
+  border-color: #39BDF7;
+  background-color: #061226;
+  box-shadow:
+    inset 2px 2px 0 0 #0B254A,
+    inset -2px -2px 0 0 #39BDF7,
+    0 0 16px rgba(57, 189, 247, 0.35);
+}
+
+/* Selected Case Slot with Bright Blue Outline & Pink Alert Accent */
+.pixel-slot-active {
+  border: 3px solid #39BDF7 !important;
+  background-color: #071733 !important;
+  box-shadow:
+    inset 2px 2px 0 0 #93E2FE,
+    inset -2px -2px 0 0 #0A2B52,
+    0 0 22px rgba(57, 189, 247, 0.5) !important;
+}
+
+.pixel-slot-alert {
+  border: 3px solid #F05A9D !important;
+  background-color: #170A1E !important;
+  box-shadow:
+    inset 2px 2px 0 0 #FBCFE8,
+    inset -2px -2px 0 0 #5E0F37,
+    0 0 24px rgba(240, 90, 157, 0.55) !important;
+}
+
+/* Blocky Tactile Buttons */
+.pixel-btn {
+  border: 2px solid #0E2445;
+  background-color: #0B1A35;
+  box-shadow:
+    inset 2px 2px 0 0 #1E3D6E,
+    inset -2px -2px 0 0 #040812;
+  transition: transform 0.06s steps(2);
+}
+
+.pixel-btn:hover {
+  border-color: #39BDF7;
+  background-color: #0F254B;
+  box-shadow:
+    inset 2px 2px 0 0 #39BDF7,
+    inset -2px -2px 0 0 #071326,
+    0 0 12px rgba(57, 189, 247, 0.35);
+}
+
+.pixel-btn:active {
+  transform: translateY(2px);
+  box-shadow:
+    inset 2px 2px 0 0 #040812,
+    inset -2px -2px 0 0 #1E3D6E;
+}
+
+/* Chunky Block & Inventory Menu Buttons */
+.block-btn {
+  border: 3px solid #102344;
+  background-color: #0A162B;
+  background-image: linear-gradient(180deg, rgba(255,255,255,0.03) 0%, transparent 100%),
+    radial-gradient(circle at 50% 50%, rgba(57,189,247,0.03) 0%, transparent 80%);
+  box-shadow:
+    inset 3px 3px 0 0 #1E3B68,
+    inset -3px -3px 0 0 #040913,
+    0 4px 10px rgba(0, 0, 0, 0.6);
+  transition: all 0.08s steps(2);
+}
+
+.block-btn:hover {
+  border-color: #39BDF7;
+  background-color: #0D1D38;
+  box-shadow:
+    inset 3px 3px 0 0 #39BDF7,
+    inset -3px -3px 0 0 #040913,
+    0 0 16px rgba(57, 189, 247, 0.25);
+}
+
+/* Active Inventory Slot State */
+.block-btn-selected {
+  border: 3px solid #39BDF7 !important;
+  background-color: #0F2347 !important;
+  background-image: linear-gradient(180deg, rgba(57,189,247,0.12) 0%, transparent 100%) !important;
+  box-shadow:
+    inset 3px 3px 0 0 #93E2FE,
+    inset -3px -3px 0 0 #0284C7,
+    0 0 24px rgba(57, 189, 247, 0.45),
+    0 4px 12px rgba(0, 0, 0, 0.8) !important;
+  transform: translateY(-2px);
+}
+
+/* Recessed Inventory Slot Preview Tile */
+.inventory-slot-tile {
+  border: 2px solid #060E1C;
+  background-color: #050B17;
+  box-shadow:
+    inset 2px 2px 0 0 #03070E,
+    inset -2px -2px 0 0 #142848;
+}
+
+.inventory-slot-tile-active {
+  border: 2px solid #39BDF7;
+  background-color: #09172E;
+  box-shadow:
+    inset 2px 2px 0 0 #39BDF7,
+    inset -2px -2px 0 0 #03070E,
+    0 0 8px rgba(57, 189, 247, 0.5);
+}
+
+/* Primary Action Pixel Button */
+.pixel-btn-action {
+  border: 3px solid #39BDF7;
+  background-color: #39BDF7;
+  color: #040914;
+  font-family: var(--font-pixel);
+  box-shadow:
+    inset 2px 2px 0 0 #BAE6FD,
+    inset -2px -2px 0 0 #0284C7,
+    0 4px 20px rgba(57, 189, 247, 0.4);
+  transition: transform 0.06s steps(2);
+}
+
+.pixel-btn-action:hover {
+  background-color: #68CEF9;
+  box-shadow:
+    inset 2px 2px 0 0 #E0F2FE,
+    inset -2px -2px 0 0 #0369A1,
+    0 0 26px rgba(57, 189, 247, 0.65);
+}
+
+.pixel-btn-action:active {
+  transform: translateY(2px);
+}
+
+/* Block-by-Block Reveal Transition */
+@keyframes blockStepReveal {
+  0% {
+    opacity: 0;
+    clip-path: inset(0 100% 0 0);
+  }
+  25% {
+    clip-path: inset(0 75% 0 0);
+  }
+  50% {
+    clip-path: inset(0 50% 0 0);
+  }
+  75% {
+    clip-path: inset(0 25% 0 0);
+  }
+  100% {
+    opacity: 1;
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+.animate-block-reveal {
+  animation: blockStepReveal 0.24s steps(4) forwards;
+}
+
+/* Pixel City Grid Overlay */
+.pixel-grid-city {
+  background-image:
+    linear-gradient(to right, rgba(57, 189, 247, 0.06) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(57, 189, 247, 0.06) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+/* Animated Clue / Inventory Slot Pop */
+@keyframes tilePop {
+  0% { transform: scale(0.92); }
+  60% { transform: scale(1.06); }
+  100% { transform: scale(1); }
+}
+
+.animate-tile-pop {
+  animation: tilePop 0.16s steps(3) forwards;
+}
+
+/* Floating Voxel Data Cube */
+@keyframes voxelFloat {
+  0%, 100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(0, -8px, 0);
+  }
+}
+
+.animate-voxel-float {
+  animation: voxelFloat 3.2s ease-in-out infinite;
+}
+
+/* Chunky Voxel Crate Panel */
+.voxel-crate-panel {
+  border: 4px solid #102344;
+  background-color: #071326;
+  background-image:
+    linear-gradient(90deg, rgba(57, 189, 247, 0.03) 1px, transparent 1px),
+    linear-gradient(rgba(57, 189, 247, 0.03) 1px, transparent 1px);
+  background-size: 16px 16px;
+  box-shadow:
+    inset 4px 4px 0 0 #1E3B68,
+    inset -4px -4px 0 0 #040913,
+    0 8px 32px rgba(0, 0, 0, 0.85);
+}
+
+/* Achievement Collectible Badge Styles */
+.voxel-badge-unlocked {
+  border: 2px solid #F05A9D;
+  background: linear-gradient(180deg, #1A0D22 0%, #0A0612 100%);
+  box-shadow:
+    inset 2px 2px 0 0 #F472B6,
+    inset -2px -2px 0 0 #831843,
+    0 0 14px rgba(240, 90, 157, 0.4);
+}
+
+.voxel-badge-locked {
+  border: 2px solid #102344;
+  background-color: #050B17;
+  box-shadow:
+    inset 2px 2px 0 0 #0C1A33,
+    inset -2px -2px 0 0 #02050A;
+}
+
+/* =====================================================================
+   SCAM SLEUTH NEON TITLE GLOW & CYBER-INVESTIGATION SIGNAL EFFECTS
+===================================================================== */
+
+/* Vivid Electric-Blue Neon Glow for "SCAM" with subtle hot-pink cross-spill */
+.sleuth-neon-scam {
+  color: #DDF4FF;
+  text-shadow:
+    0 0 2px #FFFFFF,
+    0 0 6px #39BDF7,
+    0 0 14px #39BDF7,
+    0 0 26px rgba(57, 189, 247, 0.85),
+    6px 0 18px rgba(240, 90, 157, 0.32),
+    3px 3px 0 #03070F;
+}
+
+/* Vivid Hot-Pink Neon Glow for "SLEUTH" with subtle electric-blue cross-spill */
+.sleuth-neon-word {
+  color: #FFE4F3;
+  text-shadow:
+    0 0 2px #FFFFFF,
+    0 0 6px #F05A9D,
+    0 0 14px #F05A9D,
+    0 0 28px rgba(240, 90, 157, 0.9),
+    -6px 0 18px rgba(57, 189, 247, 0.32),
+    3px 3px 0 #03070F;
+}
+
+/* Restrained Signal Flicker for Electric-Blue "SCAM" */
+@keyframes neonSignalScam {
+  0%, 100% {
+    opacity: 1;
+    text-shadow:
+      0 0 2px #FFFFFF,
+      0 0 6px #39BDF7,
+      0 0 14px #39BDF7,
+      0 0 26px rgba(57, 189, 247, 0.85),
+      6px 0 18px rgba(240, 90, 157, 0.32),
+      3px 3px 0 #03070F;
+  }
+  41% {
+    opacity: 1;
+  }
+  41.4% {
+    opacity: 0.86;
+    text-shadow:
+      -1px 0 0 #F05A9D,
+      1px 0 4px #39BDF7,
+      0 0 10px rgba(57, 189, 247, 0.55),
+      3px 3px 0 #03070F;
+  }
+  41.8% {
+    opacity: 1;
+  }
+  42.2% {
+    opacity: 0.92;
+  }
+  42.5% {
+    opacity: 1;
+  }
+  83% {
+    opacity: 1;
+  }
+  83.3% {
+    opacity: 0.88;
+    text-shadow:
+      0 0 3px #39BDF7,
+      0 0 16px rgba(57, 189, 247, 0.7),
+      1px 0 0 #F05A9D,
+      3px 3px 0 #03070F;
+  }
+  83.6% {
+    opacity: 1;
+  }
+}
+
+/* Restrained Signal Flicker for Hot-Pink "SLEUTH" */
+@keyframes neonSignalSleuth {
+  0%, 100% {
+    opacity: 1;
+    text-shadow:
+      0 0 2px #FFFFFF,
+      0 0 6px #F05A9D,
+      0 0 14px #F05A9D,
+      0 0 28px rgba(240, 90, 157, 0.9),
+      -6px 0 18px rgba(57, 189, 247, 0.32),
+      3px 3px 0 #03070F;
+  }
+  18% {
+    opacity: 1;
+  }
+  18.3% {
+    opacity: 0.85;
+    text-shadow:
+      1px 0 0 #39BDF7,
+      -1px 0 4px #F05A9D,
+      0 0 10px rgba(240, 90, 157, 0.55),
+      3px 3px 0 #03070F;
+  }
+  18.7% {
+    opacity: 1;
+  }
+  64% {
+    opacity: 1;
+  }
+  64.3% {
+    opacity: 0.9;
+  }
+  64.6% {
+    opacity: 0.82;
+    text-shadow:
+      0 0 4px #F05A9D,
+      0 0 14px rgba(240, 90, 157, 0.65),
+      -1px 0 0 #39BDF7,
+      3px 3px 0 #03070F;
+  }
+  65% {
+    opacity: 1;
+  }
+}
+
+.animate-neon-scam {
+  animation: neonSignalScam 8.5s infinite ease-in-out;
+}
+
+.animate-neon-sleuth {
+  animation: neonSignalSleuth 7.2s infinite ease-in-out;
+}
+
+/* Faint Cyber-Forensic Scan Sweep Across the Title Frame */
+@keyframes titleScanSweep {
+  0% {
+    transform: translateX(-120%) skewX(-18deg);
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.65;
+  }
+  50% {
+    opacity: 0.65;
+  }
+  65% {
+    transform: translateX(220%) skewX(-18deg);
+    opacity: 0;
+  }
+  100% {
+    transform: translateX(220%) skewX(-18deg);
+    opacity: 0;
+  }
+}
+
+.animate-title-scan {
+  animation: titleScanSweep 6.4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+/* Subtle Pixel Fragment Pulse Around Title Frame */
+@keyframes pixelShardPulse {
+  0%, 100% {
+    opacity: 0.35;
+    transform: translateY(0);
+  }
+  50% {
+    opacity: 0.95;
+    transform: translateY(-2px);
+  }
+}
+
+.animate-pixel-shard {
+  animation: pixelShardPulse 3.6s steps(3) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-neon-scam,
+  .animate-neon-sleuth,
+  .animate-title-scan,
+  .animate-pixel-shard {
+    animation: none !important;
+  }
+}

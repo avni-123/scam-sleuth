@@ -76,26 +76,32 @@ export const InspectionModal: React.FC<InspectionModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#040814]/88 backdrop-blur-md animate-fade-in pointer-events-auto cursor-default select-text">
-      <div className="w-full max-w-xl bg-[#070E22] border-2 border-[#00F0FF]/65 rounded-3xl p-6 sm:p-7 shadow-[0_24px_64px_rgba(2,6,23,0.95),0_0_35px_rgba(0,240,255,0.22)] relative text-white space-y-5">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#081426]/90 backdrop-blur-md animate-fade-in pointer-events-auto cursor-default select-text">
+      <div className="w-full max-w-xl pixel-panel border-4 border-[#0D1C34] p-5 sm:p-7 shadow-[0_24px_64px_rgba(2,6,23,0.95),0_0_35px_rgba(57,189,247,0.25)] relative text-[#F2F5FA] space-y-4 rounded-none animate-block-reveal">
+        {/* Pixel Corner Pins */}
+        <span className="absolute -top-1 -left-1 w-2.5 h-2.5 bg-[#39BDF7]" />
+        <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[#F05A9D]" />
+        <span className="absolute -bottom-1 -left-1 w-2.5 h-2.5 bg-[#F05A9D]" />
+        <span className="absolute -bottom-1 -right-1 w-2.5 h-2.5 bg-[#39BDF7]" />
+
         {/* Header */}
-        <div className="flex items-start justify-between gap-3 pb-3 border-b border-sky-500/20">
+        <div className="flex items-start justify-between gap-3 pb-3 border-b-2 border-[#1B2F4D]">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-[#00F0FF]/15 border border-[#00F0FF]/40 flex items-center justify-center">
+            <div className="w-10 h-10 border-2 border-[#39BDF7]/40 bg-[#091D3B] flex items-center justify-center rounded-none shrink-0 shadow-[inset_1px_1px_0_0_#93E2FE]">
               {getIcon()}
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="font-mono text-[10px] text-pink-300 font-bold uppercase tracking-widest">
+                <span className="font-pixel text-[9.5px] text-[#F05A9D] uppercase tracking-wider">
                   EVIDENCE INSPECTION
                 </span>
                 {isAlreadyCollected && (
-                  <span className="text-[9px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-1.5 py-0.5 rounded uppercase">
+                  <span className="text-[8.5px] font-pixel bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-1.5 py-0.5 rounded-none uppercase">
                     CLUE LOGGED ✓
                   </span>
                 )}
               </div>
-              <h2 className="font-heading font-black text-base sm:text-lg text-white">
+              <h2 className="font-pixel text-sm sm:text-base text-white mt-0.5">
                 {data.title}
               </h2>
             </div>
@@ -104,28 +110,28 @@ export const InspectionModal: React.FC<InspectionModalProps> = ({
           <button
             type="button"
             onClick={onDismiss}
-            className="p-1.5 rounded-xl text-[#94A3B8] hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
-            title="Close without logging clue"
+            className="pixel-btn p-1.5 text-[#94A3B8] hover:text-white cursor-pointer rounded-none"
+            title="Close without logging clue (Esc)"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Source & Timestamp Meta (Fictional Safe Details) */}
-        <div className="grid grid-cols-2 gap-3 text-xs font-mono p-3 rounded-2xl bg-[#050A18] border border-sky-500/20">
+        <div className="grid grid-cols-2 gap-3 text-xs font-mono p-3 bg-[#060D1A] border-2 border-[#102344] rounded-none">
           <div>
-            <span className="text-[#94A3B8] block text-[10px] uppercase">Fictional Sender / Source</span>
-            <span className="text-white font-semibold truncate block">{data.senderOrSource}</span>
+            <span className="text-[#94A3B8] block text-[9px] font-pixel uppercase">Sender / Source</span>
+            <span className="text-white font-semibold truncate block mt-0.5">{data.senderOrSource}</span>
           </div>
           <div>
-            <span className="text-[#94A3B8] block text-[10px] uppercase">Timestamp</span>
-            <span className="text-slate-300 block">{data.timestamp}</span>
+            <span className="text-[#94A3B8] block text-[9px] font-pixel uppercase">Timestamp</span>
+            <span className="text-slate-300 block mt-0.5">{data.timestamp}</span>
           </div>
         </div>
 
         {/* Interactive Magnifier Toggle Bar */}
-        <div className="flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-[#0B1530] border border-sky-500/20 text-xs">
-          <span className="font-mono text-xs text-slate-200">
+        <div className="flex items-center justify-between px-3.5 py-2.5 bg-[#09162C] border-2 border-[#152B4D] text-xs rounded-none">
+          <span className="font-sans text-xs text-slate-200">
             Use the magnifier to highlight suspicious details in the message:
           </span>
           <button
@@ -245,14 +251,14 @@ export const InspectionModal: React.FC<InspectionModalProps> = ({
                 onContinueInvestigation();
               }
             }}
-            className={`px-5 py-2.5 rounded-xl font-heading text-xs transition-all flex items-center gap-2 ${
+            className={`px-5 py-2.5 font-pixel text-xs transition-all flex items-center gap-2 rounded-none uppercase ${
               isClueHighlighted
-                ? 'bg-[#00F0FF] hover:bg-[#38BDF8] active:scale-[0.98] text-[#050A18] font-black cursor-pointer shadow-[0_0_20px_rgba(0,240,255,0.4)]'
-                : 'bg-[#0B1530] border border-slate-700/60 text-slate-500 font-bold cursor-not-allowed opacity-60'
+                ? 'pixel-btn-action text-[#081426] cursor-pointer shadow-[0_0_20px_rgba(57,189,247,0.4)]'
+                : 'bg-[#0B1530] border-2 border-slate-700/60 text-slate-500 cursor-not-allowed opacity-50'
             }`}
             title={isClueHighlighted ? 'Log clue and continue' : 'Highlight the clue above first'}
           >
-            <span>Continue Investigating</span>
+            <span>LOG CLUE & CONTINUE</span>
             <ChevronRight className="w-4 h-4" />
           </button>
         </div>

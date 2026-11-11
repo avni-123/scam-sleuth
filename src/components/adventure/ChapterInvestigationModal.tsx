@@ -61,31 +61,35 @@ export const ChapterInvestigationModal: React.FC<ChapterInvestigationModalProps>
   const selectedOption = chapter.question?.options.find((o) => o.id === selectedOptionId) || null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/85 backdrop-blur-md animate-fade-in pointer-events-auto">
-      <div className="w-full max-w-5xl bg-[#070E22] border border-sky-500/30 rounded-2xl shadow-[0_24px_60px_rgba(2,6,23,0.9),0_0_32px_rgba(14,165,233,0.12)] text-[#F8FAFC] flex flex-col max-h-[92vh] overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-[#081426]/90 backdrop-blur-md animate-fade-in pointer-events-auto">
+      <div className="w-full max-w-5xl pixel-panel border-4 border-[#0D1C34] shadow-[0_24px_60px_rgba(2,6,23,0.95),0_0_32px_rgba(57,189,247,0.2)] text-[#F2F5FA] flex flex-col max-h-[92vh] overflow-hidden rounded-none animate-block-reveal relative">
+        {/* Pixel Corner Pins */}
+        <span className="absolute -top-1 -left-1 w-2.5 h-2.5 bg-[#39BDF7]" />
+        <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[#F05A9D]" />
+        <span className="absolute -bottom-1 -left-1 w-2.5 h-2.5 bg-[#F05A9D]" />
+        <span className="absolute -bottom-1 -right-1 w-2.5 h-2.5 bg-[#39BDF7]" />
+
         {/* Top Modal Header */}
-        <div className="px-5 sm:px-7 py-4 bg-[#0A1430] border-b border-sky-500/20 flex flex-wrap items-center justify-between gap-4 shrink-0">
+        <div className="px-5 sm:px-7 py-3.5 bg-[#060D1A] border-b-2 border-[#1B2F4D] flex flex-wrap items-center justify-between gap-4 shrink-0">
           <div>
-            <div className="flex items-center gap-2 text-xs text-pink-300 font-mono font-semibold">
-              <span>{level.levelNumber}</span>
-              <span aria-hidden="true">·</span>
-              <span>{level.title}</span>
-              <span aria-hidden="true">·</span>
-              <span className="text-[#00F0FF]">{level.locationName}</span>
+            <div className="flex items-center gap-2 text-[10px] sm:text-xs text-[#F05A9D] font-pixel tracking-wider">
+              <span>CASE 0{level.levelNumber}</span>
+              <span aria-hidden="true" className="text-slate-600">·</span>
+              <span className="text-[#39BDF7]">{level.locationName}</span>
             </div>
-            <h2 className="font-heading font-bold text-lg sm:text-xl text-[#F8FAFC] mt-0.5">
-              {chapter.title} ({chapter.phase})
+            <h2 className="font-pixel text-base sm:text-lg text-[#F2F5FA] mt-0.5">
+              CHAPTER 0{chapter.number}: {chapter.title}
             </h2>
           </div>
 
           <div className="flex items-center gap-2">
             {/* Chapter Progress Indicator / Switcher */}
             {isGameplayMode ? (
-              <div className="px-3 py-1.5 rounded-xl bg-pink-500/20 border border-pink-400/50 font-mono text-xs font-bold text-pink-200">
-                Chapter {activeChapterNum} of 3 — {chapter.phase.replace('The ', '')}
+              <div className="px-3 py-1 bg-[#1A0A1C] border-2 border-[#F05A9D]/50 font-pixel text-[10px] text-[#F05A9D] rounded-none">
+                CHAPTER {activeChapterNum} OF 3 — {chapter.phase.replace('The ', '')}
               </div>
             ) : (
-              <div className="flex items-center gap-1 p-1 bg-[#050B1C] rounded-xl border border-sky-500/25">
+              <div className="flex items-center gap-1 p-1 bg-[#040914] border-2 border-[#0D1C34]">
                 {level.chapters.map((ch) => (
                   <button
                     key={ch.number}
@@ -94,13 +98,13 @@ export const ChapterInvestigationModal: React.FC<ChapterInvestigationModalProps>
                       soundEngine.playInteract();
                       onSelectChapter(ch.number);
                     }}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
+                    className={`px-3 py-1 text-xs font-pixel uppercase transition-colors cursor-pointer whitespace-nowrap shrink-0 rounded-none ${
                       ch.number === activeChapterNum
-                        ? 'bg-pink-500 text-white shadow-[0_0_12px_rgba(236,72,153,0.4)]'
-                        : 'text-slate-300 hover:text-white hover:bg-white/5'
+                        ? 'bg-[#39BDF7] text-[#081426] font-bold shadow-[inset_1px_1px_0_0_#BAE6FD]'
+                        : 'text-slate-300 hover:text-white'
                     }`}
                   >
-                    Chapter {ch.number}
+                    CH {ch.number}
                   </button>
                 ))}
               </div>
@@ -109,10 +113,10 @@ export const ChapterInvestigationModal: React.FC<ChapterInvestigationModalProps>
             <button
               type="button"
               onClick={onClose}
-              className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
-              title="Close Window"
+              className="pixel-btn p-1.5 text-slate-400 hover:text-white cursor-pointer rounded-none"
+              title="Close Case Window (Esc)"
             >
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4" />
             </button>
           </div>
         </div>
@@ -363,26 +367,26 @@ export const ChapterInvestigationModal: React.FC<ChapterInvestigationModalProps>
 
           {/* 6. Knowledge Question and Four Options + 7. Correct Answer and Feedback */}
           {chapter.question && (
-            <section className="p-5 rounded-xl bg-[#0B1636] border border-pink-400/40 space-y-4">
+            <section className="p-4 sm:p-5 pixel-panel border-2 border-[#16345E] space-y-3.5 rounded-none">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
-                  <HelpCircle className="w-5 h-5 text-pink-400" />
-                  <h3 className="font-heading font-bold text-base sm:text-lg text-[#F8FAFC]">
-                    Chapter {chapter.number} Knowledge Question (4 Options)
+                  <HelpCircle className="w-4 h-4 text-[#F05A9D]" />
+                  <h3 className="font-pixel text-xs sm:text-sm text-[#F2F5FA] uppercase tracking-wide">
+                    CHAPTER 0{chapter.number} KNOWLEDGE VERIFICATION (4 OPTIONS)
                   </h3>
                 </div>
                 <button
                   type="button"
                   onClick={() => setShowAllFeedback((prev) => !prev)}
-                  className="text-xs font-mono text-[#00F0FF] hover:underline cursor-pointer"
+                  className="text-[10px] font-pixel text-[#39BDF7] hover:underline cursor-pointer"
                 >
                   {showAllFeedback
-                    ? 'Hide Full Answer Key'
-                    : 'Show Answer Key & All Option Feedback'}
+                    ? '[HIDE ANSWER KEY]'
+                    : '[SHOW ANSWER KEY & EXPLANATIONS]'}
                 </button>
               </div>
 
-              <p className="font-heading font-semibold text-sm sm:text-base text-[#F8FAFC] leading-snug">
+              <p className="font-heading font-black text-sm sm:text-base text-[#F2F5FA] leading-snug">
                 {chapter.question.prompt}
               </p>
 
@@ -396,24 +400,26 @@ export const ChapterInvestigationModal: React.FC<ChapterInvestigationModalProps>
                       key={opt.id}
                       type="button"
                       onClick={() => handleSelectOption(opt)}
-                      className={`p-4 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between space-y-2 ${
+                      className={`p-3.5 border-2 text-left transition-all cursor-pointer flex flex-col justify-between space-y-2 rounded-none ${
                         showResult
                           ? opt.isCorrect
-                            ? 'bg-emerald-950/40 border-emerald-400 text-[#F8FAFC]'
+                            ? 'bg-emerald-950/40 border-emerald-400 text-[#F2F5FA] shadow-[inset_1px_1px_0_0_#34D399]'
                             : isSelected
-                            ? 'bg-red-950/40 border-red-400 text-[#F8FAFC]'
-                            : 'bg-[#070E22] border-sky-500/20 text-slate-300'
-                          : 'bg-[#070E22] hover:bg-[#0F1F44] border-sky-500/30 hover:border-[#00F0FF]/60 text-[#F8FAFC]'
+                            ? 'bg-rose-950/40 border-rose-400 text-[#F2F5FA] shadow-[inset_1px_1px_0_0_#F87171]'
+                            : 'bg-[#060D1A] border-[#102344] text-slate-400'
+                          : isSelected
+                          ? 'block-btn-selected'
+                          : 'block-btn'
                       }`}
                     >
-                      <div className="flex items-start gap-3">
+                      <div className="flex items-start gap-2.5">
                         <span
-                          className={`w-6 h-6 rounded-lg font-mono text-xs font-bold flex items-center justify-center shrink-0 mt-0.5 ${
+                          className={`w-6 h-6 rounded-none font-pixel text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5 border ${
                             showResult && opt.isCorrect
-                              ? 'bg-emerald-400 text-slate-950'
+                              ? 'bg-emerald-400 text-slate-950 border-emerald-300'
                               : showResult && isSelected && !opt.isCorrect
-                              ? 'bg-red-400 text-slate-950'
-                              : 'bg-pink-500/20 border border-pink-400/40 text-pink-300'
+                              ? 'bg-rose-500 text-white border-rose-400'
+                              : 'bg-[#091A36] border-[#1B3B6D] text-[#39BDF7]'
                           }`}
                         >
                           {opt.id}
@@ -428,13 +434,13 @@ export const ChapterInvestigationModal: React.FC<ChapterInvestigationModalProps>
                           className={`pt-2 border-t text-xs leading-relaxed flex items-start gap-2 ${
                             opt.isCorrect
                               ? 'border-emerald-500/30 text-emerald-300'
-                              : 'border-red-500/30 text-red-300'
+                              : 'border-rose-500/30 text-rose-300'
                           }`}
                         >
                           {opt.isCorrect ? (
-                            <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5 text-emerald-400" />
+                            <CheckCircle2 className="w-3.5 h-3.5 shrink-0 mt-0.5 text-emerald-400" />
                           ) : (
-                            <XCircle className="w-4 h-4 shrink-0 mt-0.5 text-red-400" />
+                            <XCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-rose-400" />
                           )}
                           <span>{opt.feedback}</span>
                         </div>
@@ -459,12 +465,12 @@ export const ChapterInvestigationModal: React.FC<ChapterInvestigationModalProps>
 
           {/* 8. Chapter Transition */}
           {chapter.chapterTransition && (
-            <div className="p-4 rounded-xl bg-[#0A1430] border border-pink-400/35 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="p-4 bg-[#0A1430] border-2 border-[#1B2F4D] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-none">
               <div className="space-y-1">
-                <span className="text-xs font-mono text-pink-300 font-semibold uppercase">
-                  Chapter {chapter.number} Transition
+                <span className="text-[10px] font-pixel text-[#F05A9D] font-bold uppercase">
+                  CHAPTER 0{chapter.number} TRANSITION
                 </span>
-                <p className="text-xs sm:text-sm text-slate-200 leading-relaxed">
+                <p className="text-xs sm:text-sm text-slate-200 leading-relaxed font-sans">
                   {chapter.chapterTransition}
                 </p>
               </div>
@@ -477,10 +483,10 @@ export const ChapterInvestigationModal: React.FC<ChapterInvestigationModalProps>
                       soundEngine.playInteract();
                       onSelectChapter((activeChapterNum + 1) as 1 | 2 | 3);
                     }}
-                    className="px-4 py-2.5 rounded-xl bg-[#00F0FF] hover:bg-[#38BDF8] text-slate-950 font-heading font-bold text-xs flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0 shadow-[0_0_16px_rgba(0,240,255,0.3)]"
+                    className="pixel-btn-action px-4 py-2 font-pixel text-xs text-[#081426] flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0 rounded-none uppercase"
                   >
-                    <span>Continue to Chapter {activeChapterNum + 1}</span>
-                    <ArrowRight className="w-4 h-4" />
+                    <span>NEXT: CH 0{activeChapterNum + 1}</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
                   </button>
                 ) : (
                   onTriggerFinalDecision && (
@@ -491,10 +497,10 @@ export const ChapterInvestigationModal: React.FC<ChapterInvestigationModalProps>
                         onClose();
                         onTriggerFinalDecision();
                       }}
-                      className="px-4 py-2.5 rounded-xl bg-[#00F0FF] hover:bg-[#38BDF8] text-slate-950 font-heading font-bold text-xs flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0 shadow-[0_0_16px_rgba(0,240,255,0.3)]"
+                      className="pixel-btn-action px-4 py-2 font-pixel text-xs text-[#081426] flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0 rounded-none uppercase shadow-[0_0_16px_rgba(57,189,247,0.4)]"
                     >
-                      <span>Make Final Case Decision (4 Options)</span>
-                      <ArrowRight className="w-4 h-4" />
+                      <span>TRIGGER FINAL DECISION</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
                     </button>
                   )
                 )}
@@ -503,9 +509,9 @@ export const ChapterInvestigationModal: React.FC<ChapterInvestigationModalProps>
                   <button
                     type="button"
                     onClick={onClose}
-                    className="px-4 py-2.5 rounded-xl bg-[#0F1F44] hover:bg-[#162B5B] border border-sky-400/30 text-white font-mono text-xs cursor-pointer whitespace-nowrap shrink-0"
+                    className="pixel-btn px-4 py-2 font-pixel text-[10px] text-slate-300 hover:text-white cursor-pointer whitespace-nowrap shrink-0 rounded-none uppercase"
                   >
-                    Back to 3D Scene
+                    RETURN TO SCENE [ESC]
                   </button>
                 )}
               </div>

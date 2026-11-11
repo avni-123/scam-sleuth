@@ -27,6 +27,16 @@ import { CompleteCampaignScriptView } from './CompleteCampaignScriptView';
 import { ScamSleuthLogo } from './ScamSleuthLogo';
 import rainyDeskBgImg from '../../assets/images/scam_sleuth_blue_pink_desk_1794314110762.jpg';
 import detectivePortraitImg from '../../assets/images/detective_character_portrait_1794034150867.jpg';
+import {
+  PixelCaseFolderIcon,
+  PixelNewCaseIcon,
+  PixelArchiveGridIcon,
+  PixelBadgeIcon,
+  PixelCharacterDossierIcon,
+  PixelSettingsGearIcon,
+  PixelQuitIcon,
+  PixelMagnifierIcon,
+} from './PixelIcons';
 
 interface TitleScreenProps {
   onStartInvestigation: () => void;
@@ -187,15 +197,99 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
     };
   })();
 
+  const menuOptions = [
+    {
+      id: 'continue',
+      hotkey: '1',
+      slotTag: `CASE 0${currentActiveIndex + 1} · CH ${resolvedChapterNum}/3`,
+      label: hasSavedProgress ? 'Continue Investigation' : 'Start Investigation',
+      shortLabel: 'Active Case',
+      icon: PixelCaseFolderIcon,
+      itemType: 'PRIMARY INCIDENT DOSSIER',
+      title: `Case 0${currentActiveIndex + 1}: ${getCleanLevelTitle(currentLevel.title)}`,
+      desc: currentLevel.objective || currentLevel.subtitle,
+      meta: `Chapter ${resolvedChapterNum} of 3 · ${foundCluesCount}/${totalCluesInCurrent} Clues Found`,
+      actionLabel: hasSavedProgress ? 'CONTINUE INVESTIGATION' : 'START INVESTIGATION',
+    },
+    {
+      id: 'new',
+      hotkey: '2',
+      slotTag: 'START CH 1',
+      label: 'New Investigation',
+      shortLabel: 'New Case',
+      icon: PixelNewCaseIcon,
+      itemType: 'FRESH CAMPAIGN START',
+      title: 'Case 01: The Parcel That Never Came',
+      desc: 'Reset active campaign journal and begin fresh investigation in Sunset Heights Apt 4B.',
+      meta: hasSavedProgress ? `${completedCount}/${totalLevels} Cases Solved in Current Journal` : 'No Prior Journal History',
+      actionLabel: 'COMMENCE FRESH CASE',
+    },
+    {
+      id: 'case-files',
+      hotkey: '3',
+      slotTag: `${completedCount}/${totalLevels} SOLVED`,
+      label: 'Case Files Archive',
+      shortLabel: 'Case Board',
+      icon: PixelArchiveGridIcon,
+      itemType: 'CRIME BOARD & SCRIPT ARCHIVE',
+      title: 'The Glasshouse Files (10 Cases)',
+      desc: 'Browse all 10 connected cyber incidents, 30 investigation chapters, dialogue logs, and real-world habits.',
+      meta: `${completedCount} Solved · ${totalLevels - completedCount} Unsolved`,
+      actionLabel: 'OPEN CASE BOARD',
+    },
+    {
+      id: 'achievements',
+      hotkey: '4',
+      slotTag: `${earnedBadges.length}/${totalLevels} EARNED`,
+      label: 'Investigator Badges',
+      shortLabel: 'Badges',
+      icon: PixelBadgeIcon,
+      itemType: 'CYBER SAFETY MEDAL RACK',
+      title: '10 Field Investigator Safety Badges',
+      desc: 'Collect commemorative safety badges for mastering phishing verification, QR safety, 2FA hygiene, and scam defense.',
+      meta: `${earnedBadges.length} of ${totalLevels} Badges Earned`,
+      actionLabel: 'VIEW BADGE RACK',
+    },
+    {
+      id: 'settings',
+      hotkey: '5',
+      slotTag: 'CONFIG',
+      label: 'Terminal Settings',
+      shortLabel: 'Settings',
+      icon: PixelSettingsGearIcon,
+      itemType: 'SYSTEM CONFIGURATION',
+      title: 'Investigation Preferences & Controls',
+      desc: 'Configure procedural audio volume, camera sensitivity, subtitles, contrast, and reduced motion.',
+      meta: `Motion: ${reducedMotion ? 'Reduced' : 'Subtle'} · Audio: Active`,
+      actionLabel: 'OPEN SETTINGS',
+    },
+    {
+      id: 'quit',
+      hotkey: '6',
+      slotTag: 'SAVE & EXIT',
+      label: 'Stand Down & Save',
+      shortLabel: 'Stand Down',
+      icon: PixelQuitIcon,
+      itemType: 'TERMINAL SESSION STAND DOWN',
+      title: 'Save Campaign Progress to Browser',
+      desc: 'Securely verify that all clues and solved cases are committed to local persistent storage before stepping away.',
+      meta: `${totalCluesLoggedAcrossCampaign} Total Clues Logged`,
+      actionLabel: 'VERIFY PROGRESS & QUIT',
+    },
+  ];
+
   const handleActivateMenuOption = useCallback(
     (index: number) => {
       soundEngine.playGtaMenuSelect();
-      switch (index) {
-        case 0: // Continue Investigation
+      const item = menuOptions[index];
+      if (!item) return;
+
+      switch (item.id) {
+        case 'continue':
           soundEngine.playGtaMissionStart();
           onSelectLevel(currentLevel.id, resolvedChapterNum);
           break;
-        case 1: // New Investigation
+        case 'new':
           if (hasSavedProgress) {
             setActiveSubModal('new-confirm');
           } else if (onNewInvestigation) {
@@ -204,17 +298,20 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
             onSelectLevel('tutorial-delivery', 1);
           }
           break;
-        case 2: // Case Files
+        case 'case-files':
           setCaseFilesTab('board');
           setActiveSubModal('case-files');
           break;
-        case 3: // Achievements
+        case 'achievements':
           setActiveSubModal('achievements');
           break;
-        case 4: // Settings
+        case 'dossier':
+          onOpenArtDossier?.();
+          break;
+        case 'settings':
           onOpenSettings();
           break;
-        case 5: // Quit
+        case 'quit':
           setActiveSubModal('quit');
           break;
         default:
@@ -222,39 +319,50 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
       }
     },
     [
+      menuOptions,
       currentLevel.id,
       resolvedChapterNum,
       hasSavedProgress,
       onNewInvestigation,
       onSelectLevel,
+      onOpenArtDossier,
       onOpenSettings,
     ]
   );
 
-  // Keyboard / Controller navigation for the vertical menu
+  // Keyboard navigation for the inventory hotbar (WASD, Arrows, 1-7 numbers, Enter/Space)
   useEffect(() => {
     if (activeSubModal !== 'none' || previewLevel) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.target as HTMLElement)?.tagName === 'INPUT') return;
 
-      if (e.code === 'ArrowDown' || e.code === 'KeyS') {
+      const totalOptions = menuOptions.length;
+
+      if (e.code === 'ArrowRight' || e.code === 'KeyD' || e.code === 'ArrowDown' || e.code === 'KeyS') {
         e.preventDefault();
         soundEngine.playGtaMenuHover();
-        setSelectedIndex((prev) => (prev + 1) % 6);
-      } else if (e.code === 'ArrowUp' || e.code === 'KeyW') {
+        setSelectedIndex((prev) => (prev + 1) % totalOptions);
+      } else if (e.code === 'ArrowLeft' || e.code === 'KeyA' || e.code === 'ArrowUp' || e.code === 'KeyW') {
         e.preventDefault();
         soundEngine.playGtaMenuHover();
-        setSelectedIndex((prev) => (prev - 1 + 6) % 6);
+        setSelectedIndex((prev) => (prev - 1 + totalOptions) % totalOptions);
       } else if (e.code === 'Enter' || e.code === 'Space') {
         e.preventDefault();
         handleActivateMenuOption(selectedIndex);
+      } else if (e.key >= '1' && e.key <= String(totalOptions)) {
+        const targetIdx = parseInt(e.key, 10) - 1;
+        if (targetIdx >= 0 && targetIdx < totalOptions) {
+          e.preventDefault();
+          soundEngine.playGtaMenuHover();
+          setSelectedIndex(targetIdx);
+        }
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [activeSubModal, previewLevel, selectedIndex, handleActivateMenuOption]);
+  }, [activeSubModal, previewLevel, selectedIndex, handleActivateMenuOption, menuOptions.length]);
 
   // Close sub-modals on Escape
   useEffect(() => {
@@ -281,55 +389,12 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
     }
   );
 
-  const menuOptions = [
-    {
-      id: 'continue',
-      label: 'Start Investigation',
-      meta: `Case 0${currentActiveIndex + 1}: ${getCleanLevelTitle(
-        currentLevel.title
-      )} · Ch. ${resolvedChapterNum}/3 · ${completedCount}/${totalLevels} Solved`,
-      disabled: false,
-    },
-    {
-      id: 'new',
-      label: 'New Investigation',
-      meta: hasSavedProgress
-        ? 'Start fresh from Case 01: The Parcel That Never Came'
-        : 'Begin Case 01 in Sunset Heights Apt 4B',
-      disabled: false,
-    },
-    {
-      id: 'case-files',
-      label: 'Case Files',
-      meta: `${completedCount} of ${totalLevels} Cases Solved · 30 Investigation Chapters`,
-      disabled: false,
-    },
-    {
-      id: 'achievements',
-      label: 'Achievements',
-      meta: `${earnedBadges.length} of ${totalLevels} Investigator Safety Badges Earned`,
-      disabled: false,
-    },
-    {
-      id: 'settings',
-      label: 'Settings',
-      meta: 'Audio, Subtitles, Camera Sensitivity & Accessibility',
-      disabled: false,
-    },
-    {
-      id: 'quit',
-      label: 'Quit',
-      meta: 'Stand down from the investigation desk',
-      disabled: false,
-    },
-  ];
-
   return (
-    <div className="relative w-screen h-screen overflow-hidden bg-[#081426] text-[#F2F5FA] select-none font-sans flex flex-col justify-between">
+    <div className="relative w-full min-h-[100dvh] h-[100dvh] overflow-y-auto overflow-x-hidden bg-[#081426] text-[#F2F5FA] select-none font-sans flex flex-col justify-between">
       {/* =====================================================================
           1. FULL-SCREEN CINEMATIC RAINY APARTMENT & DETECTIVE DESK ARTWORK
       ===================================================================== */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
         {bgLoaded ? (
           <img
             src={rainyDeskBgImg}
@@ -346,13 +411,23 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
           <div className="w-full h-full bg-gradient-to-br from-[#081426] via-[#0E2445] to-[#1F102B]" />
         )}
 
-        {/* Measured Contrast Scrim: deep navy (#081426) atmosphere with subtle electric blue (#39BDF7) & vivid pink (#F05A9D) reflections */}
+        {/* Deepened Navy Shadows & Atmospheric Suspense Vignette */}
         <div
-          className="absolute inset-0 bg-gradient-to-b from-[#081426]/75 via-[#081426]/50 to-[#081426]/92"
+          className="absolute inset-0 bg-gradient-to-b from-[#020612]/92 via-[#081426]/65 to-[#01040A]/96"
           aria-hidden="true"
         />
+
+        {/* Restrained Magenta Warning Glow & Electric Blue Reflections (Occasional subtle flicker) */}
         <div
-          className="absolute inset-0 bg-[radial-gradient(circle_at_20%_40%,rgba(57,189,247,0.2)_0%,transparent_50%),radial-gradient(circle_at_80%_35%,rgba(240,90,157,0.2)_0%,transparent_50%)]"
+          className={`absolute inset-0 bg-[radial-gradient(ellipse_at_50%_100%,rgba(240,90,157,0.18)_0%,transparent_60%),radial-gradient(circle_at_18%_35%,rgba(57,189,247,0.18)_0%,transparent_50%),radial-gradient(circle_at_82%_30%,rgba(240,90,157,0.14)_0%,transparent_50%)] pointer-events-none ${
+            reducedMotion ? '' : 'animate-sleuth-flicker'
+          }`}
+          aria-hidden="true"
+        />
+
+        {/* Cyber Detective Scanlines Overlay */}
+        <div
+          className="absolute inset-0 sleuth-scanlines opacity-40 pointer-events-none z-[1]"
           aria-hidden="true"
         />
 
@@ -380,20 +455,79 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
             ))}
           </div>
         )}
+
+        {/* =================================================================
+            SUBTLE PIXEL-ART CLUES & DECORATIVE ACCENTS NEAR SCREEN EDGES
+        ================================================================= */}
+        {/* Safe-Margin Corner Pixel Reticles */}
+        <div
+          aria-hidden="true"
+          className="hidden sm:block absolute top-3 left-3 lg:top-5 lg:left-5 w-4 h-4 border-t-2 border-l-2 border-[#39BDF7]/35"
+        />
+        <div
+          aria-hidden="true"
+          className="hidden sm:block absolute top-3 right-3 lg:top-5 lg:right-5 w-4 h-4 border-t-2 border-r-2 border-[#F05A9D]/35"
+        />
+        <div
+          aria-hidden="true"
+          className="hidden sm:block absolute bottom-3 left-3 lg:bottom-5 lg:left-5 w-4 h-4 border-b-2 border-l-2 border-[#F05A9D]/35"
+        />
+        <div
+          aria-hidden="true"
+          className="hidden sm:block absolute bottom-3 right-3 lg:bottom-5 lg:right-5 w-4 h-4 border-b-2 border-r-2 border-[#39BDF7]/35"
+        />
+
+        {/* Left Edge Pixel-Art Clue Trace Accent (Visible on Laptop/Desktop) */}
+        <div
+          aria-hidden="true"
+          className="hidden lg:flex flex-col items-center gap-3 absolute left-6 xl:left-10 top-1/2 -translate-y-1/2 opacity-55"
+        >
+          <span className="w-1.5 h-1.5 bg-[#39BDF7] shadow-[0_0_6px_#39BDF7]" />
+          <div className="w-[2px] h-16 bg-gradient-to-b from-[#39BDF7]/70 via-[#F05A9D]/40 to-transparent" />
+          <div className="p-1.5 text-[#39BDF7] drop-shadow-[0_0_8px_rgba(57,189,247,0.7)]">
+            <PixelMagnifierIcon className="w-5 h-5" />
+          </div>
+          <span className="font-pixel text-[8px] tracking-[0.2em] text-[#39BDF7]/80 uppercase [writing-mode:vertical-rl] rotate-180">
+            CLUE TRACE // {foundCluesCount}/{totalCluesInCurrent} LOGGED
+          </span>
+          <div className="w-[2px] h-16 bg-gradient-to-t from-[#F05A9D]/70 via-[#39BDF7]/40 to-transparent" />
+          <span className="w-1.5 h-1.5 bg-[#F05A9D] shadow-[0_0_6px_#F05A9D]" />
+        </div>
+
+        {/* Right Edge Pixel-Art Case Signal Accent (Visible on Laptop/Desktop) */}
+        <div
+          aria-hidden="true"
+          className="hidden lg:flex flex-col items-center gap-3 absolute right-6 xl:right-10 top-1/2 -translate-y-1/2 opacity-55"
+        >
+          <span className="w-1.5 h-1.5 bg-[#F05A9D] shadow-[0_0_6px_#F05A9D]" />
+          <div className="w-[2px] h-16 bg-gradient-to-b from-[#F05A9D]/70 via-[#39BDF7]/40 to-transparent" />
+          <div className="p-1.5 text-[#F05A9D] drop-shadow-[0_0_8px_rgba(240,90,157,0.7)]">
+            <PixelCaseFolderIcon className="w-5 h-5" />
+          </div>
+          <span className="font-pixel text-[8px] tracking-[0.2em] text-[#F05A9D]/80 uppercase [writing-mode:vertical-rl]">
+            CASE 0{currentActiveIndex + 1} // CH.{resolvedChapterNum} ACTIVE
+          </span>
+          <div className="w-[2px] h-16 bg-gradient-to-t from-[#39BDF7]/70 via-[#F05A9D]/40 to-transparent" />
+          <span className="w-1.5 h-1.5 bg-[#39BDF7] shadow-[0_0_6px_#39BDF7]" />
+        </div>
       </div>
 
       {/* =====================================================================
-          2. TOP SUBTLE AMBIENT HEADER (Quiet Case File Kicker & Reduced Motion Toggle)
+          2. TOP AMBIENT TERMINAL HEADER (Safe Margins & Compact on Phones)
       ===================================================================== */}
-      <header className="relative z-10 w-full max-w-6xl mx-auto px-6 sm:px-10 pt-6 flex items-center justify-between text-xs font-mono text-[#F2F5FA]/90">
-        <div className="flex items-center gap-2">
-          <span className="h-2 w-2 rounded-full bg-[#F05A9D] shadow-[0_0_10px_#F05A9D]" />
-          <span className="text-[#F05A9D] font-semibold tracking-wider">THE GLASSHOUSE FILES</span>
-          <span aria-hidden="true" className="text-slate-500">·</span>
-          <span className="text-[#F2F5FA]/80">10 CASES · 30 CHAPTERS</span>
+      <header className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-8 lg:px-12 pt-3 sm:pt-5 lg:pt-6 shrink-0 flex items-center justify-between gap-2 text-xs font-mono text-[#F2F5FA]">
+        <div className="px-2.5 py-1 sm:px-3.5 sm:py-1.5 bg-[#060D1A]/90 border-2 border-[#0E2445] shadow-[2px_2px_0_0_#02050A] flex items-center gap-2 min-w-0">
+          <span className="w-2 h-2 bg-[#F05A9D] shadow-[0_0_6px_#F05A9D] shrink-0" />
+          <span className="font-pixel text-[9px] sm:text-[10px] lg:text-[11px] text-[#F05A9D] tracking-wider uppercase truncate">
+            GLASSHOUSE ARCHIVE
+          </span>
+          <span aria-hidden="true" className="hidden sm:inline text-slate-600">·</span>
+          <span className="hidden sm:inline font-mono text-[10px] lg:text-xs text-[#39BDF7] shrink-0">
+            10 CASES // 30 CHAPTERS
+          </span>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 shrink-0">
           {onUpdateSettings && (
             <button
               type="button"
@@ -401,125 +535,119 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
                 soundEngine.playGtaMenuHover();
                 onUpdateSettings({ reducedMotion: !reducedMotion });
               }}
-              className="text-[#F2F5FA]/85 hover:text-[#39BDF7] transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39BDF7] rounded px-1.5 py-0.5"
-              title="Toggle Reduced Background Motion"
+              className="pixel-btn px-2.5 py-1 sm:px-3 sm:py-1.5 text-[9px] sm:text-[10px] lg:text-[11px] font-pixel text-[#F2F5FA] hover:text-[#39BDF7] cursor-pointer"
+              title="Toggle Reduced Motion / Pixel FX"
             >
-              Motion: {reducedMotion ? 'Reduced' : 'Subtle'}
-            </button>
-          )}
-          {onOpenArtDossier && (
-            <button
-              type="button"
-              onClick={() => {
-                soundEngine.playGtaMenuSelect();
-                onOpenArtDossier();
-              }}
-              className="text-[#F2F5FA]/85 hover:text-[#39BDF7] transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39BDF7] rounded px-1.5 py-0.5"
-            >
-              Character Dossier
+              FX: {reducedMotion ? 'MINIMAL' : 'ACTIVE'}
             </button>
           )}
         </div>
       </header>
 
       {/* =====================================================================
-          3. CENTER / UPPER-CENTER TITLE & SIMPLE VERTICAL MENU OVER THE SCENE
+          3. CENTER FOCAL GROUP: SCALED NEON TITLE & TEXT-ONLY VERTICAL MENU
       ===================================================================== */}
       <main
-        className={`relative z-10 flex-1 flex flex-col items-center justify-center px-6 sm:px-10 transition-opacity duration-700 ${
+        className={`relative z-10 flex-1 flex flex-col items-center justify-center px-4 sm:px-8 py-2 sm:py-4 my-auto transition-opacity duration-500 ${
           entered ? 'opacity-100' : 'opacity-0'
         }`}
       >
-        {/* Clean, Confident SCAM SLEUTH Title & Subtitle */}
-        <div className="mb-8 sm:mb-12">
+        {/* Scam Sleuth Floating Neon Title Lockup */}
+        <div className="mb-3 sm:mb-5 lg:mb-7">
           <ScamSleuthLogo reducedMotion={reducedMotion} />
         </div>
 
-        {/* Simple Vertical Menu Over the Scene */}
+        {/* Centered Vertical List of Text-Only Menu Options (Generous Invisible Touch Targets, No Boxes) */}
         <nav
           aria-label="Main Menu"
-          className="w-full max-w-md flex flex-col items-center space-y-1.5 sm:space-y-2"
+          className="w-full max-w-lg mx-auto flex flex-col items-center gap-0.5 sm:gap-1.5 lg:gap-2.5"
         >
           {menuOptions.map((item, idx) => {
             const isSelected = selectedIndex === idx;
-            const isContinue = item.id === 'continue';
+            const IconComp = item.icon;
 
             return (
-              <div key={item.id} className="w-full flex flex-col items-center">
-                <button
-                  type="button"
-                  disabled={item.disabled}
-                  onMouseEnter={() => {
-                    if (selectedIndex !== idx) {
-                      soundEngine.playGtaMenuHover();
-                      setSelectedIndex(idx);
-                    }
-                  }}
-                  onFocus={() => setSelectedIndex(idx)}
-                  onClick={() => handleActivateMenuOption(idx)}
-                  className={`group relative w-full py-2 sm:py-2.5 px-6 flex flex-col items-center justify-center transition-all duration-150 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39BDF7] rounded-xl ${
-                    isSelected
-                      ? 'bg-[#081426]/20 backdrop-blur-sm border border-[#F05A9D]/60 shadow-[0_4px_24px_rgba(8,20,38,0.45),0_0_12px_rgba(240,90,157,0.18)]'
-                      : 'border border-transparent hover:bg-[#081426]/20 hover:backdrop-blur-sm hover:border-[#F05A9D]/30'
-                  } ${item.disabled ? 'opacity-40 cursor-not-allowed' : ''}`}
-                >
-                  <div className="flex items-center justify-center gap-3">
-                    {/* Left Selection Marker (Vivid Pink for selected item) */}
-                    <span
-                      aria-hidden="true"
-                      className={`h-1.5 w-1.5 rounded-full transition-all duration-150 ${
-                        isSelected
-                          ? 'bg-[#F05A9D] shadow-[0_0_12px_#F05A9D] scale-125'
-                          : 'bg-transparent'
-                      }`}
-                    />
-
-                    <span
-                      className={`font-heading tracking-wider transition-all duration-150 [text-shadow:0_2px_12px_rgba(8,20,38,0.98),0_1px_3px_rgba(8,20,38,0.95)] ${
-                        isSelected
-                          ? isContinue
-                            ? 'text-xl sm:text-2xl font-bold text-[#39BDF7]'
-                            : 'text-xl sm:text-2xl font-bold text-[#F2F5FA]'
-                          : 'text-lg sm:text-xl font-medium text-[#F2F5FA]/80 hover:text-white'
-                      }`}
-                    >
-                      {item.label}
-                    </span>
-
-                    <span
-                      aria-hidden="true"
-                      className={`h-1.5 w-1.5 rounded-full transition-all duration-150 ${
-                        isSelected
-                          ? 'bg-[#F05A9D] shadow-[0_0_12px_#F05A9D] scale-125'
-                          : 'bg-transparent'
-                      }`}
-                    />
-                  </div>
-
-                  {/* Subtle Underline / Soft Glow on Active Selection (Pink to Blue gradient) */}
-                  <div
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => {
+                  setSelectedIndex(idx);
+                  handleActivateMenuOption(idx);
+                }}
+                onMouseEnter={() => {
+                  if (selectedIndex !== idx) {
+                    soundEngine.playGtaMenuHover();
+                    setSelectedIndex(idx);
+                  }
+                }}
+                onFocus={() => {
+                  if (selectedIndex !== idx) {
+                    soundEngine.playGtaMenuHover();
+                    setSelectedIndex(idx);
+                  }
+                }}
+                onTouchStart={() => {
+                  if (selectedIndex !== idx) {
+                    setSelectedIndex(idx);
+                  }
+                }}
+                className="group relative min-h-[40px] sm:min-h-[46px] lg:min-h-[52px] px-6 py-1 sm:py-1.5 inline-flex flex-col items-center justify-center bg-transparent border-0 outline-none cursor-pointer select-none transition-all duration-150"
+              >
+                <div className="inline-flex items-center justify-center gap-2.5 sm:gap-3.5">
+                  {/* Small Pixel Cursor (Preserves Center Alignment) */}
+                  <span
                     aria-hidden="true"
-                    className={`mt-1 h-[2px] rounded-full transition-all duration-200 ${
+                    className={`font-pixel text-xs sm:text-sm lg:text-base leading-none transition-opacity duration-150 ${
                       isSelected
-                        ? 'w-48 bg-gradient-to-r from-transparent via-[#F05A9D] to-[#39BDF7] shadow-[0_0_16px_rgba(240,90,157,0.85)]'
-                        : 'w-0 bg-transparent'
+                        ? 'opacity-100 text-[#F05A9D] drop-shadow-[0_0_8px_rgba(240,90,157,0.9)]'
+                        : 'opacity-0'
+                    }`}
+                  >
+                    ►
+                  </span>
+
+                  {/* Pixel Icon */}
+                  <IconComp
+                    className={`w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 shrink-0 transition-all duration-150 ${
+                      isSelected
+                        ? 'text-[#F05A9D] drop-shadow-[0_0_10px_rgba(240,90,157,0.9)] scale-110'
+                        : 'text-[#39BDF7]/90 group-hover:text-[#39BDF7] drop-shadow-[0_2px_4px_rgba(2,6,18,0.95)]'
                     }`}
                   />
 
-                  {/* Campaign Progress & Current Level beneath Continue Investigation */}
-                  {(isContinue || isSelected) && (
-                    <span
-                      className={`mt-1 font-mono text-[11px] sm:text-xs tracking-wide [text-shadow:0_1px_4px_rgba(8,20,38,0.98)] transition-opacity duration-200 ${
-                        isContinue
-                          ? 'text-[#F05A9D] font-medium'
-                          : 'text-[#F2F5FA]/85'
-                      }`}
-                    >
-                      {item.meta}
-                    </span>
-                  )}
-                </button>
-              </div>
+                  {/* Option Label */}
+                  <span
+                    className={`font-pixel text-sm sm:text-base md:text-lg lg:text-xl xl:text-2xl uppercase tracking-[0.14em] transition-all duration-150 ${
+                      isSelected
+                        ? 'text-[#39BDF7] font-bold drop-shadow-[0_0_12px_rgba(57,189,247,0.95)]'
+                        : 'text-[#F2F5FA] group-hover:text-[#39BDF7] drop-shadow-[0_2px_4px_rgba(2,6,18,0.95)]'
+                    }`}
+                  >
+                    {item.shortLabel}
+                  </span>
+
+                  {/* Keyboard Shortcut */}
+                  <span
+                    className={`font-pixel text-[10px] sm:text-xs lg:text-sm tracking-wider transition-all duration-150 ${
+                      isSelected
+                        ? 'text-[#F05A9D] drop-shadow-[0_0_8px_rgba(240,90,157,0.9)]'
+                        : 'text-[#39BDF7]/75 group-hover:text-[#F05A9D] drop-shadow-[0_2px_4px_rgba(2,6,18,0.95)]'
+                    }`}
+                  >
+                    [{item.hotkey}]
+                  </span>
+                </div>
+
+                {/* Thin Neon Underline for Selected Option Only */}
+                <span
+                  aria-hidden="true"
+                  className={`mt-1 sm:mt-1.5 h-[2px] transition-all duration-150 ${
+                    isSelected
+                      ? 'w-full bg-gradient-to-r from-[#39BDF7] via-[#F05A9D] to-[#39BDF7] shadow-[0_0_10px_#39BDF7]'
+                      : 'w-0 bg-transparent'
+                  }`}
+                />
+              </button>
             );
           })}
         </nav>
@@ -528,10 +656,10 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
       {/* =====================================================================
           4. BOTTOM BAR: COMPACT PLAYER PORTRAIT & LATEST ACHIEVEMENT
       ===================================================================== */}
-      <footer className="relative z-10 w-full max-w-6xl mx-auto px-6 sm:px-10 pb-6 pt-2 flex flex-col sm:flex-row items-center justify-between gap-4">
-        {/* Left: Compact Player-Character Portrait & Investigator Status */}
-        <div className="flex items-center gap-3.5">
-          <div className="w-11 h-11 rounded-full overflow-hidden border border-[#39BDF7]/70 bg-[#081426] shrink-0 shadow-[0_0_16px_rgba(57,189,247,0.3)]">
+      <footer className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-8 lg:px-12 pb-3 sm:pb-5 lg:pb-6 pt-1 shrink-0 flex flex-row items-center justify-between gap-2 sm:gap-4 text-xs">
+        {/* Left: Detective Avatar & Status in Pixel Frame */}
+        <div className="flex items-center gap-2.5 sm:gap-3 px-2.5 py-1 sm:px-3.5 sm:py-1.5 bg-[#060D1A]/90 border-2 border-[#0E2445] shadow-[2px_2px_0_0_#02050A] min-w-0">
+          <div className="w-7 h-7 sm:w-9 sm:h-9 border-2 border-[#39BDF7] bg-[#081426] shrink-0 overflow-hidden">
             {portraitLoaded ? (
               <img
                 src={detectivePortraitImg}
@@ -541,50 +669,52 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
                 className="w-full h-full object-cover object-top"
               />
             ) : (
-              <div className="w-full h-full flex items-center justify-center font-heading font-bold text-xs text-[#39BDF7]">
+              <div className="w-full h-full flex items-center justify-center font-pixel text-[9px] sm:text-[10px] text-[#39BDF7]">
                 RV
               </div>
             )}
           </div>
-          <div className="[text-shadow:0_1px_4px_rgba(8,20,38,0.95)]">
-            <div className="flex items-center gap-2 text-xs sm:text-sm font-heading font-semibold text-[#F2F5FA]">
-              <span>Detective Rowan Vance</span>
-              <span className="text-slate-400 font-normal">·</span>
-              <span className="text-[#39BDF7] text-xs font-mono font-normal">
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <span className="font-pixel text-[9px] sm:text-[10px] lg:text-[11px] text-[#F2F5FA] truncate">
+                ROWAN VANCE
+              </span>
+              <span className="hidden md:inline text-slate-600">·</span>
+              <span className="hidden md:inline font-mono text-[10px] lg:text-xs text-[#39BDF7] truncate">
                 {investigatorRank}
               </span>
             </div>
-            <div className="font-mono text-[11px] text-[#F2F5FA]/80 tabular-nums">
-              {completedCount}/{totalLevels} Cases Solved · {totalCluesLoggedAcrossCampaign} Clues Logged
+            <div className="font-mono text-[9px] sm:text-[10px] lg:text-[11px] text-[#94A3B8] truncate">
+              {completedCount}/{totalLevels} CASES<span className="hidden sm:inline"> SOLVED</span> · {totalCluesLoggedAcrossCampaign} CLUES
             </div>
           </div>
         </div>
 
-        {/* Right: Latest Achievement / Next Badge Preview */}
+        {/* Right: Latest Collectible Badge Preview */}
         <button
           type="button"
           onClick={() => {
             soundEngine.playGtaMenuSelect();
             setActiveSubModal('achievements');
           }}
-          className="flex items-center gap-3 text-left group cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39BDF7] rounded-lg px-2 py-1 [text-shadow:0_1px_4px_rgba(8,20,38,0.95)]"
-          title="View All Investigator Achievements"
+          className="pixel-btn px-2.5 py-1 sm:px-3.5 sm:py-1.5 flex items-center gap-2 sm:gap-2.5 text-left cursor-pointer shrink-0"
+          title="Inspect All 10 Investigator Badges"
         >
           <div
-            className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border ${
+            className={`w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center shrink-0 border-2 ${
               latestAchievement.earned
-                ? 'bg-emerald-500/20 border-emerald-400/50 text-emerald-300'
-                : 'bg-[#F05A9D]/20 border-[#F05A9D]/50 text-[#F05A9D]'
+                ? 'bg-emerald-500/20 border-emerald-400 text-emerald-300'
+                : 'bg-[#F05A9D]/20 border-[#F05A9D] text-[#F05A9D]'
             }`}
           >
-            <Award className="w-4 h-4" />
+            <PixelBadgeIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
           </div>
-          <div>
-            <div className="font-mono text-[10px] uppercase tracking-wider text-[#F2F5FA]/80">
-              {latestAchievement.earned ? 'Latest Achievement' : 'Next Achievement Target'} ·{' '}
-              <span className="text-[#F05A9D]">{latestAchievement.caseLabel}</span>
+          <div className="min-w-0">
+            <div className="font-pixel text-[8px] sm:text-[8.5px] lg:text-[9.5px] text-[#F05A9D] uppercase truncate">
+              {latestAchievement.earned ? 'LATEST BADGE' : 'NEXT TARGET'}
+              <span className="hidden sm:inline"> · {latestAchievement.caseLabel}</span>
             </div>
-            <div className="font-heading font-semibold text-xs sm:text-sm text-[#F2F5FA] group-hover:text-[#39BDF7] transition-colors">
+            <div className="font-pixel text-[9px] sm:text-[10px] lg:text-[11px] text-[#F2F5FA] truncate max-w-[120px] sm:max-w-none">
               {latestAchievement.badgeName}
             </div>
           </div>
@@ -596,31 +726,37 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
       ===================================================================== */}
       {activeSubModal === 'case-files' && (
         <div
-          className="fixed inset-0 z-40 bg-[#081426]/94 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 overflow-y-auto"
+          className="fixed inset-0 z-40 bg-[#081426]/95 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 overflow-y-auto"
           role="dialog"
           aria-modal="true"
           aria-label="Case Files"
         >
-          <div className="w-full max-w-5xl max-h-[90vh] bg-[#081426] border border-[#39BDF7]/30 rounded-2xl shadow-[0_24px_64px_rgba(8,20,38,0.95)] flex flex-col overflow-hidden text-[#F2F5FA]">
+          <div className="w-full max-w-5xl max-h-[92vh] pixel-panel border-4 border-[#0D1C34] flex flex-col overflow-hidden text-[#F2F5FA] animate-block-reveal relative">
+            {/* Pixel Corner Pins */}
+            <span className="absolute -top-1 -left-1 w-2.5 h-2.5 bg-[#39BDF7]" />
+            <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[#F05A9D]" />
+            <span className="absolute -bottom-1 -left-1 w-2.5 h-2.5 bg-[#F05A9D]" />
+            <span className="absolute -bottom-1 -right-1 w-2.5 h-2.5 bg-[#39BDF7]" />
+
             {/* Modal Header */}
-            <div className="px-6 py-4 border-b border-[#39BDF7]/20 bg-[#060D1A] flex flex-wrap items-center justify-between gap-4">
+            <div className="px-5 py-3.5 border-b-2 border-[#0D1C34] bg-[#060D1A] flex flex-wrap items-center justify-between gap-3">
               <div>
-                <span className="font-mono text-xs text-[#F05A9D] font-semibold tracking-wider block">
-                  THE GLASSHOUSE FILES · 10 CONNECTED CASES
+                <span className="font-pixel text-[9px] text-[#F05A9D] tracking-wider block">
+                  GLASSHOUSE ARCHIVE // 10 CONNECTED CYBER INCIDENTS
                 </span>
-                <h2 className="font-heading font-bold text-xl sm:text-2xl text-[#F2F5FA]">
-                  Investigation Case Files
+                <h2 className="font-pixel text-base sm:text-xl text-[#F2F5FA] mt-0.5">
+                  INVESTIGATION CASE BOARD
                 </h2>
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
-                <div className="flex items-center gap-1 p-1 bg-[#081426] border border-[#39BDF7]/25 rounded-lg">
+                <div className="flex items-center gap-1.5 p-1 bg-[#040914] border-2 border-[#0D1C34]">
                   <button
                     type="button"
                     onClick={() => setCaseFilesTab('board')}
-                    className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer ${
+                    className={`px-3 py-1 font-pixel text-[10px] tracking-wider uppercase transition-colors cursor-pointer ${
                       caseFilesTab === 'board'
-                        ? 'bg-[#F05A9D] text-white font-semibold shadow-[0_0_12px_rgba(240,90,157,0.45)]'
+                        ? 'bg-[#39BDF7] text-[#081426] font-bold shadow-[inset_1px_1px_0_0_#BAE6FD]'
                         : 'text-[#F2F5FA]/70 hover:text-white'
                     }`}
                   >
@@ -629,9 +765,9 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
                   <button
                     type="button"
                     onClick={() => setCaseFilesTab('script')}
-                    className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer ${
+                    className={`px-3 py-1 font-pixel text-[10px] tracking-wider uppercase transition-colors cursor-pointer ${
                       caseFilesTab === 'script'
-                        ? 'bg-[#F05A9D] text-white font-semibold shadow-[0_0_12px_rgba(240,90,157,0.45)]'
+                        ? 'bg-[#39BDF7] text-[#081426] font-bold shadow-[inset_1px_1px_0_0_#BAE6FD]'
                         : 'text-[#F2F5FA]/70 hover:text-white'
                     }`}
                   >
@@ -646,17 +782,17 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
                       soundEngine.playGtaMenuSelect();
                       onUnlockAllLevels();
                     }}
-                    className="px-3 py-1.5 rounded-lg bg-[#081426] hover:bg-[#0E223D] border border-[#39BDF7]/40 text-[#F2F5FA] text-xs font-medium flex items-center gap-1.5 cursor-pointer"
+                    className="pixel-btn px-2.5 py-1 text-[9.5px] font-pixel text-[#39BDF7] hover:text-white flex items-center gap-1.5 cursor-pointer"
                   >
                     <Unlock className="w-3.5 h-3.5 text-[#39BDF7]" />
-                    <span>Unlock All</span>
+                    <span>UNLOCK ALL</span>
                   </button>
                 )}
 
                 <button
                   type="button"
                   onClick={() => setActiveSubModal('none')}
-                  className="p-2 rounded-lg bg-[#081426] hover:bg-[#0E223D] border border-[#39BDF7]/30 text-[#F2F5FA]/80 hover:text-white cursor-pointer"
+                  className="pixel-btn p-1.5 text-slate-400 hover:text-white cursor-pointer"
                   title="Close Case Files (Esc)"
                 >
                   <X className="w-4 h-4" />
@@ -665,16 +801,16 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
             </div>
 
             {/* Modal Content */}
-            <div className="p-6 overflow-y-auto space-y-5">
+            <div className="p-4 sm:p-6 overflow-y-auto space-y-4">
               {caseFilesTab === 'board' ? (
                 <>
                   {/* Filter Bar */}
                   <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div className="flex items-center gap-1 p-1 bg-[#060D1A] border border-[#39BDF7]/25 rounded-lg">
+                    <div className="flex items-center gap-1.5 p-1 bg-[#040914] border-2 border-[#0D1C34]">
                       {(
                         [
                           { id: 'all', label: 'All Cases (10)' },
-                          { id: 'current', label: 'Current' },
+                          { id: 'current', label: 'Current Focus' },
                           { id: 'completed', label: `Solved (${completedCount})` },
                           { id: 'locked', label: 'Locked' },
                         ] as const
@@ -683,9 +819,9 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
                           key={tab.id}
                           type="button"
                           onClick={() => setBoardFilter(tab.id)}
-                          className={`px-3 py-1 rounded-md text-xs font-medium transition-colors cursor-pointer ${
+                          className={`px-2.5 py-1 font-pixel text-[9px] uppercase tracking-wider transition-colors cursor-pointer ${
                             boardFilter === tab.id
-                              ? 'bg-[#F05A9D]/25 border border-[#F05A9D]/60 text-[#F05A9D] font-semibold'
+                              ? 'bg-[#F05A9D] text-[#081426] font-bold shadow-[inset_1px_1px_0_0_#FBCFE8]'
                               : 'text-[#F2F5FA]/70 hover:text-white'
                           }`}
                         >
@@ -695,8 +831,8 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
                     </div>
                   </div>
 
-                  {/* Case Grid */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Case Grid (Collectible Inventory Tiles) */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
                     {filteredLevels.map(({ lvl, idx }) => {
                       const levelNum = idx + 1;
                       const cleanTitle = getCleanLevelTitle(lvl.title);
@@ -709,53 +845,52 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
                       return (
                         <article
                           key={lvl.id}
-                          className={`rounded-xl border p-5 flex flex-col justify-between gap-4 transition-all ${
+                          className={`p-4 flex flex-col justify-between gap-3 transition-all ${
                             isCurrent
-                              ? 'bg-[#0B1A33] border-[#F05A9D]/80 shadow-[0_8px_28px_rgba(240,90,157,0.2)]'
+                              ? 'pixel-slot-active'
                               : isCompleted
-                              ? 'bg-[#081426] border-emerald-500/45'
-                              : 'bg-[#060D1A]/90 border-[#39BDF7]/20 opacity-80 hover:opacity-100'
+                              ? 'pixel-slot border-emerald-500/60 bg-[#061226]'
+                              : 'pixel-slot opacity-85 hover:opacity-100'
                           }`}
                         >
-                          <div className="space-y-2.5">
+                          <div className="space-y-2">
                             <div className="flex items-start justify-between gap-2">
                               <div>
-                                <div className="text-xs font-mono text-[#F2F5FA]/80">
-                                  <span className="text-[#F05A9D] font-semibold">Case 0{levelNum}</span> · {lvl.locationName} · {lvl.npcs[0]?.name}
+                                <div className="text-[10px] font-pixel text-[#94A3B8]">
+                                  <span className="text-[#F05A9D]">CASE 0{levelNum}</span> // {lvl.locationName}
                                 </div>
-                                <h3 className="font-heading font-bold text-base sm:text-lg text-white mt-0.5">
-                                  {levelNum}. {cleanTitle}
+                                <h3 className="font-pixel text-xs sm:text-sm text-white mt-0.5">
+                                  {cleanTitle}
                                 </h3>
                               </div>
 
-                              <span className="font-mono text-xs font-semibold shrink-0">
+                              <span className="font-pixel text-[9px] shrink-0">
                                 {isCompleted ? (
-                                  <span className="text-emerald-400 flex items-center gap-1">
-                                    <CheckCircle2 className="w-3.5 h-3.5" />
-                                    Solved
+                                  <span className="px-1.5 py-0.5 bg-emerald-500/20 border border-emerald-400 text-emerald-300">
+                                    [SOLVED]
                                   </span>
                                 ) : isCurrent ? (
-                                  <span className="text-[#F05A9D] flex items-center gap-1">
-                                    <FolderOpen className="w-3.5 h-3.5" />
-                                    Active Case
+                                  <span className="px-1.5 py-0.5 bg-[#F05A9D] text-[#081426] font-bold animate-pulse">
+                                    [ACTIVE]
                                   </span>
                                 ) : isAvailable ? (
-                                  <span className="text-[#39BDF7]">Available</span>
+                                  <span className="px-1.5 py-0.5 bg-[#39BDF7]/20 border border-[#39BDF7] text-[#39BDF7]">
+                                    [READY]
+                                  </span>
                                 ) : (
-                                  <span className="text-[#F2F5FA]/40 flex items-center gap-1">
-                                    <Lock className="w-3.5 h-3.5" />
-                                    Locked
+                                  <span className="px-1.5 py-0.5 bg-white/5 border border-white/10 text-slate-500">
+                                    [LOCKED]
                                   </span>
                                 )}
                               </span>
                             </div>
 
-                            <p className="text-xs text-[#F2F5FA]/85 leading-relaxed">
+                            <p className="font-sans text-xs text-[#F2F5FA]/85 leading-relaxed">
                               {lvl.objective}
                             </p>
 
                             {/* 3 Chapter Launch Buttons */}
-                            <div className="grid grid-cols-3 gap-1.5 pt-2">
+                            <div className="grid grid-cols-3 gap-1.5 pt-1">
                               {lvl.chapters.map((ch) => (
                                 <button
                                   key={ch.number}
@@ -770,24 +905,24 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
                                       setPreviewLevel(lvl);
                                     }
                                   }}
-                                  className="p-2 rounded-lg bg-[#060D1A] hover:bg-[#0E223D] border border-[#39BDF7]/20 hover:border-[#F05A9D]/60 text-left transition-colors cursor-pointer"
+                                  className="pixel-btn p-1.5 text-left transition-colors cursor-pointer"
                                 >
-                                  <span className="block font-mono text-[10px] text-[#F05A9D] font-semibold">
-                                    Ch {ch.number} · {ch.phase.replace('The ', '')}
+                                  <span className="block font-pixel text-[8px] text-[#F05A9D]">
+                                    CH {ch.number}
                                   </span>
-                                  <span className="block font-heading text-xs text-white truncate">
-                                    {ch.title.replace(/^Chapter\s+\d+\s*:\s*/i, '')}
+                                  <span className="block font-sans text-[11px] text-white truncate font-medium">
+                                    {ch.phase.replace('The ', '')}
                                   </span>
                                 </button>
                               ))}
                             </div>
                           </div>
 
-                          <div className="pt-3 border-t border-[#39BDF7]/20 flex items-center justify-between gap-2">
-                            <span className="font-mono text-[11px] text-[#F2F5FA]/80 tabular-nums">
+                          <div className="pt-2.5 border-t border-[#0D1D38] flex items-center justify-between gap-2 text-[10px] font-mono">
+                            <span className="text-[#94A3B8] tabular-nums">
                               {isCompleted
-                                ? `${lvlCluesTotal}/${lvlCluesTotal} Clues Verified`
-                                : `${lvlCluesFound}/${lvlCluesTotal} Clues Logged`}
+                                ? `${lvlCluesTotal}/${lvlCluesTotal} CLUES FOUND`
+                                : `${lvlCluesFound}/${lvlCluesTotal} CLUES LOGGED`}
                             </span>
 
                             <div className="flex items-center gap-2">
@@ -797,10 +932,10 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
                                   setPreviewChapterNum(1);
                                   setPreviewLevel(lvl);
                                 }}
-                                className="px-3 py-1.5 rounded-lg bg-[#081426] hover:bg-[#0E223D] border border-[#39BDF7]/30 text-xs text-[#F2F5FA] flex items-center gap-1 cursor-pointer"
+                                className="pixel-btn px-2 py-1 text-[9px] font-pixel text-[#F2F5FA] flex items-center gap-1 cursor-pointer"
                               >
-                                <Eye className="w-3.5 h-3.5 text-[#F05A9D]" />
-                                <span>Notes</span>
+                                <Eye className="w-3 h-3 text-[#F05A9D]" />
+                                <span>NOTES</span>
                               </button>
 
                               {isAvailable && (
@@ -811,15 +946,15 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
                                     setActiveSubModal('none');
                                     onSelectLevel(lvl.id, isCurrent ? resolvedChapterNum : 1);
                                   }}
-                                  className="px-3.5 py-1.5 rounded-lg bg-[#39BDF7] hover:bg-[#68CEF9] text-[#081426] font-heading font-bold text-xs flex items-center gap-1 cursor-pointer shadow-[0_0_16px_rgba(57,189,247,0.35)]"
+                                  className="pixel-btn-action px-3 py-1 text-[10px] flex items-center gap-1 cursor-pointer"
                                 >
                                   <Play className="w-3 h-3 fill-current" />
                                   <span>
                                     {isCurrent
-                                      ? 'Continue'
+                                      ? 'RESUME'
                                       : isCompleted
-                                      ? 'Replay'
-                                      : 'Investigate'}
+                                      ? 'REPLAY'
+                                      : 'INVESTIGATE'}
                                   </span>
                                 </button>
                               )}
@@ -850,33 +985,39 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
       ===================================================================== */}
       {activeSubModal === 'achievements' && (
         <div
-          className="fixed inset-0 z-40 bg-[#081426]/95 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 overflow-y-auto"
+          className="fixed inset-0 z-40 bg-[#081426]/95 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 overflow-y-auto"
           role="dialog"
           aria-modal="true"
           aria-label="Investigator Achievements"
         >
-          <div className="w-full max-w-4xl max-h-[88vh] bg-[#081426] border border-[#39BDF7]/30 rounded-2xl shadow-2xl flex flex-col overflow-hidden text-[#F2F5FA]">
-            <div className="px-6 py-4 border-b border-[#39BDF7]/25 bg-[#060D1A] flex items-center justify-between">
+          <div className="w-full max-w-4xl max-h-[90vh] pixel-panel border-4 border-[#0D1C34] flex flex-col overflow-hidden text-[#F2F5FA] animate-block-reveal relative">
+            {/* Pixel Corner Pins */}
+            <span className="absolute -top-1 -left-1 w-2.5 h-2.5 bg-[#39BDF7]" />
+            <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[#F05A9D]" />
+            <span className="absolute -bottom-1 -left-1 w-2.5 h-2.5 bg-[#F05A9D]" />
+            <span className="absolute -bottom-1 -right-1 w-2.5 h-2.5 bg-[#39BDF7]" />
+
+            <div className="px-5 py-3.5 border-b-2 border-[#0D1C34] bg-[#060D1A] flex items-center justify-between">
               <div>
-                <span className="font-mono text-xs text-[#F05A9D] font-semibold tracking-wider block">
-                  INVESTIGATOR RECORD · {earnedBadges.length} OF {totalLevels} EARNED
+                <span className="font-pixel text-[9px] text-[#F05A9D] tracking-wider block">
+                  INVESTIGATOR RECORD // {earnedBadges.length} OF {totalLevels} BADGES EARNED
                 </span>
-                <h2 className="font-heading font-bold text-xl sm:text-2xl text-[#F2F5FA]">
-                  Achievements & Cyber-Safety Badges
+                <h2 className="font-pixel text-base sm:text-xl text-[#F2F5FA] mt-0.5">
+                  CYBER-SAFETY BADGE RACK
                 </h2>
               </div>
 
               <button
                 type="button"
                 onClick={() => setActiveSubModal('none')}
-                className="p-2 rounded-lg bg-[#081426] hover:bg-[#0E223D] border border-[#39BDF7]/30 text-[#F2F5FA]/80 hover:text-white cursor-pointer"
+                className="pixel-btn p-1.5 text-slate-400 hover:text-white cursor-pointer"
                 title="Close Achievements (Esc)"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="p-6 overflow-y-auto grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="p-4 sm:p-6 overflow-y-auto grid grid-cols-1 sm:grid-cols-2 gap-3.5">
               {ADVENTURE_LEVELS.map((lvl, idx) => {
                 const badgeTitle = lvl.debrief.badgeName;
                 const isEarned =
@@ -886,42 +1027,42 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
                 return (
                   <div
                     key={lvl.id}
-                    className={`p-4 rounded-xl border flex items-start gap-3.5 ${
+                    className={`p-3.5 flex items-start gap-3 transition-all ${
                       isEarned
-                        ? 'bg-[#0B1A33] border-emerald-500/50'
+                        ? 'pixel-slot border-emerald-500/60 bg-[#061226]'
                         : isNextTarget
-                        ? 'bg-[#0B1A33] border-[#F05A9D]/70 shadow-[0_0_20px_rgba(240,90,157,0.2)]'
-                        : 'bg-[#060D1A]/85 border-[#39BDF7]/20 opacity-70'
+                        ? 'pixel-slot-active'
+                        : 'pixel-slot opacity-75'
                     }`}
                   >
                     <div
-                      className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                      className={`w-9 h-9 border-2 flex items-center justify-center shrink-0 ${
                         isEarned
-                          ? 'bg-emerald-500/20 text-emerald-300'
+                          ? 'border-emerald-400 bg-emerald-500/20 text-emerald-300'
                           : isNextTarget
-                          ? 'bg-[#F05A9D]/20 text-[#F05A9D] border border-[#F05A9D]/50'
-                          : 'bg-[#081426] text-[#F2F5FA]/40'
+                          ? 'border-[#F05A9D] bg-[#F05A9D]/20 text-[#F05A9D]'
+                          : 'border-[#0D1D38] bg-[#02050A] text-slate-600'
                       }`}
                     >
-                      {isEarned ? <Award className="w-5 h-5" /> : <Lock className="w-4 h-4" />}
+                      <PixelBadgeIcon className="w-5 h-5" />
                     </div>
 
                     <div className="space-y-1 min-w-0">
-                      <div className="flex items-center gap-2 text-[11px] font-mono">
-                        <span className="text-[#F05A9D]">Case 0{idx + 1}</span>
-                        <span className="text-slate-500">·</span>
+                      <div className="flex items-center gap-2 text-[9px] font-pixel">
+                        <span className="text-[#F05A9D]">CASE 0{idx + 1}</span>
+                        <span className="text-slate-600">·</span>
                         {isEarned ? (
-                          <span className="text-emerald-400 font-semibold">Earned</span>
+                          <span className="text-emerald-400 font-bold">[EARNED]</span>
                         ) : isNextTarget ? (
-                          <span className="text-[#F05A9D] font-semibold">Current Target</span>
+                          <span className="text-[#F05A9D] font-bold">[ACTIVE TARGET]</span>
                         ) : (
-                          <span className="text-[#F2F5FA]/50">Locked Preview</span>
+                          <span className="text-slate-500">[LOCKED]</span>
                         )}
                       </div>
-                      <h3 className="font-heading font-bold text-sm sm:text-base text-white">
+                      <h3 className="font-pixel text-xs text-white">
                         {badgeTitle}
                       </h3>
-                      <p className="text-xs text-[#F2F5FA]/80 leading-relaxed">
+                      <p className="font-sans text-xs text-[#F2F5FA]/80 leading-relaxed">
                         {isEarned
                           ? lvl.debrief.realWorldHabit
                           : `Solve Case 0${idx + 1} (${getCleanLevelTitle(
@@ -947,22 +1088,27 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
           aria-modal="true"
           aria-label="Start New Investigation"
         >
-          <div className="w-full max-w-md bg-[#081426] border border-[#39BDF7]/35 rounded-2xl p-6 space-y-4 shadow-2xl text-[#F2F5FA]">
-            <div className="flex items-center gap-2.5 text-[#F05A9D] font-heading font-bold text-lg">
-              <RotateCcw className="w-5 h-5" />
-              <span>Start a New Investigation?</span>
+          <div className="w-full max-w-md pixel-panel border-4 border-[#0D1C34] p-5 sm:p-6 space-y-4 shadow-2xl text-[#F2F5FA] relative">
+            <span className="absolute -top-1 -left-1 w-2 h-2 bg-[#39BDF7]" />
+            <span className="absolute -top-1 -right-1 w-2 h-2 bg-[#F05A9D]" />
+            <span className="absolute -bottom-1 -left-1 w-2 h-2 bg-[#F05A9D]" />
+            <span className="absolute -bottom-1 -right-1 w-2 h-2 bg-[#39BDF7]" />
+
+            <div className="flex items-center gap-2 text-[#F05A9D] font-pixel text-sm">
+              <RotateCcw className="w-4 h-4" />
+              <span>START A NEW INVESTIGATION?</span>
             </div>
-            <p className="text-xs sm:text-sm text-[#F2F5FA]/90 leading-relaxed">
-              This will reset your current campaign journal ({completedCount}/{totalLevels} cases
+            <p className="font-sans text-xs sm:text-sm text-[#F2F5FA]/90 leading-relaxed">
+              This will reset your active campaign journal ({completedCount}/{totalLevels} cases
               solved) and begin fresh at <strong className="text-white">Case 01: The Parcel That Never Came</strong>.
             </p>
-            <div className="flex items-center justify-end gap-3 pt-2">
+            <div className="flex items-center justify-end gap-2.5 pt-2">
               <button
                 type="button"
                 onClick={() => setActiveSubModal('none')}
-                className="px-4 py-2 rounded-lg bg-[#060D1A] hover:bg-[#0E223D] border border-[#39BDF7]/30 text-xs font-medium text-[#F2F5FA] cursor-pointer"
+                className="pixel-btn px-4 py-2 font-pixel text-[10px] text-[#F2F5FA] cursor-pointer"
               >
-                Cancel
+                CANCEL
               </button>
               <button
                 type="button"
@@ -975,10 +1121,10 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
                     onSelectLevel('tutorial-delivery', 1);
                   }
                 }}
-                className="px-4 py-2 rounded-lg bg-[#39BDF7] hover:bg-[#68CEF9] text-[#081426] font-heading font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-[0_0_16px_rgba(57,189,247,0.35)]"
+                className="pixel-btn-action px-4 py-2 text-[10px] flex items-center gap-1.5 cursor-pointer"
               >
-                <span>Begin New Investigation</span>
-                <ChevronRight className="w-4 h-4" />
+                <span>BEGIN FRESH</span>
+                <ChevronRight className="w-3.5 h-3.5" />
               </button>
             </div>
           </div>
@@ -995,25 +1141,30 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
           aria-modal="true"
           aria-label="Quit Session"
         >
-          <div className="w-full max-w-md bg-[#081426] border border-[#39BDF7]/35 rounded-2xl p-6 space-y-4 shadow-2xl text-center text-[#F2F5FA]">
-            <div className="w-11 h-11 rounded-full bg-emerald-500/15 border border-emerald-400/40 text-emerald-300 flex items-center justify-center mx-auto">
+          <div className="w-full max-w-md pixel-panel border-4 border-[#0D1C34] p-5 sm:p-6 space-y-4 shadow-2xl text-center text-[#F2F5FA] relative">
+            <span className="absolute -top-1 -left-1 w-2 h-2 bg-[#39BDF7]" />
+            <span className="absolute -top-1 -right-1 w-2 h-2 bg-[#F05A9D]" />
+            <span className="absolute -bottom-1 -left-1 w-2 h-2 bg-[#F05A9D]" />
+            <span className="absolute -bottom-1 -right-1 w-2 h-2 bg-[#39BDF7]" />
+
+            <div className="w-10 h-10 border-2 border-emerald-400 bg-emerald-500/20 text-emerald-300 flex items-center justify-center mx-auto">
               <ShieldCheck className="w-5 h-5" />
             </div>
-            <h2 className="font-heading font-bold text-lg text-white">
-              Case Progress Saved to Journal
+            <h2 className="font-pixel text-sm sm:text-base text-white">
+              CAMPAIGN PROGRESS COMMITTED
             </h2>
-            <p className="text-xs sm:text-sm text-[#F2F5FA]/90 leading-relaxed">
+            <p className="font-sans text-xs sm:text-sm text-[#F2F5FA]/90 leading-relaxed">
               Detective Rowan Vance’s case notes ({completedCount}/{totalLevels} cases solved,{' '}
               {totalCluesLoggedAcrossCampaign} clues logged) are safely stored in your browser.
-              You can close this tab anytime or return to the desk.
+              You can close this tab anytime or return to the terminal.
             </p>
             <div className="flex items-center justify-center gap-3 pt-2">
               <button
                 type="button"
                 onClick={() => setActiveSubModal('none')}
-                className="px-5 py-2 rounded-lg bg-[#39BDF7] hover:bg-[#68CEF9] text-[#081426] font-heading font-bold text-xs cursor-pointer shadow-[0_0_16px_rgba(57,189,247,0.35)]"
+                className="pixel-btn-action px-5 py-2 text-[10px] cursor-pointer"
               >
-                Return to Main Menu
+                RETURN TO DESK
               </button>
             </div>
           </div>
