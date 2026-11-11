@@ -212,11 +212,11 @@ export const SmartReadReview: React.FC<SmartReadReviewProps> = ({
 
       {/* Duplicate Warning Callout if found */}
       {hasDuplicateWarning && (
-        <div className="mb-6 p-4 rounded-xl bg-amber-50/90 border border-amber-200 text-amber-900 flex items-start gap-3 text-xs sm:text-sm">
-          <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+        <div className="mb-6 p-4 rounded-xl bg-[#F05A9D]/15 border border-[#F05A9D]/40 text-[#F2F5FA] flex items-start gap-3 text-xs sm:text-sm">
+          <AlertTriangle className="w-5 h-5 text-[#F05A9D] shrink-0 mt-0.5" />
           <div className="space-y-1">
-            <span className="font-bold">Possible duplicate transaction detected:</span>
-            <p className="text-amber-800 leading-relaxed">
+            <span className="font-bold text-[#F05A9D]">Possible duplicate transaction detected:</span>
+            <p className="text-[#F2F5FA]/85 leading-relaxed">
               You already recorded an expense of {currency}
               {potentialDuplicates[0].amount.toFixed(2)} at {potentialDuplicates[0].merchant} on{' '}
               {potentialDuplicates[0].date}. If this was a separate purchase or repeat coffee, you can proceed with confidence.
@@ -611,7 +611,7 @@ export const SmartReadReview: React.FC<SmartReadReviewProps> = ({
               )}
 
               {itemsSumMismatch && (
-                <p className="mt-1.5 text-[11px] text-amber-700 flex items-center gap-1">
+                <p className="mt-1.5 text-[11px] text-[#F05A9D] flex items-center gap-1">
                   <Info className="w-3 h-3" />
                   <span>
                     Note: Items subtotal ({currency}

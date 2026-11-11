@@ -75,17 +75,17 @@ export const EvidenceLocker: React.FC<EvidenceLockerProps> = ({
   onNavigateToCases,
 }) => {
   return (
-    <div className="max-w-5xl mx-auto px-4 py-8 md:py-12 space-y-10">
+    <div className="max-w-5xl mx-auto px-4 py-8 md:py-12 space-y-10 text-[#F2F5FA]">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#1E293B]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#39BDF7]/20">
         <div>
           <div className="flex items-center gap-2">
-            <Award className="w-5 h-5 text-[#F59E0B]" />
-            <h1 className="font-heading text-2xl md:text-3xl font-bold text-white">
+            <Award className="w-5 h-5 text-[#F05A9D]" />
+            <h1 className="font-heading text-2xl md:text-3xl font-bold text-[#F2F5FA]">
               Detective Evidence Locker
             </h1>
           </div>
-          <p className="text-xs sm:text-sm text-[#94A3B8] mt-1">
+          <p className="text-xs sm:text-sm text-[#F2F5FA]/80 mt-1">
             Track your cyber defense badges, scam pattern mastery, and practical real-life instincts.
           </p>
         </div>
@@ -93,7 +93,7 @@ export const EvidenceLocker: React.FC<EvidenceLockerProps> = ({
         <button
           type="button"
           onClick={onNavigateToCases}
-          className="self-start sm:self-auto px-4 py-2 bg-[#1C2541] hover:bg-[#233054] text-white text-xs font-semibold rounded-xl border border-[#3A506B]/50 transition-colors"
+          className="self-start sm:self-auto px-4 py-2 bg-[#081426] hover:bg-[#0E223D] text-[#F2F5FA] text-xs font-semibold rounded-xl border border-[#39BDF7]/40 transition-colors cursor-pointer"
         >
           Back to Case Room
         </button>
@@ -101,7 +101,7 @@ export const EvidenceLocker: React.FC<EvidenceLockerProps> = ({
 
       {/* Badges Showcase Grid */}
       <div className="space-y-4">
-        <h2 className="font-heading text-lg font-bold text-white">
+        <h2 className="font-heading text-lg font-bold text-[#F2F5FA]">
           Detective Mastery Badges ({progress.earnedBadges.length} / {BADGE_DEFINITIONS.length} Unlocked)
         </h2>
 
@@ -114,36 +114,36 @@ export const EvidenceLocker: React.FC<EvidenceLockerProps> = ({
                 key={badge.type}
                 className={`p-5 rounded-2xl border transition-all flex flex-col justify-between ${
                   isUnlocked
-                    ? 'bg-[#131E3A] border-[#F59E0B]/40 shadow-sm'
-                    : 'bg-[#0B132B]/80 border-[#1E293B] opacity-75'
+                    ? 'bg-[#0B1A33] border-[#F05A9D]/50 shadow-sm'
+                    : 'bg-[#081426]/80 border-[#39BDF7]/20 opacity-75'
                 }`}
               >
                 <div>
                   <div className="flex items-center justify-between mb-3">
                     <span className="text-3xl">{badge.icon}</span>
                     {isUnlocked ? (
-                      <span className="text-[11px] font-mono text-[#10B981] bg-[#10B981]/10 border border-[#10B981]/30 px-2 py-0.5 rounded">
+                      <span className="text-[11px] font-mono text-[#F05A9D] bg-[#F05A9D]/15 border border-[#F05A9D]/40 px-2 py-0.5 rounded font-semibold">
                         UNLOCKED
                       </span>
                     ) : (
-                      <span className="text-[11px] font-mono text-[#64748B] flex items-center gap-1">
+                      <span className="text-[11px] font-mono text-[#F2F5FA]/40 flex items-center gap-1">
                         <Lock className="w-3 h-3" />
                         <span>Locked</span>
                       </span>
                     )}
                   </div>
 
-                  <h3 className="font-heading text-base font-bold text-white mb-1">
+                  <h3 className="font-heading text-base font-bold text-[#F2F5FA] mb-1">
                     {badge.title}
                   </h3>
 
-                  <p className="text-xs text-[#94A3B8] leading-relaxed mb-3">
+                  <p className="text-xs text-[#F2F5FA]/80 leading-relaxed mb-3">
                     {badge.description}
                   </p>
                 </div>
 
-                <div className="pt-3 border-t border-[#1E293B] text-[11px] font-mono text-[#64748B]">
-                  <strong>Unlock Path:</strong> {badge.criteria}
+                <div className="pt-3 border-t border-[#39BDF7]/20 text-[11px] font-mono text-[#F2F5FA]/60">
+                  <strong className="text-[#39BDF7]">Unlock Path:</strong> {badge.criteria}
                 </div>
               </div>
             );
@@ -152,10 +152,10 @@ export const EvidenceLocker: React.FC<EvidenceLockerProps> = ({
       </div>
 
       {/* Detective Handbook: 5 Universal Scam Rules */}
-      <div className="p-6 sm:p-8 rounded-2xl bg-[#131E3A] border border-[#1E293B] space-y-4">
-        <div className="flex items-center gap-2 text-[#F59E0B]">
-          <Shield className="w-5 h-5" />
-          <h2 className="font-heading text-lg font-bold text-white">
+      <div className="p-6 sm:p-8 rounded-2xl bg-[#0B1A33] border border-[#39BDF7]/25 space-y-4">
+        <div className="flex items-center gap-2 text-[#39BDF7]">
+          <Shield className="w-5 h-5 text-[#F05A9D]" />
+          <h2 className="font-heading text-lg font-bold text-[#F2F5FA]">
             The Sleuth's Field Guide: 5 Universal Rules
           </h2>
         </div>

@@ -135,7 +135,7 @@ export const AnimatedStoryOutcome: React.FC<AnimatedStoryOutcomeProps> = ({
                   SCENE {idx + 1} // {panel.title.toUpperCase()}
                 </span>
                 {panel.soundEffect && (
-                  <span className="font-bold text-amber-300">★ {panel.soundEffect}</span>
+                  <span className="font-bold text-[#F05A9D]">★ {panel.soundEffect}</span>
                 )}
               </div>
 
@@ -153,7 +153,7 @@ export const AnimatedStoryOutcome: React.FC<AnimatedStoryOutcomeProps> = ({
                       : 'bg-[#15080E] border-red-500/40'
                   }`}
                 >
-                  <div className="flex items-center gap-1.5 mb-1 font-mono text-[10px] uppercase font-bold text-[#F59E0B]">
+                  <div className="flex items-center gap-1.5 mb-1 font-mono text-[10px] uppercase font-bold text-[#39BDF7]">
                     <span>{panel.speaker || 'Narrator'}</span>
                   </div>
                   <p className="italic text-slate-200">
@@ -205,7 +205,7 @@ export const AnimatedStoryOutcome: React.FC<AnimatedStoryOutcomeProps> = ({
             <button
               type="button"
               onClick={handleRewind}
-              className="px-5 py-3 bg-[#F59E0B] hover:bg-[#D97706] text-[#070D1E] font-heading font-black text-xs rounded-xl transition-all shadow-lg flex items-center justify-center gap-2 cursor-pointer group"
+              className="px-5 py-3 bg-[#F05A9D] hover:bg-[#F472B6] text-[#081426] font-heading font-black text-xs rounded-xl transition-all shadow-lg flex items-center justify-center gap-2 cursor-pointer group"
             >
               <RotateCcw className="w-4 h-4 group-hover:-rotate-45 transition-transform" />
               <span>REWIND TIME & RETRY</span>

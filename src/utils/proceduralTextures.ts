@@ -414,7 +414,7 @@ export class ProceduralTextureGenerator {
     ctx.beginPath();
     ctx.roundRect(20, 62, 472, 118, 20);
     ctx.fill();
-    ctx.strokeStyle = highlightClues ? '#F59E0B' : '#1E293B';
+    ctx.strokeStyle = highlightClues ? '#F05A9D' : '#1E293B';
     ctx.lineWidth = highlightClues ? 3 : 1.5;
     ctx.stroke();
 
@@ -423,7 +423,7 @@ export class ProceduralTextureGenerator {
     ctx.beginPath();
     ctx.arc(64, 118, 28, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillStyle = '#38BDF8';
+    ctx.fillStyle = '#39BDF7';
     ctx.font = 'bold 22px sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText('SMS', 64, 126);
@@ -434,14 +434,14 @@ export class ProceduralTextureGenerator {
     ctx.font = 'bold 21px monospace';
     ctx.fillText((msgSender || '+1 (555) 019-3382').slice(0, 24), 106, 108);
 
-    ctx.fillStyle = '#FBBF24';
+    ctx.fillStyle = '#39BDF7';
     ctx.font = 'bold 15px sans-serif';
     ctx.fillText('Unverified Number · Not in Contacts', 106, 136);
 
     if (highlightClues) {
-      ctx.fillStyle = 'rgba(245, 158, 11, 0.22)';
+      ctx.fillStyle = 'rgba(240, 90, 157, 0.22)';
       ctx.fillRect(102, 86, 370, 62);
-      ctx.fillStyle = '#FDE68A';
+      ctx.fillStyle = '#F2F5FA';
       ctx.font = 'bold 13px monospace';
       ctx.fillText('🔍 CLUE 1: Random mobile number', 106, 166);
     }
@@ -454,8 +454,8 @@ export class ProceduralTextureGenerator {
     ctx.textAlign = 'left';
 
     // Message Bubble
-    ctx.fillStyle = '#172542';
-    ctx.strokeStyle = highlightClues ? '#F59E0B' : '#334155';
+    ctx.fillStyle = '#081426';
+    ctx.strokeStyle = highlightClues ? '#F05A9D' : '#39BDF7';
     ctx.lineWidth = highlightClues ? 3 : 2;
     ctx.beginPath();
     ctx.roundRect(22, 234, 468, 520, 26);
@@ -463,7 +463,7 @@ export class ProceduralTextureGenerator {
     ctx.stroke();
 
     // Header inside SMS bubble
-    ctx.fillStyle = '#FEF3C7';
+    ctx.fillStyle = '#F2F5FA';
     ctx.font = 'bold 22px sans-serif';
     ctx.fillText('CITY-POST DELIVERY NOTICE', 44, 280);
 
@@ -491,8 +491,8 @@ export class ProceduralTextureGenerator {
 
     // Highlighted Fictional Link Box (Non-working .invalid domain)
     const linkBoxY = Math.max(y + 28, 535);
-    ctx.fillStyle = '#0F172A';
-    ctx.strokeStyle = highlightClues ? '#F59E0B' : '#38BDF8';
+    ctx.fillStyle = '#0B1A33';
+    ctx.strokeStyle = highlightClues ? '#F05A9D' : '#39BDF7';
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.roundRect(42, linkBoxY, 428, 92, 16);
@@ -719,11 +719,11 @@ export class ProceduralTextureGenerator {
 
     // Warm dusk mountain landscape canvas painting
     const grad = ctx.createLinearGradient(0, 0, 0, 384);
-    grad.addColorStop(0, '#2b4c7e');
-    grad.addColorStop(0.35, '#4a75a0');
-    grad.addColorStop(0.68, '#d97706');
-    grad.addColorStop(0.88, '#f59e0b');
-    grad.addColorStop(1, '#fef3c7');
+    grad.addColorStop(0, '#081426');
+    grad.addColorStop(0.35, '#1B2C52');
+    grad.addColorStop(0.68, '#39BDF7');
+    grad.addColorStop(0.88, '#F05A9D');
+    grad.addColorStop(1, '#F2F5FA');
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, 512, 384);
 
@@ -1487,11 +1487,11 @@ export class ProceduralTextureGenerator {
     ctx.stroke();
 
     // Avatar Circle
-    ctx.fillStyle = '#f59e0b';
+    ctx.fillStyle = '#F05A9D';
     ctx.beginPath();
     ctx.arc(64, 122, 30, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillStyle = '#0f172a';
+    ctx.fillStyle = '#081426';
     ctx.font = '900 26px sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText('!', 64, 132);
@@ -1501,19 +1501,19 @@ export class ProceduralTextureGenerator {
     ctx.font = 'bold 26px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
     ctx.fillText(msgSender, 112, 115);
 
-    ctx.fillStyle = '#fbbf24';
+    ctx.fillStyle = '#39BDF7';
     ctx.font = 'bold 18px monospace';
     ctx.fillText('UNVERIFIED CARRIER · SMS', 112, 146);
 
     // 4. High-Contrast Suspicious Delivery Alert Banner
-    ctx.fillStyle = 'rgba(245, 158, 11, 0.22)';
+    ctx.fillStyle = 'rgba(240, 90, 157, 0.22)';
     drawRoundRect(24, 200, w - 48, 68, 16);
     ctx.fill();
-    ctx.strokeStyle = '#f59e0b';
+    ctx.strokeStyle = '#F05A9D';
     ctx.lineWidth = 3;
     ctx.stroke();
 
-    ctx.fillStyle = '#fde68a';
+    ctx.fillStyle = '#F2F5FA';
     ctx.font = 'bold 21px monospace';
     ctx.textAlign = 'center';
     ctx.fillText('⚠ CASE EVIDENCE: DELIVERY FEE SCAM', w / 2, 242);

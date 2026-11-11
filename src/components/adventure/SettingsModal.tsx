@@ -68,7 +68,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               <button
                 type="button"
                 onClick={onReturnToMenu}
-                className="px-3.5 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-heading font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap shrink-0"
+                className="px-3.5 py-2 rounded-xl bg-pink-500/20 hover:bg-pink-500/30 border border-pink-400/50 text-pink-200 font-heading font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap shrink-0"
                 title="Return to Home Screen"
               >
                 <Home className="w-4 h-4" />
@@ -89,13 +89,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
         {/* Current Case Story & Full 3-Chapter List (Moved from HUD into Pause/Settings & Journal) */}
         {currentLevel && (
-          <div className="p-4 rounded-2xl bg-[#0E1A38] border border-amber-400/30 space-y-2.5">
+          <div className="p-4 rounded-2xl bg-[#0C1736] border border-pink-400/35 space-y-2.5">
             <div className="flex items-center justify-between gap-2">
-              <span className="font-mono text-xs font-bold text-amber-300 flex items-center gap-1.5 uppercase">
+              <span className="font-mono text-xs font-bold text-pink-300 flex items-center gap-1.5 uppercase">
                 <BookOpen className="w-3.5 h-3.5" />
                 <span>{currentLevel.title} · {currentLevel.locationName}</span>
               </span>
-              <span className="font-mono text-[11px] text-[#38BDF8] font-bold">
+              <span className="font-mono text-[11px] text-[#00F0FF] font-bold">
                 Chapter {activeChapterNum} of 3
               </span>
             </div>
@@ -110,11 +110,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     key={ch.number}
                     className={`p-2.5 rounded-xl border text-xs ${
                       isCurrent
-                        ? 'bg-amber-400/20 border-amber-400 text-white'
-                        : 'bg-[#091124] border-white/10 text-slate-300'
+                        ? 'bg-pink-500/18 border-pink-400 text-[#F8FAFC]'
+                        : 'bg-[#070E22] border-sky-500/20 text-slate-300'
                     }`}
                   >
-                    <span className="font-mono text-[10px] text-amber-300 font-bold block uppercase">
+                    <span className="font-mono text-[10px] text-pink-300 font-bold block uppercase">
                       Chapter {ch.number} · {ch.phase}
                     </span>
                     <span className="font-heading font-bold block mt-0.5">{ch.title}</span>
@@ -127,53 +127,53 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         )}
 
         {/* Full Control List Reference */}
-        <div className="p-4 rounded-2xl bg-[#0E1A38] border border-white/10 space-y-2.5">
+        <div className="p-4 rounded-2xl bg-[#0C1736] border border-sky-500/25 space-y-2.5">
           <div className="flex items-center gap-2 text-xs font-mono font-bold text-[#00F0FF] uppercase tracking-wider">
             <Keyboard className="w-4 h-4" />
             <span>Full Controls Reference</span>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs font-mono">
-            <div className="p-2 rounded-xl bg-[#091124] border border-white/10">
-              <span className="text-amber-300 font-bold block">WASD / Arrows</span>
+            <div className="p-2 rounded-xl bg-[#070E22] border border-sky-500/20">
+              <span className="text-pink-300 font-bold block">WASD / Arrows</span>
               <span className="text-slate-300 text-[11px]">Move Investigator</span>
             </div>
-            <div className="p-2 rounded-xl bg-[#091124] border border-white/10">
-              <span className="text-[#00F0FF] font-bold block">E Key</span>
+            <div className="p-2 rounded-xl bg-[#070E22] border border-sky-500/20">
+              <span className="text-pink-300 font-bold block">E Key</span>
               <span className="text-slate-300 text-[11px]">Interact / Inspect</span>
             </div>
-            <div className="p-2 rounded-xl bg-[#091124] border border-white/10">
-              <span className="text-amber-300 font-bold block">Q Key</span>
+            <div className="p-2 rounded-xl bg-[#070E22] border border-sky-500/20">
+              <span className="text-pink-300 font-bold block">Q Key</span>
               <span className="text-slate-300 text-[11px]">Inspect Clues</span>
             </div>
-            <div className="p-2 rounded-xl bg-[#091124] border border-white/10">
-              <span className="text-white font-bold block">J Key</span>
+            <div className="p-2 rounded-xl bg-[#070E22] border border-sky-500/20">
+              <span className="text-[#F8FAFC] font-bold block">J Key</span>
               <span className="text-slate-300 text-[11px]">Case Journal</span>
             </div>
-            <div className="p-2 rounded-xl bg-[#091124] border border-white/10">
-              <span className="text-white font-bold block">Mouse</span>
+            <div className="p-2 rounded-xl bg-[#070E22] border border-sky-500/20">
+              <span className="text-[#F8FAFC] font-bold block">Mouse</span>
               <span className="text-slate-300 text-[11px]">Look Around</span>
             </div>
-            <div className="p-2 rounded-xl bg-[#091124] border border-white/10">
-              <span className="text-white font-bold block">Shift</span>
+            <div className="p-2 rounded-xl bg-[#070E22] border border-sky-500/20">
+              <span className="text-[#F8FAFC] font-bold block">Shift</span>
               <span className="text-slate-300 text-[11px]">Move Faster</span>
             </div>
-            <div className="p-2 rounded-xl bg-[#091124] border border-white/10">
-              <span className="text-white font-bold block">V Key</span>
+            <div className="p-2 rounded-xl bg-[#070E22] border border-sky-500/20">
+              <span className="text-[#F8FAFC] font-bold block">V Key</span>
               <span className="text-slate-300 text-[11px]">1st / 3rd Person</span>
             </div>
-            <div className="p-2 rounded-xl bg-[#091124] border border-white/10">
+            <div className="p-2 rounded-xl bg-[#070E22] border border-sky-500/20">
               <span className="text-[#00F0FF] font-bold block">T Key</span>
               <span className="text-slate-300 text-[11px]">Talk to Person</span>
             </div>
-            <div className="p-2 rounded-xl bg-[#091124] border border-white/10">
+            <div className="p-2 rounded-xl bg-[#070E22] border border-sky-500/20">
               <span className="text-[#00F0FF] font-bold block">P Key</span>
               <span className="text-slate-300 text-[11px]">Show / Hide Phone</span>
             </div>
-            <div className="p-2 rounded-xl bg-[#091124] border border-white/10">
-              <span className="text-amber-300 font-bold block">H Key</span>
+            <div className="p-2 rounded-xl bg-[#070E22] border border-sky-500/20">
+              <span className="text-pink-300 font-bold block">H Key</span>
               <span className="text-slate-300 text-[11px]">Hide / Show Panel</span>
             </div>
-            <div className="p-2 rounded-xl bg-[#091124] border border-white/10">
+            <div className="p-2 rounded-xl bg-[#070E22] border border-sky-500/20">
               <span className="text-[#00F0FF] font-bold block">ESC Key</span>
               <span className="text-slate-300 text-[11px]">Pause / Settings</span>
             </div>
@@ -202,7 +202,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               className={`px-3 py-1.5 rounded-xl font-mono text-xs font-bold transition-all cursor-pointer border shrink-0 ${
                 settings.isFirstPerson
                   ? 'bg-[#00F0FF] text-[#070D1E] border-white'
-                  : 'bg-amber-400 text-black border-amber-300'
+                  : 'bg-pink-500 text-white border-pink-400'
               }`}
             >
               {settings.isFirstPerson ? '1st Person' : '3rd Person'}
@@ -443,12 +443,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         <div className="p-3.5 rounded-2xl bg-[#0E1A38] border border-white/10 space-y-1.5">
           <div className="flex items-center justify-between text-xs">
             <div className="flex items-center gap-2">
-              <Volume2 className="w-4 h-4 text-[#F59E0B]" />
+              <Volume2 className="w-4 h-4 text-pink-400" />
               <span className="font-heading font-bold text-white">
                 Sound & Audio Volume
               </span>
             </div>
-            <span className="font-mono text-xs font-bold text-[#F59E0B]">
+            <span className="font-mono text-xs font-bold text-pink-300">
               {Math.round(settings.soundVolume * 100)}%
             </span>
           </div>
@@ -464,7 +464,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               onUpdateSettings({ soundVolume: vol });
               soundEngine.setVolume(vol);
             }}
-            className="w-full accent-[#F59E0B] cursor-pointer"
+            className="w-full accent-pink-500 cursor-pointer"
           />
         </div>
 
@@ -521,7 +521,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               <button
                 type="button"
                 onClick={onReturnToMenu}
-                className="px-3.5 py-2 rounded-xl bg-amber-400/20 hover:bg-amber-400/30 border border-amber-400/50 text-xs font-mono font-bold text-amber-300 flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap shrink-0"
+                className="px-3.5 py-2 rounded-xl bg-pink-500/20 hover:bg-pink-500/30 border border-pink-400/50 text-xs font-mono font-bold text-pink-200 flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap shrink-0"
               >
                 <Home className="w-3.5 h-3.5" />
                 <span>Home</span>
@@ -541,7 +541,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               <button
                 type="button"
                 onClick={onUnlockAllLevels}
-                className="text-xs font-mono text-amber-400 hover:text-amber-300 flex items-center gap-1 cursor-pointer"
+                className="text-xs font-mono text-pink-300 hover:text-pink-200 flex items-center gap-1 cursor-pointer"
               >
                 <Unlock className="w-3.5 h-3.5" />
                 <span>Unlock All 10 Levels</span>
@@ -552,7 +552,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="px-5 py-2.5 rounded-xl bg-[#00F0FF] hover:bg-[#38BDF8] text-[#070D1E] font-heading font-black text-xs transition-colors cursor-pointer"
+            className="px-5 py-2.5 rounded-xl bg-[#00F0FF] hover:bg-[#38BDF8] text-[#070D1E] font-heading font-black text-xs transition-colors cursor-pointer shadow-[0_0_16px_rgba(0,240,255,0.28)]"
           >
             RESUME GAME (ESC)
           </button>

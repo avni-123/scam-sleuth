@@ -1,18 +1,29 @@
-# Refined Unobstructed Right-Hand Phone Grip on Character Rig
+# Scam Sleuth Blue-and-Pink Theme Overhaul
 
-Refined Detective Rowan Vance's right-hand smartphone grip in the active 3D character rig (`HumanCharacterBuilder.ts`) so the phone sits naturally between palm and fingers, with the back panel and camera details completely unobstructed:
+Implemented the cohesive blue-and-pink aesthetic across all shared styles, game components, and the title-screen artwork in strict accordance with the palette specifications:
 
-## 1. Upright Placement & Unobstructed Back Panel
-- **Back Panel Facing Viewer**: The phone is upright (UP vector `[0, 1, 0]`) with its frosted back panel and camera cluster facing directly toward the viewer (BACK vector `[0, 0, 1]`).
-- **Centered in Palm**: The phone is seated against the palm surface from behind ($-Z$), resting between the palm and fingers without clipping or burying.
-- **Wrist Position**: The wrist sits below the phone ($y = 0.978$ vs phone center $y = 1.045$), supporting the bottom of the device.
-- **Unobstructed Cameras & Center**: The top third of the phone containing the camera island (triple sapphire lenses, flash, and LiDAR) and the center frosted back panel are completely unobstructed by fingers.
+- **Deep navy**: `#081426` for interface backgrounds, panels, modals, and container scrims
+- **Electric blue**: `#39BDF7` for primary highlights, buttons, progress bars, active selections, and interactive clues
+- **Vivid pink**: `#F05A9D` for selected states, case markers, clue pulses, badges, and secondary accents
+- **Soft white**: `#F2F5FA` for high-contrast readable text, typography, and crisp labels
 
-## 2. Outer-Edge Finger Wrapping & Inner-Edge Thumb Clamping
-- **Outer Edge Grip**: Reoriented `RightHand` (`-2.54, 1.36, 0.56`) so the fingers extend along the outer long edge ($X \le -0.290$, away from body). All four finger bone chains (`j1: 0.65`, `j2: 0.85`, `j3: 0.55`) wrap cleanly around the outer rim/edge below $Y = 1.062$, well beneath the camera island.
-- **Inner Edge Thumb**: Posed thumb bone chains (`t1: 0.45, 0.35, -0.45`, `t2: 0.55`, `t3: 0.40`) to clamp firmly across the opposite inner edge ($X \ge -0.216$).
-- **Arm Posture**: Relaxed right arm hanging straight down beside the right thigh (`RightArm` offset `0.36 + syncBreath, -0.06, -0.14`, `RightForeArm` `0.15, 0.0, 0.32`).
+## 1. Title Screen & Artwork
+- **Artwork**: Generated high-fidelity, photorealistic late-night detective desk artwork (`scam_sleuth_blue_pink_desk_1794314110762.jpg`) featuring a rain-streaked apartment window overlooking electric blue and vivid magenta/pink cyberpunk city lighting, reflecting subtly on dark desk surfaces and task lamp. Removed all warm amber/gold lighting.
+- **Title Lockup**: SCAM in `#F2F5FA`, SLEUTH in `#F05A9D` with soft pink glow and electric blue & pink accent lines (`ScamSleuthLogo.tsx`).
+- **Interactive Menu**: Navigation buttons, active borders, dual selection dots, progress subtitles, and glowing gradient underlines styled in `#39BDF7` and `#F05A9D`.
+- **Modals**: Re-skinned Case Files modal, Achievements modal, Reset confirmation, and Stand-down modal into `#081426` with `#39BDF7` and `#F05A9D` accents.
 
-## 3. Palm Socket Attachment & Camera Alignment
-- **Socket Attachment**: Parented to `bones.rightHand` at local position `(0.0569, 0.0357, 0.0072)` and orientation `(0.0093, -0.0142, -0.5260, 0.8503)`, locking the phone center to world position `(-0.252, 1.045, 0.040)`.
-- **Preserved Existing Camera**: Camera close-up framing in `RealisticGameGraphicsDossier.tsx` remained untouched, perfectly framing the unobstructed phone grip.
+## 2. Shared Game Components & HUD
+- **Case Board (`CaseBoard.tsx`)**: Replaced all amber and gold pins, header accents, and buttons with `#081426`, `#39BDF7`, `#F05A9D`, and `#F2F5FA`.
+- **Mission HUD (`MissionHud.tsx`)**: Electric blue and pink progress bar, chapter decision triggers, interaction reticles, and keybind badges.
+- **Investigation Desk (`InvestigationDesk.tsx`)**: Updated magnifier reticle, clue trays, clue guidance, question drop targets, and clue inspection popups to `#39BDF7` and `#F05A9D`.
+- **Cutscenes & Dialogue (`PreInvestigationCutscene.tsx`, `DialogueOverlay.tsx`, `levelIntroCutscenes.ts`, `adventureLevels.ts`)**: Recolored speech headers, detective avatar tags, and skip buttons to `#39BDF7` and `#F05A9D`.
+- **Decision & Journal Modals (`FourChoiceDecisionModal.tsx`, `CaseJournalModal.tsx`, `ConsequenceModal.tsx`)**: Framed in deep navy `#081426` with electric blue borders and pink choice letter markers.
+- **Evidence Locker & Case Report (`EvidenceLocker.tsx`, `CaseReport.tsx`)**: Badges, unlocked achievements, and review cards updated to `#F05A9D` and `#39BDF7`.
+- **Neon City Map (`NeonCityMap.tsx`)**: Replaced yellow/amber highway glow and reward indicators with `#39BDF7` and `#F05A9D`.
+- **Procedural Textures (`proceduralTextures.ts`)**: Phone message bubbles, carrier alerts, and clue borders updated to `#081426`, `#39BDF7`, and `#F05A9D`.
+
+## 3. Verification & Integrity
+- All menu items, chapter navigation, level progression, and save states preserved.
+- Verified build and TypeScript type-checking via `compile_applet` and `lint_applet` (0 errors).
+- Validated UI rendering with headless browser screenshots. Zero gold/amber accent styling remains.

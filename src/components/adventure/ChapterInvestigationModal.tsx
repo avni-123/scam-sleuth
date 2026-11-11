@@ -62,18 +62,18 @@ export const ChapterInvestigationModal: React.FC<ChapterInvestigationModalProps>
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/85 backdrop-blur-md animate-fade-in pointer-events-auto">
-      <div className="w-full max-w-5xl bg-[#081022] border border-slate-700/80 rounded-2xl shadow-2xl text-white flex flex-col max-h-[92vh] overflow-hidden">
+      <div className="w-full max-w-5xl bg-[#070E22] border border-sky-500/30 rounded-2xl shadow-[0_24px_60px_rgba(2,6,23,0.9),0_0_32px_rgba(14,165,233,0.12)] text-[#F8FAFC] flex flex-col max-h-[92vh] overflow-hidden">
         {/* Top Modal Header */}
-        <div className="px-5 sm:px-7 py-4 bg-[#0B152C] border-b border-slate-800 flex flex-wrap items-center justify-between gap-4 shrink-0">
+        <div className="px-5 sm:px-7 py-4 bg-[#0A1430] border-b border-sky-500/20 flex flex-wrap items-center justify-between gap-4 shrink-0">
           <div>
-            <div className="flex items-center gap-2 text-xs text-amber-300 font-mono">
+            <div className="flex items-center gap-2 text-xs text-pink-300 font-mono font-semibold">
               <span>{level.levelNumber}</span>
               <span aria-hidden="true">·</span>
               <span>{level.title}</span>
               <span aria-hidden="true">·</span>
-              <span>{level.locationName}</span>
+              <span className="text-[#00F0FF]">{level.locationName}</span>
             </div>
-            <h2 className="font-heading font-bold text-lg sm:text-xl text-white mt-0.5">
+            <h2 className="font-heading font-bold text-lg sm:text-xl text-[#F8FAFC] mt-0.5">
               {chapter.title} ({chapter.phase})
             </h2>
           </div>
@@ -81,11 +81,11 @@ export const ChapterInvestigationModal: React.FC<ChapterInvestigationModalProps>
           <div className="flex items-center gap-2">
             {/* Chapter Progress Indicator / Switcher */}
             {isGameplayMode ? (
-              <div className="px-3 py-1.5 rounded-xl bg-amber-400/20 border border-amber-400/40 font-mono text-xs font-bold text-amber-300">
+              <div className="px-3 py-1.5 rounded-xl bg-pink-500/20 border border-pink-400/50 font-mono text-xs font-bold text-pink-200">
                 Chapter {activeChapterNum} of 3 — {chapter.phase.replace('The ', '')}
               </div>
             ) : (
-              <div className="flex items-center gap-1 p-1 bg-[#060B18] rounded-xl border border-slate-800">
+              <div className="flex items-center gap-1 p-1 bg-[#050B1C] rounded-xl border border-sky-500/25">
                 {level.chapters.map((ch) => (
                   <button
                     key={ch.number}
@@ -96,7 +96,7 @@ export const ChapterInvestigationModal: React.FC<ChapterInvestigationModalProps>
                     }}
                     className={`px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
                       ch.number === activeChapterNum
-                        ? 'bg-amber-400 text-slate-950'
+                        ? 'bg-pink-500 text-white shadow-[0_0_12px_rgba(236,72,153,0.4)]'
                         : 'text-slate-300 hover:text-white hover:bg-white/5'
                     }`}
                   >
@@ -121,17 +121,17 @@ export const ChapterInvestigationModal: React.FC<ChapterInvestigationModalProps>
         <div className="p-5 sm:p-7 overflow-y-auto space-y-6">
           {/* 1. Learning Goal & Story Setup */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <div className="p-4 rounded-xl bg-[#0D1832] border border-slate-800 space-y-1.5">
-              <div className="text-xs font-mono text-amber-300 uppercase tracking-wider">
+            <div className="p-4 rounded-xl bg-[#0B1636] border border-pink-500/25 space-y-1.5">
+              <div className="text-xs font-mono text-pink-300 font-semibold uppercase tracking-wider">
                 Learning Goal
               </div>
-              <p className="text-sm text-white font-medium leading-relaxed">
+              <p className="text-sm text-[#F8FAFC] font-medium leading-relaxed">
                 {chapter.learningGoal || chapter.summary}
               </p>
             </div>
 
-            <div className="p-4 rounded-xl bg-[#0D1832] border border-slate-800 space-y-1.5">
-              <div className="text-xs font-mono text-[#38BDF8] uppercase tracking-wider">
+            <div className="p-4 rounded-xl bg-[#0B1636] border border-sky-500/25 space-y-1.5">
+              <div className="text-xs font-mono text-[#00F0FF] font-semibold uppercase tracking-wider">
                 Story Setup
               </div>
               <p className="text-sm text-slate-200 leading-relaxed">
@@ -142,85 +142,85 @@ export const ChapterInvestigationModal: React.FC<ChapterInvestigationModalProps>
 
           {/* 2. Scene and Graphics Direction + Interactive On-Screen Device Preview */}
           {chapter.graphicsDirection && (
-            <section className="p-5 rounded-xl bg-[#0B142A] border border-slate-800 space-y-4">
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800/80 pb-3">
-                <h3 className="font-heading font-bold text-base text-white flex items-center gap-2">
+            <section className="p-5 rounded-xl bg-[#0A1430] border border-sky-500/20 space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-sky-500/20 pb-3">
+                <h3 className="font-heading font-bold text-base text-[#F8FAFC] flex items-center gap-2">
                   <Monitor className="w-4 h-4 text-[#00F0FF]" />
                   <span>Scene and Graphics</span>
                 </h3>
-                <span className="text-xs font-mono text-slate-400">
+                <span className="text-xs font-mono text-slate-300">
                   Cinematic Third-Person & Over-the-Shoulder Framing
                 </span>
               </div>
 
               {/* Simulated Fictional On-Screen Message Preview */}
-              <div className="p-4 rounded-xl bg-[#050914] border border-teal-500/40 space-y-1.5">
-                <div className="flex items-center justify-between text-[11px] font-mono text-teal-300">
+              <div className="p-4 rounded-xl bg-[#040918] border border-pink-500/35 space-y-1.5">
+                <div className="flex items-center justify-between text-[11px] font-mono text-[#00F0FF]">
                   <span>ON-SCREEN DEVICE / EVIDENCE DISPLAY (SAFE FICTIONAL PREVIEW)</span>
-                  <span>NO LIVE LINKS</span>
+                  <span className="text-pink-300">NO LIVE LINKS</span>
                 </div>
-                <p className="font-mono text-xs sm:text-sm text-amber-200 leading-relaxed">
+                <p className="font-mono text-xs sm:text-sm text-pink-100 leading-relaxed">
                   {chapter.graphicsDirection.onScreenMessage}
                 </p>
               </div>
 
               {/* Art, Character, Props, Camera, Lighting, Clue Effects, Transition */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5 text-xs">
-                <div className="p-3.5 rounded-xl bg-[#0F1B38] border border-slate-800/90 space-y-1">
-                  <span className="font-mono text-amber-300 font-semibold block">
+                <div className="p-3.5 rounded-xl bg-[#0D1A3C] border border-sky-500/20 space-y-1">
+                  <span className="font-mono text-pink-300 font-semibold block">
                     Background Art & Environment
                   </span>
-                  <p className="text-slate-300 leading-relaxed">
+                  <p className="text-slate-200 leading-relaxed">
                     {chapter.graphicsDirection.backgroundArt}
                   </p>
                 </div>
 
-                <div className="p-3.5 rounded-xl bg-[#0F1B38] border border-slate-800/90 space-y-1">
-                  <span className="font-mono text-amber-300 font-semibold block">
+                <div className="p-3.5 rounded-xl bg-[#0D1A3C] border border-sky-500/20 space-y-1">
+                  <span className="font-mono text-pink-300 font-semibold block">
                     Character Appearance & Pose
                   </span>
-                  <p className="text-slate-300 leading-relaxed">
+                  <p className="text-slate-200 leading-relaxed">
                     {chapter.graphicsDirection.characterAppearanceAndPose}
                   </p>
                 </div>
 
-                <div className="p-3.5 rounded-xl bg-[#0F1B38] border border-slate-800/90 space-y-1">
-                  <span className="font-mono text-amber-300 font-semibold block">
+                <div className="p-3.5 rounded-xl bg-[#0D1A3C] border border-sky-500/20 space-y-1">
+                  <span className="font-mono text-pink-300 font-semibold block">
                     Key Interactive Props
                   </span>
-                  <p className="text-slate-300 leading-relaxed">
+                  <p className="text-slate-200 leading-relaxed">
                     {chapter.graphicsDirection.keyProps}
                   </p>
                 </div>
 
-                <div className="p-3.5 rounded-xl bg-[#0F1B38] border border-slate-800/90 space-y-1">
-                  <span className="font-mono text-teal-300 font-semibold flex items-center gap-1.5">
+                <div className="p-3.5 rounded-xl bg-[#0D1A3C] border border-sky-500/20 space-y-1">
+                  <span className="font-mono text-[#00F0FF] font-semibold flex items-center gap-1.5">
                     <Camera className="w-3.5 h-3.5" />
                     <span>Camera Framing</span>
                   </span>
-                  <p className="text-slate-300 leading-relaxed">
+                  <p className="text-slate-200 leading-relaxed">
                     {chapter.graphicsDirection.cameraAngle}
                   </p>
                 </div>
 
-                <div className="p-3.5 rounded-xl bg-[#0F1B38] border border-slate-800/90 space-y-1">
-                  <span className="font-mono text-teal-300 font-semibold flex items-center gap-1.5">
+                <div className="p-3.5 rounded-xl bg-[#0D1A3C] border border-sky-500/20 space-y-1">
+                  <span className="font-mono text-[#00F0FF] font-semibold flex items-center gap-1.5">
                     <Sun className="w-3.5 h-3.5" />
                     <span>Lighting & Atmosphere</span>
                   </span>
-                  <p className="text-slate-300 leading-relaxed">
+                  <p className="text-slate-200 leading-relaxed">
                     {chapter.graphicsDirection.lighting}
                   </p>
                 </div>
 
-                <div className="p-3.5 rounded-xl bg-[#0F1B38] border border-slate-800/90 space-y-1">
-                  <span className="font-mono text-teal-300 font-semibold flex items-center gap-1.5">
+                <div className="p-3.5 rounded-xl bg-[#0D1A3C] border border-sky-500/20 space-y-1">
+                  <span className="font-mono text-[#00F0FF] font-semibold flex items-center gap-1.5">
                     <Layers className="w-3.5 h-3.5" />
                     <span>Interactive Clue Effects & Transition</span>
                   </span>
-                  <p className="text-slate-300 leading-relaxed">
+                  <p className="text-slate-200 leading-relaxed">
                     {chapter.graphicsDirection.interactiveClueEffects}{' '}
-                    <span className="text-slate-400">
+                    <span className="text-slate-300">
                       ({chapter.graphicsDirection.transitionGraphic})
                     </span>
                   </p>
@@ -231,29 +231,29 @@ export const ChapterInvestigationModal: React.FC<ChapterInvestigationModalProps>
 
           {/* 3. Characters and Subtitled Dialogue + 4. Player Interaction */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            <div className="lg:col-span-2 p-5 rounded-xl bg-[#0B142A] border border-slate-800 space-y-3">
-              <h3 className="font-heading font-bold text-base text-white flex items-center gap-2">
-                <MessageSquare className="w-4 h-4 text-amber-400" />
+            <div className="lg:col-span-2 p-5 rounded-xl bg-[#0A1430] border border-sky-500/20 space-y-3">
+              <h3 className="font-heading font-bold text-base text-[#F8FAFC] flex items-center gap-2">
+                <MessageSquare className="w-4 h-4 text-pink-400" />
                 <span>Characters and Subtitled Dialogue</span>
               </h3>
               <div className="space-y-2.5">
                 {chapter.chapterDialogue?.map((d, idx) => (
                   <div
                     key={idx}
-                    className="p-3 rounded-xl bg-[#060C1A] border border-slate-800/90 space-y-1"
+                    className="p-3 rounded-xl bg-[#050B1C] border border-sky-500/20 space-y-1"
                   >
                     <div className="flex items-center gap-2 text-xs font-mono">
-                      <span className="font-bold text-amber-300">{d.speaker}</span>
+                      <span className="font-bold text-pink-300">{d.speaker}</span>
                       {d.role && (
                         <>
-                          <span aria-hidden="true" className="text-slate-600">
+                          <span aria-hidden="true" className="text-slate-500">
                             ·
                           </span>
-                          <span className="text-slate-400">{d.role}</span>
+                          <span className="text-slate-300">{d.role}</span>
                         </>
                       )}
                     </div>
-                    <p className="text-xs sm:text-sm text-slate-100 leading-relaxed">
+                    <p className="text-xs sm:text-sm text-[#F8FAFC] leading-relaxed">
                       “{d.line}”
                     </p>
                   </div>
@@ -261,23 +261,23 @@ export const ChapterInvestigationModal: React.FC<ChapterInvestigationModalProps>
               </div>
             </div>
 
-            <div className="p-5 rounded-xl bg-[#0B142A] border border-slate-800 flex flex-col justify-between space-y-4">
+            <div className="p-5 rounded-xl bg-[#0A1430] border border-sky-500/20 flex flex-col justify-between space-y-4">
               <div className="space-y-2">
-                <h3 className="font-heading font-bold text-base text-white flex items-center gap-2">
+                <h3 className="font-heading font-bold text-base text-[#F8FAFC] flex items-center gap-2">
                   <Hand className="w-4 h-4 text-[#00F0FF]" />
                   <span>Player Interaction</span>
                 </h3>
-                <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                <p className="text-xs sm:text-sm text-slate-200 leading-relaxed">
                   {chapter.playerInteraction}
                 </p>
               </div>
 
               {level.glasshouseClue && (
-                <div className="p-3.5 rounded-xl bg-[#060C1A] border border-amber-500/30 space-y-1">
-                  <span className="text-[11px] font-mono text-amber-300 uppercase">
+                <div className="p-3.5 rounded-xl bg-[#050B1C] border border-pink-400/35 space-y-1">
+                  <span className="text-[11px] font-mono text-pink-300 font-semibold uppercase">
                     Recurring Glasshouse Thread
                   </span>
-                  <p className="text-xs text-slate-300 leading-relaxed">
+                  <p className="text-xs text-slate-200 leading-relaxed">
                     {level.glasshouseClue}
                   </p>
                 </div>
@@ -287,13 +287,13 @@ export const ChapterInvestigationModal: React.FC<ChapterInvestigationModalProps>
 
           {/* 5. Clues and Hints (Three Visible / Discoverable Clues) */}
           {chapter.clues && (
-            <section className="p-5 rounded-xl bg-[#0B142A] border border-slate-800 space-y-3.5">
+            <section className="p-5 rounded-xl bg-[#0A1430] border border-pink-500/25 space-y-3.5">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <h3 className="font-heading font-bold text-base text-white flex items-center gap-2">
-                  <Search className="w-4 h-4 text-emerald-400" />
+                <h3 className="font-heading font-bold text-base text-[#F8FAFC] flex items-center gap-2">
+                  <Search className="w-4 h-4 text-pink-400" />
                   <span>Clues and Hints (3 Discoverable Chapter Clues)</span>
                 </h3>
-                <span className="text-xs font-mono text-slate-400">
+                <span className="text-xs font-mono text-slate-300">
                   Click any clue to inspect or toggle its hint
                 </span>
               </div>
@@ -313,27 +313,27 @@ export const ChapterInvestigationModal: React.FC<ChapterInvestigationModalProps>
                       className={`p-4 rounded-xl border transition-colors cursor-pointer flex flex-col justify-between space-y-3 ${
                         isInspected
                           ? 'bg-emerald-950/30 border-emerald-500/60'
-                          : 'bg-[#0F1B38] border-slate-800 hover:border-teal-400/50'
+                          : 'bg-[#0D1A3C] border-pink-500/25 hover:border-pink-400/60'
                       }`}
                     >
                       <div className="space-y-1.5">
                         <div className="flex items-center justify-between text-xs font-mono">
-                          <span className="text-teal-300 font-semibold">
+                          <span className="text-pink-300 font-semibold">
                             Clue {idx + 1} of 3
                           </span>
-                          <span className="text-emerald-300">
+                          <span className={isInspected ? 'text-emerald-300' : 'text-[#00F0FF]'}>
                             {isInspected ? 'Inspected ✓' : 'Click to Inspect'}
                           </span>
                         </div>
-                        <h4 className="font-heading font-bold text-sm text-white">
+                        <h4 className="font-heading font-bold text-sm text-[#F8FAFC]">
                           {clue.title}
                         </h4>
-                        <p className="text-xs text-slate-300 leading-relaxed">
+                        <p className="text-xs text-slate-200 leading-relaxed">
                           {clue.detail}
                         </p>
                       </div>
 
-                      <div className="pt-2 border-t border-slate-800/80 space-y-1.5">
+                      <div className="pt-2 border-t border-sky-500/20 space-y-1.5">
                         <button
                           type="button"
                           onClick={(e) => {
@@ -343,13 +343,13 @@ export const ChapterInvestigationModal: React.FC<ChapterInvestigationModalProps>
                               [clue.id]: !prev[clue.id],
                             }));
                           }}
-                          className="text-xs font-mono text-amber-300 hover:text-amber-200 flex items-center gap-1.5 cursor-pointer"
+                          className="text-xs font-mono text-pink-300 hover:text-pink-200 flex items-center gap-1.5 cursor-pointer"
                         >
                           <Lightbulb className="w-3.5 h-3.5" />
                           <span>{isHintOpen ? 'Hide Hint' : 'Show Hint'}</span>
                         </button>
                         {isHintOpen && (
-                          <p className="text-xs text-amber-200/90 bg-amber-500/10 p-2.5 rounded-lg leading-relaxed">
+                          <p className="text-xs text-pink-100 bg-pink-500/15 border border-pink-400/30 p-2.5 rounded-lg leading-relaxed">
                             <strong>Hint:</strong> {clue.hint}
                           </p>
                         )}
@@ -363,18 +363,18 @@ export const ChapterInvestigationModal: React.FC<ChapterInvestigationModalProps>
 
           {/* 6. Knowledge Question and Four Options + 7. Correct Answer and Feedback */}
           {chapter.question && (
-            <section className="p-5 rounded-xl bg-[#0D1730] border border-amber-400/40 space-y-4">
+            <section className="p-5 rounded-xl bg-[#0B1636] border border-pink-400/40 space-y-4">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
-                  <HelpCircle className="w-5 h-5 text-amber-400" />
-                  <h3 className="font-heading font-bold text-base sm:text-lg text-white">
+                  <HelpCircle className="w-5 h-5 text-pink-400" />
+                  <h3 className="font-heading font-bold text-base sm:text-lg text-[#F8FAFC]">
                     Chapter {chapter.number} Knowledge Question (4 Options)
                   </h3>
                 </div>
                 <button
                   type="button"
                   onClick={() => setShowAllFeedback((prev) => !prev)}
-                  className="text-xs font-mono text-teal-300 hover:underline cursor-pointer"
+                  className="text-xs font-mono text-[#00F0FF] hover:underline cursor-pointer"
                 >
                   {showAllFeedback
                     ? 'Hide Full Answer Key'
@@ -382,7 +382,7 @@ export const ChapterInvestigationModal: React.FC<ChapterInvestigationModalProps>
                 </button>
               </div>
 
-              <p className="font-heading font-semibold text-sm sm:text-base text-amber-100 leading-snug">
+              <p className="font-heading font-semibold text-sm sm:text-base text-[#F8FAFC] leading-snug">
                 {chapter.question.prompt}
               </p>
 
@@ -399,11 +399,11 @@ export const ChapterInvestigationModal: React.FC<ChapterInvestigationModalProps>
                       className={`p-4 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between space-y-2 ${
                         showResult
                           ? opt.isCorrect
-                            ? 'bg-emerald-950/40 border-emerald-400 text-white'
+                            ? 'bg-emerald-950/40 border-emerald-400 text-[#F8FAFC]'
                             : isSelected
-                            ? 'bg-red-950/40 border-red-400 text-white'
-                            : 'bg-[#091124] border-slate-800 text-slate-300'
-                          : 'bg-[#091124] hover:bg-[#111E3C] border-slate-700/80 text-white'
+                            ? 'bg-red-950/40 border-red-400 text-[#F8FAFC]'
+                            : 'bg-[#070E22] border-sky-500/20 text-slate-300'
+                          : 'bg-[#070E22] hover:bg-[#0F1F44] border-sky-500/30 hover:border-[#00F0FF]/60 text-[#F8FAFC]'
                       }`}
                     >
                       <div className="flex items-start gap-3">
@@ -413,7 +413,7 @@ export const ChapterInvestigationModal: React.FC<ChapterInvestigationModalProps>
                               ? 'bg-emerald-400 text-slate-950'
                               : showResult && isSelected && !opt.isCorrect
                               ? 'bg-red-400 text-slate-950'
-                              : 'bg-slate-800 text-amber-300'
+                              : 'bg-pink-500/20 border border-pink-400/40 text-pink-300'
                           }`}
                         >
                           {opt.id}
@@ -445,7 +445,7 @@ export const ChapterInvestigationModal: React.FC<ChapterInvestigationModalProps>
               </div>
 
               {(selectedOption || showAllFeedback) && (
-                <div className="p-4 rounded-xl bg-[#070E1F] border border-emerald-500/40 space-y-1.5">
+                <div className="p-4 rounded-xl bg-[#060C1D] border border-emerald-500/40 space-y-1.5">
                   <div className="text-xs font-mono text-emerald-300 font-semibold uppercase">
                     Safety Lesson & Explanation
                   </div>
@@ -459,9 +459,9 @@ export const ChapterInvestigationModal: React.FC<ChapterInvestigationModalProps>
 
           {/* 8. Chapter Transition */}
           {chapter.chapterTransition && (
-            <div className="p-4 rounded-xl bg-[#0B142A] border border-slate-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="p-4 rounded-xl bg-[#0A1430] border border-pink-400/35 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div className="space-y-1">
-                <span className="text-xs font-mono text-amber-300 uppercase">
+                <span className="text-xs font-mono text-pink-300 font-semibold uppercase">
                   Chapter {chapter.number} Transition
                 </span>
                 <p className="text-xs sm:text-sm text-slate-200 leading-relaxed">
@@ -477,7 +477,7 @@ export const ChapterInvestigationModal: React.FC<ChapterInvestigationModalProps>
                       soundEngine.playInteract();
                       onSelectChapter((activeChapterNum + 1) as 1 | 2 | 3);
                     }}
-                    className="px-4 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-heading font-bold text-xs flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0"
+                    className="px-4 py-2.5 rounded-xl bg-[#00F0FF] hover:bg-[#38BDF8] text-slate-950 font-heading font-bold text-xs flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0 shadow-[0_0_16px_rgba(0,240,255,0.3)]"
                   >
                     <span>Continue to Chapter {activeChapterNum + 1}</span>
                     <ArrowRight className="w-4 h-4" />
@@ -491,7 +491,7 @@ export const ChapterInvestigationModal: React.FC<ChapterInvestigationModalProps>
                         onClose();
                         onTriggerFinalDecision();
                       }}
-                      className="px-4 py-2.5 rounded-xl bg-emerald-400 hover:bg-emerald-300 text-slate-950 font-heading font-bold text-xs flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0"
+                      className="px-4 py-2.5 rounded-xl bg-[#00F0FF] hover:bg-[#38BDF8] text-slate-950 font-heading font-bold text-xs flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0 shadow-[0_0_16px_rgba(0,240,255,0.3)]"
                     >
                       <span>Make Final Case Decision (4 Options)</span>
                       <ArrowRight className="w-4 h-4" />
@@ -503,7 +503,7 @@ export const ChapterInvestigationModal: React.FC<ChapterInvestigationModalProps>
                   <button
                     type="button"
                     onClick={onClose}
-                    className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-mono text-xs cursor-pointer whitespace-nowrap shrink-0"
+                    className="px-4 py-2.5 rounded-xl bg-[#0F1F44] hover:bg-[#162B5B] border border-sky-400/30 text-white font-mono text-xs cursor-pointer whitespace-nowrap shrink-0"
                   >
                     Back to 3D Scene
                   </button>

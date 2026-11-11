@@ -11,9 +11,9 @@
 
   body {
     font-family: var(--font-body);
-    color: #E2E8F0;
-    background-color: #0B132B;
-    background-image: radial-gradient(circle at 50% 0%, #1C2541 0%, #0B132B 75%);
+    color: #F2F5FA;
+    background-color: #081426;
+    background-image: radial-gradient(circle at 50% 0%, #0F2342 0%, #081426 50%, #050D1A 100%);
     min-height: 100vh;
   }
 
@@ -107,7 +107,7 @@
     box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2), 0 8px 25px rgba(16, 185, 129, 0.15);
   }
   100% {
-    border-color: rgba(58, 80, 107, 0.6);
+    border-color: rgba(56, 189, 248, 0.35);
     box-shadow: none;
   }
 }
@@ -128,9 +128,9 @@
 }
 
 .stamp-flagged {
-  color: #F59E0B;
-  border-color: #F59E0B;
-  background-color: rgba(245, 158, 11, 0.08);
+  color: #F05A9D;
+  border-color: #F05A9D;
+  background-color: rgba(240, 90, 157, 0.12);
 }
 
 .stamp-danger {
@@ -139,25 +139,25 @@
   background-color: rgba(239, 68, 68, 0.08);
 }
 
-/* Detective Manila Evidence Card styling */
+/* Detective Evidence Card styling */
 .evidence-paper {
-  background-color: #FAF7F0;
-  color: #1E293B;
-  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(226, 214, 195, 0.8);
+  background-color: #081426;
+  color: #F2F5FA;
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(57, 189, 247, 0.35);
 }
 
-/* Clue highlight pulsing border */
+/* Clue highlight pulsing border (vivid pink #F05A9D / electric blue #39BDF7) */
 .clue-pulse {
-  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.4);
+  box-shadow: 0 0 0 2px rgba(240, 90, 157, 0.75), 0 0 18px rgba(240, 90, 157, 0.45);
 }
 
-/* Red thread pin connection */
+/* Vivid pink thread pin connection */
 .evidence-pin {
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  background: radial-gradient(circle at 35% 35%, #F87171, #DC2626);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+  background: radial-gradient(circle at 35% 35%, #F05A9D, #C0266B);
+  box-shadow: 0 2px 6px rgba(240, 90, 157, 0.55);
 }
 
 /* Snappy Close-Range Proximity Pop Animation */

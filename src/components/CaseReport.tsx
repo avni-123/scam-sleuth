@@ -121,13 +121,13 @@ export const CaseReport: React.FC<CaseReportProps> = ({
                   className={`p-2.5 rounded-lg border flex items-start gap-2.5 ${
                     caught
                       ? 'bg-emerald-50/80 border-emerald-200 text-emerald-950'
-                      : 'bg-amber-50/80 border-amber-200 text-amber-950'
+                      : 'bg-[#F05A9D]/15 border-[#F05A9D]/40 text-[#831843]'
                   }`}
                 >
                   {caught ? (
                     <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
                   ) : (
-                    <XCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                    <XCircle className="w-4 h-4 text-[#F05A9D] shrink-0 mt-0.5" />
                   )}
                   <div>
                     <span className="font-bold">{clue.label}:</span>{' '}
@@ -141,7 +141,7 @@ export const CaseReport: React.FC<CaseReportProps> = ({
 
         {/* Core Daily Habit to Remember */}
         <div className="p-4 rounded-xl bg-[#FAF7F0] border-2 border-dashed border-[#D5C7B2] space-y-1 text-xs text-[#1E293B]">
-          <div className="flex items-center gap-1.5 font-bold uppercase tracking-wider text-[#D97706]">
+          <div className="flex items-center gap-1.5 font-bold uppercase tracking-wider text-[#F05A9D]">
             <Lightbulb className="w-4 h-4" />
             <span>Habit to Remember in Real Life</span>
           </div>
@@ -158,7 +158,7 @@ export const CaseReport: React.FC<CaseReportProps> = ({
           <button
             type="button"
             onClick={onReplayCase}
-            className="w-full sm:w-auto px-5 py-2.5 rounded-xl border border-[#D5C7B2] text-[#475569] hover:text-[#1E293B] hover:bg-white text-xs font-semibold transition-all flex items-center justify-center gap-2"
+            className="w-full sm:w-auto px-5 py-2.5 rounded-xl border border-[#D5C7B2] text-[#475569] hover:text-[#1E293B] hover:bg-white text-xs font-semibold transition-all flex items-center justify-center gap-2 cursor-pointer"
           >
             <RotateCcw className="w-4 h-4" />
             <span>Replay for Better Score</span>
@@ -167,10 +167,10 @@ export const CaseReport: React.FC<CaseReportProps> = ({
           <button
             type="button"
             onClick={onReturnToCases}
-            className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-[#0B132B] hover:bg-[#1C2541] text-white text-xs font-bold transition-all flex items-center justify-center gap-2"
+            className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-[#081426] hover:bg-[#0E223D] text-[#F2F5FA] text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md"
           >
             <span>Return to Case Room</span>
-            <ArrowRight className="w-4 h-4 text-[#F59E0B]" />
+            <ArrowRight className="w-4 h-4 text-[#39BDF7]" />
           </button>
         </div>
       </div>

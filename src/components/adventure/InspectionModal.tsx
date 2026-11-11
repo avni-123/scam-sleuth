@@ -69,24 +69,24 @@ export const InspectionModal: React.FC<InspectionModalProps> = ({
         return <Laptop className="w-5 h-5 text-[#38BDF8]" />;
       case 'document':
       case 'board':
-        return <FileText className="w-5 h-5 text-amber-400" />;
+        return <FileText className="w-5 h-5 text-pink-400" />;
       default:
         return <ShieldAlert className="w-5 h-5 text-[#00F0FF]" />;
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in pointer-events-auto cursor-default select-text">
-      <div className="w-full max-w-xl bg-[#091124] border-2 border-[#00F0FF]/70 rounded-3xl p-6 sm:p-7 shadow-[0_0_35px_rgba(0,240,255,0.25)] relative text-white space-y-5">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#040814]/88 backdrop-blur-md animate-fade-in pointer-events-auto cursor-default select-text">
+      <div className="w-full max-w-xl bg-[#070E22] border-2 border-[#00F0FF]/65 rounded-3xl p-6 sm:p-7 shadow-[0_24px_64px_rgba(2,6,23,0.95),0_0_35px_rgba(0,240,255,0.22)] relative text-white space-y-5">
         {/* Header */}
-        <div className="flex items-start justify-between gap-3 pb-3 border-b border-white/10">
+        <div className="flex items-start justify-between gap-3 pb-3 border-b border-sky-500/20">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-2xl bg-[#00F0FF]/15 border border-[#00F0FF]/40 flex items-center justify-center">
               {getIcon()}
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="font-mono text-[10px] text-[#00F0FF] font-bold uppercase tracking-widest">
+                <span className="font-mono text-[10px] text-pink-300 font-bold uppercase tracking-widest">
                   EVIDENCE INSPECTION
                 </span>
                 {isAlreadyCollected && (
@@ -112,7 +112,7 @@ export const InspectionModal: React.FC<InspectionModalProps> = ({
         </div>
 
         {/* Source & Timestamp Meta (Fictional Safe Details) */}
-        <div className="grid grid-cols-2 gap-3 text-xs font-mono p-3 rounded-2xl bg-[#050A18] border border-white/10">
+        <div className="grid grid-cols-2 gap-3 text-xs font-mono p-3 rounded-2xl bg-[#050A18] border border-sky-500/20">
           <div>
             <span className="text-[#94A3B8] block text-[10px] uppercase">Fictional Sender / Source</span>
             <span className="text-white font-semibold truncate block">{data.senderOrSource}</span>
@@ -124,7 +124,7 @@ export const InspectionModal: React.FC<InspectionModalProps> = ({
         </div>
 
         {/* Interactive Magnifier Toggle Bar */}
-        <div className="flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-[#0E1A38] border border-white/10 text-xs">
+        <div className="flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-[#0B1530] border border-sky-500/20 text-xs">
           <span className="font-mono text-xs text-slate-200">
             Use the magnifier to highlight suspicious details in the message:
           </span>
@@ -140,7 +140,7 @@ export const InspectionModal: React.FC<InspectionModalProps> = ({
             }}
             className={`flex items-center gap-1.5 font-mono text-xs font-bold px-3 py-1.5 rounded-xl transition-all cursor-pointer shrink-0 ${
               isMagnifierActive
-                ? 'bg-amber-400 text-slate-950 border border-amber-300 shadow-[0_0_15px_rgba(245,158,11,0.4)]'
+                ? 'bg-pink-500 text-white border border-pink-400 shadow-[0_0_16px_rgba(236,72,153,0.45)]'
                 : 'bg-[#00F0FF]/15 text-[#00F0FF] hover:bg-[#00F0FF]/25 border border-[#00F0FF]/40'
             }`}
           >
@@ -150,8 +150,8 @@ export const InspectionModal: React.FC<InspectionModalProps> = ({
         </div>
 
         {/* Inspected Content Body (Fictional Evidence Preview) */}
-        <div className="rounded-2xl bg-[#030712] border-2 border-slate-700 overflow-hidden shadow-2xl font-mono text-xs">
-          <div className="px-4 py-2 bg-slate-900 border-b border-slate-800 flex items-center justify-between text-[11px] text-slate-300">
+        <div className="rounded-2xl bg-[#040814] border-2 border-sky-500/25 overflow-hidden shadow-2xl font-mono text-xs">
+          <div className="px-4 py-2 bg-[#081126] border-b border-sky-500/20 flex items-center justify-between text-[11px] text-slate-300">
             <span className="font-bold text-white">
               {data.itemType === 'phone'
                 ? 'Fictional Text Message Preview'
@@ -159,7 +159,7 @@ export const InspectionModal: React.FC<InspectionModalProps> = ({
                 ? 'Fictional Browser Preview'
                 : 'Reference Document'}
             </span>
-            <span className="text-amber-300">SAFE SIMULATION</span>
+            <span className="text-pink-300 font-semibold">SAFE SIMULATION</span>
           </div>
 
           <div
@@ -170,20 +170,20 @@ export const InspectionModal: React.FC<InspectionModalProps> = ({
                 setHasHighlighted(true);
               }
             }}
-            className={`p-4 sm:p-5 text-slate-100 leading-relaxed whitespace-pre-wrap bg-gradient-to-b from-[#0B1528] to-[#040914] relative transition-all cursor-pointer ${
-              isMagnifierActive ? 'ring-2 ring-amber-400/60' : ''
+            className={`p-4 sm:p-5 text-slate-100 leading-relaxed whitespace-pre-wrap bg-gradient-to-b from-[#0B1530] to-[#050A18] relative transition-all cursor-pointer ${
+              isMagnifierActive ? 'ring-2 ring-pink-400/70' : ''
             }`}
           >
-            <div className="text-sm font-medium leading-relaxed">{data.content}</div>
+            <div className="text-sm font-medium leading-relaxed text-[#F8FAFC]">{data.content}</div>
 
-            {/* Highlighted Clue Detail when Magnifier is active */}
+            {/* Highlighted Clue Detail when Magnifier is active (Vivid Magenta / Soft Rose) */}
             {isMagnifierActive ? (
-              <div className="mt-4 p-3.5 rounded-xl bg-amber-500/20 border-2 border-amber-400 text-amber-100 text-xs flex items-start gap-2.5 shadow-[0_0_20px_rgba(245,158,11,0.25)] animate-fade-in">
-                <div className="p-1.5 rounded-lg bg-amber-400 text-slate-950 shrink-0">
+              <div className="mt-4 p-3.5 rounded-xl bg-pink-500/18 border-2 border-pink-400 text-pink-100 text-xs flex items-start gap-2.5 shadow-[0_0_22px_rgba(236,72,153,0.28)] animate-fade-in">
+                <div className="p-1.5 rounded-lg bg-pink-500 text-white shrink-0">
                   <Search className="w-4 h-4" />
                 </div>
                 <div className="space-y-1">
-                  <span className="font-bold text-amber-300 block text-xs uppercase tracking-wider">
+                  <span className="font-bold text-pink-300 block text-xs uppercase tracking-wider">
                     Highlighted Clue
                   </span>
                   <span className="text-xs leading-relaxed block text-white">
@@ -192,8 +192,8 @@ export const InspectionModal: React.FC<InspectionModalProps> = ({
                 </div>
               </div>
             ) : (
-              <div className="mt-3 pt-2.5 border-t border-white/10 flex items-center gap-2 text-amber-300 text-xs">
-                <Sparkles className="w-3.5 h-3.5" />
+              <div className="mt-3 pt-2.5 border-t border-sky-500/20 flex items-center gap-2 text-pink-300 text-xs">
+                <Sparkles className="w-3.5 h-3.5 text-pink-400" />
                 <span>Click message or “Inspect Details” to highlight the key clue.</span>
               </div>
             )}
@@ -202,7 +202,7 @@ export const InspectionModal: React.FC<InspectionModalProps> = ({
 
         {/* Clue Summary Notice */}
         {isClueHighlighted ? (
-          <div className="flex items-center justify-between p-3 rounded-xl bg-emerald-950/40 border border-emerald-500/30 text-xs text-emerald-300 animate-fade-in">
+          <div className="flex items-center justify-between p-3 rounded-xl bg-emerald-950/40 border border-emerald-500/35 text-xs text-emerald-300 animate-fade-in">
             <div className="flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
               <span>
@@ -211,26 +211,26 @@ export const InspectionModal: React.FC<InspectionModalProps> = ({
             </div>
           </div>
         ) : (
-          <div className="flex items-center justify-between p-3 rounded-xl bg-slate-900/60 border border-dashed border-slate-700 text-xs text-slate-400">
+          <div className="flex items-center justify-between p-3 rounded-xl bg-[#0A1329]/80 border border-dashed border-pink-400/35 text-xs text-slate-300">
             <div className="flex items-center gap-2">
-              <Search className="w-4 h-4 text-amber-400/80 shrink-0" />
+              <Search className="w-4 h-4 text-pink-400 shrink-0" />
               <span>
-                Click the message or <strong>“Inspect Details”</strong> to reveal and analyze the clue.
+                Click the message or <strong className="text-white">“Inspect Details”</strong> to reveal and analyze the clue.
               </span>
             </div>
           </div>
         )}
 
         {/* Actions Bar */}
-        <div className="flex items-center justify-between pt-2 border-t border-white/10 gap-3">
+        <div className="flex items-center justify-between pt-2 border-t border-sky-500/20 gap-3">
           <div className="text-xs">
             {!isClueHighlighted ? (
-              <span className="text-amber-300/90 font-mono text-[11px] flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
+              <span className="text-pink-300 font-mono text-[11px] flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-pink-400 animate-pulse" />
                 Highlight clue to enable Continue
               </span>
             ) : (
-              <span className="text-emerald-300/90 font-mono text-[11px] flex items-center gap-1.5">
+              <span className="text-emerald-300 font-mono text-[11px] flex items-center gap-1.5">
                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
                 Clue analyzed & ready to log
               </span>
@@ -247,8 +247,8 @@ export const InspectionModal: React.FC<InspectionModalProps> = ({
             }}
             className={`px-5 py-2.5 rounded-xl font-heading text-xs transition-all flex items-center gap-2 ${
               isClueHighlighted
-                ? 'bg-[#00F0FF] hover:bg-[#38BDF8] active:scale-[0.98] text-[#070D1E] font-black cursor-pointer shadow-[0_0_20px_rgba(0,240,255,0.4)]'
-                : 'bg-slate-800/80 border border-slate-700/60 text-slate-500 font-bold cursor-not-allowed opacity-60'
+                ? 'bg-[#00F0FF] hover:bg-[#38BDF8] active:scale-[0.98] text-[#050A18] font-black cursor-pointer shadow-[0_0_20px_rgba(0,240,255,0.4)]'
+                : 'bg-[#0B1530] border border-slate-700/60 text-slate-500 font-bold cursor-not-allowed opacity-60'
             }`}
             title={isClueHighlighted ? 'Log clue and continue' : 'Highlight the clue above first'}
           >

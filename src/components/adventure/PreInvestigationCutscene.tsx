@@ -179,12 +179,12 @@ export const PreInvestigationCutscene: React.FC<PreInvestigationCutsceneProps> =
 
   const popup = cutscene.devicePopup;
   const showDeviceCard = Boolean(currentBeat.showDevicePopup) || beatIndex === 1;
-  const accentMode: 'rose' | 'cyan' | 'amber' =
+  const accentMode: 'rose' | 'cyan' | 'pink' =
     popup.deviceType === 'audio_call'
       ? 'rose'
       : popup.deviceType === 'laptop' || popup.deviceType === 'case_board'
       ? 'cyan'
-      : 'amber';
+      : 'pink';
 
   // Omit speaker name on continuation lines when the visibly speaking character in the 3D scene is already established
   const shouldShowSpeaker = !currentBeat.isNpcSpeaking || lineIndex === 0;
@@ -200,11 +200,11 @@ export const PreInvestigationCutscene: React.FC<PreInvestigationCutsceneProps> =
       ===================================================================== */}
       <div className="flex flex-wrap items-center justify-between gap-2 w-full max-w-6xl mx-auto">
         {/* Left: Compact Time & Place Text over Scene */}
-        <div className="flex items-center gap-2 text-xs font-mono text-slate-200 [text-shadow:0_1px_3px_rgba(0,0,0,0.95),0_0_8px_rgba(0,0,0,0.85)]">
-          <Clock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-          <span className="text-amber-300 font-semibold">{cutscene.levelNumberLabel}</span>
-          <span>·</span>
-          <span>{cutscene.timeAndPlaceKicker}</span>
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#081426]/90 border border-[#39BDF7]/30 backdrop-blur-md text-xs font-mono text-[#F2F5FA] shadow-lg">
+          <Clock className="w-3.5 h-3.5 text-[#F05A9D] shrink-0" />
+          <span className="text-[#F05A9D] font-semibold">{cutscene.levelNumberLabel}</span>
+          <span className="text-slate-500">·</span>
+          <span className="text-[#F2F5FA]/90">{cutscene.timeAndPlaceKicker}</span>
         </div>
 
         {/* Right: Skip Button */}
@@ -216,7 +216,7 @@ export const PreInvestigationCutscene: React.FC<PreInvestigationCutsceneProps> =
               soundEngine.playInteract();
               onSkip();
             }}
-            className="px-3 py-1 rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 font-heading font-bold text-xs flex items-center gap-1.5 shadow-md transition-colors cursor-pointer"
+            className="px-3.5 py-1.5 rounded-xl bg-[#39BDF7] hover:bg-[#68CEF9] text-[#081426] font-heading font-bold text-xs flex items-center gap-1.5 shadow-[0_0_16px_rgba(57,189,247,0.35)] transition-colors cursor-pointer"
             title="Skip opening story and start gameplay with a 1-line context summary (Space)"
           >
             <span>Skip</span>
@@ -231,17 +231,17 @@ export const PreInvestigationCutscene: React.FC<PreInvestigationCutsceneProps> =
       <div className="my-auto flex items-start justify-end max-w-6xl w-full mx-auto pb-24 pointer-events-none">
         {showDeviceCard && (
           <div
-            className={`pointer-events-auto w-full max-w-sm rounded-2xl bg-[#070D1E]/92 border ${
+            className={`pointer-events-auto w-full max-w-sm rounded-2xl bg-[#060D20]/94 border ${
               accentMode === 'rose'
-                ? 'border-rose-500/70'
+                ? 'border-rose-500/70 shadow-[0_16px_40px_rgba(2,6,23,0.9),0_0_24px_rgba(244,63,94,0.2)]'
                 : accentMode === 'cyan'
-                ? 'border-[#00F0FF]/70'
-                : 'border-amber-400/70'
-            } p-3.5 backdrop-blur-xl shadow-2xl ${
+                ? 'border-[#00F0FF]/70 shadow-[0_16px_40px_rgba(2,6,23,0.9),0_0_24px_rgba(0,240,255,0.2)]'
+                : 'border-pink-400/70 shadow-[0_16px_40px_rgba(2,6,23,0.9),0_0_24px_rgba(236,72,153,0.22)]'
+            } p-3.5 backdrop-blur-xl ${
               settings.reducedMotion ? '' : 'transition-opacity duration-300'
             }`}
           >
-            <div className="flex items-center justify-between gap-2 pb-2 mb-2 border-b border-white/10">
+            <div className="flex items-center justify-between gap-2 pb-2 mb-2 border-b border-sky-500/20">
               <div className="flex items-center gap-2 min-w-0">
                 <div
                   className={`w-6 h-6 rounded-md flex items-center justify-center shrink-0 ${
@@ -249,7 +249,7 @@ export const PreInvestigationCutscene: React.FC<PreInvestigationCutsceneProps> =
                       ? 'bg-rose-500/20 text-rose-300'
                       : accentMode === 'cyan'
                       ? 'bg-[#00F0FF]/15 text-[#00F0FF]'
-                      : 'bg-amber-400/20 text-amber-300'
+                      : 'bg-pink-500/20 text-pink-300'
                   }`}
                 >
                   {popup.deviceType === 'phone' && <Smartphone className="w-3.5 h-3.5" />}
@@ -258,7 +258,7 @@ export const PreInvestigationCutscene: React.FC<PreInvestigationCutsceneProps> =
                   {popup.deviceType === 'case_board' && <LayoutGrid className="w-3.5 h-3.5" />}
                 </div>
                 <div className="min-w-0">
-                  <span className="block font-mono text-[10px] uppercase tracking-wider text-slate-400">
+                  <span className="block font-mono text-[10px] uppercase tracking-wider text-slate-300">
                     {popup.headerTitle} · {popup.timestamp}
                   </span>
                   <span className="block font-mono text-xs font-bold text-white truncate">
@@ -267,22 +267,22 @@ export const PreInvestigationCutscene: React.FC<PreInvestigationCutsceneProps> =
                 </div>
               </div>
 
-              <span className="px-1.5 py-0.5 rounded bg-amber-400/20 text-amber-200 font-mono text-[10px] font-bold shrink-0">
+              <span className="px-2 py-0.5 rounded bg-pink-500/20 border border-pink-400/45 text-pink-200 font-mono text-[10px] font-bold shrink-0">
                 {popup.alertBadge}
               </span>
             </div>
 
-            <div className="rounded-lg bg-[#0B132B] border border-white/10 p-2.5">
+            <div className="rounded-lg bg-[#0A142D] border border-sky-500/20 p-2.5">
               <div className="flex items-start gap-2">
-                <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
+                <AlertTriangle className="w-3.5 h-3.5 text-pink-400 shrink-0 mt-0.5" />
                 <p className={`font-mono text-slate-100 leading-snug ${actionFontClass}`}>
                   {popup.messagePreview}
                 </p>
               </div>
             </div>
 
-            <div className="mt-2 flex items-center gap-1.5 text-amber-200 font-mono text-[11px]">
-              <ShieldAlert className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+            <div className="mt-2 flex items-center gap-1.5 text-pink-200 font-mono text-[11px]">
+              <ShieldAlert className="w-3.5 h-3.5 text-pink-400 shrink-0" />
               <span>{popup.mysteryHighlight}</span>
             </div>
           </div>
@@ -290,7 +290,7 @@ export const PreInvestigationCutscene: React.FC<PreInvestigationCutsceneProps> =
       </div>
 
       {/* =====================================================================
-          BOX-FREE DIRECT-OVER-SCENE SUBTITLE (Matches Reference Video)
+          READABLE SUBTITLE OVER SCENE
       ===================================================================== */}
       <SceneSubtitleLine
         speaker={currentBeat.speaker}
@@ -303,12 +303,12 @@ export const PreInvestigationCutscene: React.FC<PreInvestigationCutsceneProps> =
       {/* =====================================================================
           MINIMAL BOTTOM-CORNER PLAYBACK CONTROLS (Kept outside center subtitle area)
       ===================================================================== */}
-      <div className="w-full max-w-6xl mx-auto flex items-center justify-between text-xs font-mono text-slate-300/85 [text-shadow:0_1px_3px_rgba(0,0,0,0.95)] pt-2">
-        <span className="truncate max-w-md hidden sm:inline">
+      <div className="w-full max-w-6xl mx-auto flex items-center justify-between text-xs font-mono text-[#F2F5FA] pt-2">
+        <span className="truncate max-w-md hidden sm:inline px-3 py-1 rounded-lg bg-[#081426]/90 border border-[#39BDF7]/25 text-[#F2F5FA]/80">
           {isFinalBeat ? `Objective: ${cutscene.startingObjective}` : cutscene.compellingQuestion}
         </span>
 
-        <div className="flex items-center gap-3 ml-auto">
+        <div className="flex items-center gap-3 ml-auto px-3.5 py-1.5 rounded-xl bg-[#081426]/90 border border-[#39BDF7]/30 backdrop-blur-md">
           <button
             type="button"
             onClick={handlePrevBeat}
@@ -336,11 +336,11 @@ export const PreInvestigationCutscene: React.FC<PreInvestigationCutsceneProps> =
           <button
             type="button"
             onClick={handleNextBeat}
-            className="text-amber-300 hover:text-amber-200 font-semibold flex items-center gap-1 cursor-pointer"
+            className="text-[#39BDF7] hover:text-[#68CEF9] font-semibold flex items-center gap-1 cursor-pointer"
           >
             {isFinalBeat ? (
               <>
-                <Footprints className="w-3.5 h-3.5" />
+                <Footprints className="w-3.5 h-3.5 text-[#F05A9D]" />
                 <span>Investigate</span>
               </>
             ) : (

@@ -359,14 +359,14 @@ export const AdventureWorld: React.FC<AdventureWorldProps> = ({
     sceneRef.current = scene;
     scene.background = new THREE.Color(
       level.setting === 'campus'
-        ? 0x82b4dc
+        ? 0x74a8d8
         : level.setting === 'cafe'
-        ? 0x0c121e
-        : 0x090f1d
+        ? 0x070d1e
+        : 0x050a18
     );
     scene.fog = new THREE.FogExp2(
-      level.setting === 'campus' ? 0x82b4dc : 0x0c121e,
-      level.setting === 'campus' ? 0.022 : 0.035
+      level.setting === 'campus' ? 0x74a8d8 : 0x070e22,
+      level.setting === 'campus' ? 0.022 : 0.032
     );
 
     // Camera
@@ -398,7 +398,7 @@ export const AdventureWorld: React.FC<AdventureWorldProps> = ({
     renderer.setPixelRatio(isSoftwareGl ? 1 : Math.min(window.devicePixelRatio, 2));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = level.setting === 'campus' ? 1.02 : 0.96;
+    renderer.toneMappingExposure = level.setting === 'campus' ? 1.02 : 0.98;
     renderer.shadowMap.enabled = !isSoftwareGl;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     container.appendChild(renderer.domElement);
@@ -409,31 +409,31 @@ export const AdventureWorld: React.FC<AdventureWorldProps> = ({
     pmremGenerator.dispose();
 
     // -----------------------------------------------------------------------
-    // ATMOSPHERIC INDIE-ADVENTURE LIGHTING RIG (Cinematic, Restrained, Moody)
+    // ATMOSPHERIC DETECTIVE BLUE LIGHTING RIG (Restrained, Moody, Natural Props)
     // -----------------------------------------------------------------------
-    // Subtle cool night/room ambient fill
+    // Cool midnight-blue ambient fill for quiet investigation mood
     const ambientColor =
       level.setting === 'campus'
-        ? 0x64748b
+        ? 0x5b7da3
         : level.setting === 'cafe'
-        ? 0x1e293b
+        ? 0x1b2d4f
         : level.setting === 'office'
-        ? 0x334155
-        : 0x1e2538;
+        ? 0x2a436e
+        : 0x1e325c;
     const ambientLight = new THREE.AmbientLight(
       ambientColor,
-      level.setting === 'campus' ? 0.65 : 0.45
+      level.setting === 'campus' ? 0.65 : 0.52
     );
     scene.add(ambientLight);
 
-    // Directional Key Light (Night window moonlight or streetlamp bounce)
+    // Directional Key Light (Moonlight / evening blue window key balanced for natural materials)
     const keyLightColor =
       level.setting === 'campus'
         ? 0x93c5fd
         : level.setting === 'apartment'
-        ? 0xa5b4fc
-        : 0xfde68a;
-    const sunLight = new THREE.DirectionalLight(keyLightColor, level.setting === 'campus' ? 1.6 : 1.35);
+        ? 0x93c5fd
+        : 0xbfdbfe;
+    const sunLight = new THREE.DirectionalLight(keyLightColor, level.setting === 'campus' ? 1.55 : 1.35);
     sunLight.position.set(5.5, 8.0, 6.5);
     sunLight.castShadow = !isSoftwareGl;
     sunLight.shadow.mapSize.width = 2048;
@@ -448,14 +448,14 @@ export const AdventureWorld: React.FC<AdventureWorldProps> = ({
     sunLight.shadow.camera.bottom = -9;
     scene.add(sunLight);
 
-    // Subtle soft fill bounce
-    const fillBounceLight = new THREE.DirectionalLight(0x38bdf8, 0.25);
+    // Cool detective blue rim/fill bounce
+    const fillBounceLight = new THREE.DirectionalLight(0x38bdf8, 0.34);
     fillBounceLight.position.set(-4, 3, -4);
     scene.add(fillBounceLight);
 
-    // Warm Interior Sconce / Lamp Light with natural inverse-square physical falloff
-    const lampColor = level.setting === 'campus' ? 0x67e8f9 : 0xfbbf24;
-    const lampLight = new THREE.PointLight(lampColor, 1.8, 8, 2);
+    // Grounded Interior Sconce / Lamp Light (keeps wood/fabric props looking natural, not neon)
+    const lampColor = level.setting === 'campus' ? 0x7dd3fc : 0xfde68a;
+    const lampLight = new THREE.PointLight(lampColor, 1.55, 8, 2);
     lampLight.position.set(-3.2, 1.9, -3.2);
     lampLight.castShadow = !isSoftwareGl;
     lampLight.shadow.mapSize.width = 1024;
@@ -463,8 +463,8 @@ export const AdventureWorld: React.FC<AdventureWorldProps> = ({
     lampLight.shadow.bias = -0.0005;
     scene.add(lampLight);
 
-    // Overhead Downlight Fixture (Subtle focus on evidence table)
-    const ceilingSpot = new THREE.SpotLight(0xfffbeb, 1.2, 9, Math.PI / 4.5, 0.5, 2);
+    // Overhead Downlight Fixture (Clean neutral-cool focus on evidence table)
+    const ceilingSpot = new THREE.SpotLight(0xe0f2fe, 1.25, 9, Math.PI / 4.5, 0.5, 2);
     ceilingSpot.position.set(1.5, 3.4, 0.5);
     ceilingSpot.target.position.set(1.5, 0.4, 0.5);
     scene.add(ceilingSpot);
@@ -1442,20 +1442,20 @@ export const AdventureWorld: React.FC<AdventureWorldProps> = ({
               }
               className={`px-3 py-1.5 rounded-xl border backdrop-blur-md transition-all flex items-center gap-2 shadow-lg cursor-pointer hover:scale-105 active:scale-95 ${
                 primaryMarker.type === 'npc'
-                  ? 'bg-[#070D1E]/92 border-[#00F0FF]/80 text-white shadow-[0_4px_16px_rgba(0,0,0,0.6),0_0_14px_rgba(0,240,255,0.4)]'
-                  : 'bg-[#070D1E]/92 border-amber-400/80 text-white shadow-[0_4px_16px_rgba(0,0,0,0.6),0_0_14px_rgba(245,158,11,0.4)]'
+                  ? 'bg-[#060D20]/94 border-[#00F0FF]/85 text-[#F8FAFC] shadow-[0_4px_16px_rgba(0,0,0,0.7),0_0_16px_rgba(0,240,255,0.4)]'
+                  : 'bg-[#060D20]/94 border-pink-400/85 text-[#F8FAFC] shadow-[0_4px_16px_rgba(0,0,0,0.7),0_0_16px_rgba(236,72,153,0.45)]'
               }`}
             >
               <span
                 className={`w-5 h-5 flex items-center justify-center rounded text-[11px] font-mono font-black ${
                   primaryMarker.type === 'npc'
                     ? 'bg-[#00F0FF] text-slate-950'
-                    : 'bg-amber-400 text-slate-950'
+                    : 'bg-pink-400 text-slate-950'
                 }`}
               >
                 {primaryMarker.type === 'npc' ? 'T' : 'E'}
               </span>
-              <span className="font-heading font-semibold text-xs text-white/95 whitespace-nowrap">
+              <span className="font-heading font-semibold text-xs text-[#F8FAFC] whitespace-nowrap">
                 {primaryMarker.interactionLabel}
               </span>
               {primaryMarker.type === 'object' && primaryMarker.isCollected && (
@@ -1467,7 +1467,7 @@ export const AdventureWorld: React.FC<AdventureWorldProps> = ({
 
             {/* Small non-overlapping nearby-target list if multiple targets are equally close */}
             {secondaryCloseMarkers.length > 0 && (
-              <div className="mt-1 px-2 py-0.5 rounded-md bg-[#070D1E]/90 border border-slate-700/80 text-[10px] font-mono text-slate-300 backdrop-blur-md">
+              <div className="mt-1 px-2 py-0.5 rounded-md bg-[#060D20]/92 border border-sky-500/30 text-[10px] font-mono text-slate-200 backdrop-blur-md">
                 Also nearby: {secondaryCloseMarkers.map((s) => s.interactionLabel).join(' · ')}
               </div>
             )}
@@ -2572,14 +2572,14 @@ function createPhotorealisticWorldObjectProp(obj: WorldObjectDef, isCollected: b
     group.add(backing, sheet, accentBar);
   }
 
-  // Subtle Evidence Ring (Amber if uninspected, Emerald if inspected; brightens on proximity)
+  // Subtle Evidence Ring (Soft Rose / Magenta if uninspected, Emerald if inspected; brightens on proximity)
   const ringGeo = new THREE.RingGeometry(0.24, 0.29, 28);
   ringGeo.rotateX(-Math.PI / 2);
   const ringMat = new THREE.MeshBasicMaterial({
-    color: isCollected ? 0x10b981 : 0xf59e0b,
+    color: isCollected ? 0x10b981 : 0xf472b6,
     side: THREE.DoubleSide,
     transparent: true,
-    opacity: 0.35,
+    opacity: 0.42,
   });
   const ring = new THREE.Mesh(ringGeo, ringMat);
   ring.name = 'targetHighlightRing';

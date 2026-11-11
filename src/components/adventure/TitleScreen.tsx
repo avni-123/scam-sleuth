@@ -25,7 +25,7 @@ import { soundEngine } from '../../utils/proceduralAudio';
 import { ChapterInvestigationModal } from './ChapterInvestigationModal';
 import { CompleteCampaignScriptView } from './CompleteCampaignScriptView';
 import { ScamSleuthLogo } from './ScamSleuthLogo';
-import rainyDeskBgImg from '../../assets/images/scam_sleuth_rainy_desk_bg_1794040522608.jpg';
+import rainyDeskBgImg from '../../assets/images/scam_sleuth_blue_pink_desk_1794314110762.jpg';
 import detectivePortraitImg from '../../assets/images/detective_character_portrait_1794034150867.jpg';
 
 interface TitleScreenProps {
@@ -325,7 +325,7 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
   ];
 
   return (
-    <div className="relative w-screen h-screen overflow-hidden bg-[#060A14] text-slate-100 select-none font-sans flex flex-col justify-between">
+    <div className="relative w-screen h-screen overflow-hidden bg-[#081426] text-[#F2F5FA] select-none font-sans flex flex-col justify-between">
       {/* =====================================================================
           1. FULL-SCREEN CINEMATIC RAINY APARTMENT & DETECTIVE DESK ARTWORK
       ===================================================================== */}
@@ -333,7 +333,7 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
         {bgLoaded ? (
           <img
             src={rainyDeskBgImg}
-            alt="Late-night detective desk facing a rain-streaked apartment window with case notes and a glowing smartphone"
+            alt="Late-night detective desk with electric blue and vivid pink reflections facing a rain-streaked apartment window"
             referrerPolicy="no-referrer"
             onError={() => setBgLoaded(false)}
             className={`w-full h-full object-cover object-center ${
@@ -343,22 +343,22 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
             }`}
           />
         ) : (
-          <div className="w-full h-full bg-gradient-to-br from-[#070D1B] via-[#0F1B33] to-[#1A1423]" />
+          <div className="w-full h-full bg-gradient-to-br from-[#081426] via-[#0E2445] to-[#1F102B]" />
         )}
 
-        {/* Measured Contrast Scrim: keeps left/center menu high-contrast while revealing the rainy window, lamp, and glowing phone */}
+        {/* Measured Contrast Scrim: deep navy (#081426) atmosphere with subtle electric blue (#39BDF7) & vivid pink (#F05A9D) reflections */}
         <div
-          className="absolute inset-0 bg-gradient-to-b from-[#040711]/80 via-[#050A17]/60 to-[#040711]/92"
+          className="absolute inset-0 bg-gradient-to-b from-[#081426]/75 via-[#081426]/50 to-[#081426]/92"
           aria-hidden="true"
         />
         <div
-          className="absolute inset-0 bg-[radial-gradient(circle_at_50%_42%,rgba(6,11,24,0.45)_0%,rgba(4,7,17,0.88)_100%)]"
+          className="absolute inset-0 bg-[radial-gradient(circle_at_20%_40%,rgba(57,189,247,0.2)_0%,transparent_50%),radial-gradient(circle_at_80%_35%,rgba(240,90,157,0.2)_0%,transparent_50%)]"
           aria-hidden="true"
         />
 
         {/* Subtle Rain Streaks Over Window Glass (Disabled when Reduced Motion is On) */}
         {!reducedMotion && (
-          <div className="absolute inset-0 overflow-hidden opacity-30" aria-hidden="true">
+          <div className="absolute inset-0 overflow-hidden opacity-35" aria-hidden="true">
             <style>{`
               @keyframes sleuthRainFall {
                 0% { transform: translate3d(0, -120px, 0) rotate(8deg); opacity: 0; }
@@ -375,7 +375,7 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
                   height: drop.height,
                   animation: `sleuthRainFall ${drop.duration} linear ${drop.delay} infinite`,
                 }}
-                className="absolute top-0 w-[1px] bg-gradient-to-b from-transparent via-sky-200/50 to-transparent"
+                className="absolute top-0 w-[1px] bg-gradient-to-b from-transparent via-[#39BDF7]/55 to-transparent"
               />
             ))}
           </div>
@@ -385,11 +385,12 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
       {/* =====================================================================
           2. TOP SUBTLE AMBIENT HEADER (Quiet Case File Kicker & Reduced Motion Toggle)
       ===================================================================== */}
-      <header className="relative z-10 w-full max-w-6xl mx-auto px-6 sm:px-10 pt-6 flex items-center justify-between text-xs font-mono text-slate-300/80">
+      <header className="relative z-10 w-full max-w-6xl mx-auto px-6 sm:px-10 pt-6 flex items-center justify-between text-xs font-mono text-[#F2F5FA]/90">
         <div className="flex items-center gap-2">
-          <span className="text-amber-300/90 font-semibold">THE GLASSHOUSE FILES</span>
-          <span aria-hidden="true">·</span>
-          <span>10 CASES · 30 CHAPTERS</span>
+          <span className="h-2 w-2 rounded-full bg-[#F05A9D] shadow-[0_0_10px_#F05A9D]" />
+          <span className="text-[#F05A9D] font-semibold tracking-wider">THE GLASSHOUSE FILES</span>
+          <span aria-hidden="true" className="text-slate-500">·</span>
+          <span className="text-[#F2F5FA]/80">10 CASES · 30 CHAPTERS</span>
         </div>
 
         <div className="flex items-center gap-4">
@@ -400,7 +401,7 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
                 soundEngine.playGtaMenuHover();
                 onUpdateSettings({ reducedMotion: !reducedMotion });
               }}
-              className="text-slate-300/80 hover:text-white transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 rounded px-1.5 py-0.5"
+              className="text-[#F2F5FA]/85 hover:text-[#39BDF7] transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39BDF7] rounded px-1.5 py-0.5"
               title="Toggle Reduced Background Motion"
             >
               Motion: {reducedMotion ? 'Reduced' : 'Subtle'}
@@ -413,7 +414,7 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
                 soundEngine.playGtaMenuSelect();
                 onOpenArtDossier();
               }}
-              className="text-slate-300/80 hover:text-white transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 rounded px-1.5 py-0.5"
+              className="text-[#F2F5FA]/85 hover:text-[#39BDF7] transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39BDF7] rounded px-1.5 py-0.5"
             >
               Character Dossier
             </button>
@@ -456,26 +457,30 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
                   }}
                   onFocus={() => setSelectedIndex(idx)}
                   onClick={() => handleActivateMenuOption(idx)}
-                  className={`group relative w-full py-2 sm:py-2.5 px-6 flex flex-col items-center justify-center transition-all duration-150 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 rounded-lg ${
-                    item.disabled ? 'opacity-40 cursor-not-allowed' : ''
-                  }`}
+                  className={`group relative w-full py-2 sm:py-2.5 px-6 flex flex-col items-center justify-center transition-all duration-150 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39BDF7] rounded-xl ${
+                    isSelected
+                      ? 'bg-[#081426]/20 backdrop-blur-sm border border-[#F05A9D]/60 shadow-[0_4px_24px_rgba(8,20,38,0.45),0_0_12px_rgba(240,90,157,0.18)]'
+                      : 'border border-transparent hover:bg-[#081426]/20 hover:backdrop-blur-sm hover:border-[#F05A9D]/30'
+                  } ${item.disabled ? 'opacity-40 cursor-not-allowed' : ''}`}
                 >
                   <div className="flex items-center justify-center gap-3">
-                    {/* Subtle Left Selection Marker */}
+                    {/* Left Selection Marker (Vivid Pink for selected item) */}
                     <span
                       aria-hidden="true"
                       className={`h-1.5 w-1.5 rounded-full transition-all duration-150 ${
                         isSelected
-                          ? 'bg-amber-400 shadow-[0_0_10px_#F59E0B] scale-125'
+                          ? 'bg-[#F05A9D] shadow-[0_0_12px_#F05A9D] scale-125'
                           : 'bg-transparent'
                       }`}
                     />
 
                     <span
-                      className={`font-heading tracking-wider transition-all duration-150 [text-shadow:0_2px_12px_rgba(0,0,0,0.98),0_1px_3px_rgba(0,0,0,0.95)] ${
+                      className={`font-heading tracking-wider transition-all duration-150 [text-shadow:0_2px_12px_rgba(8,20,38,0.98),0_1px_3px_rgba(8,20,38,0.95)] ${
                         isSelected
-                          ? 'text-xl sm:text-2xl font-bold text-white'
-                          : 'text-lg sm:text-xl font-medium text-slate-300/85 hover:text-white'
+                          ? isContinue
+                            ? 'text-xl sm:text-2xl font-bold text-[#39BDF7]'
+                            : 'text-xl sm:text-2xl font-bold text-[#F2F5FA]'
+                          : 'text-lg sm:text-xl font-medium text-[#F2F5FA]/80 hover:text-white'
                       }`}
                     >
                       {item.label}
@@ -485,29 +490,29 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
                       aria-hidden="true"
                       className={`h-1.5 w-1.5 rounded-full transition-all duration-150 ${
                         isSelected
-                          ? 'bg-amber-400 shadow-[0_0_10px_#F59E0B] scale-125'
+                          ? 'bg-[#F05A9D] shadow-[0_0_12px_#F05A9D] scale-125'
                           : 'bg-transparent'
                       }`}
                     />
                   </div>
 
-                  {/* Subtle Underline / Soft Glow on Active Selection */}
+                  {/* Subtle Underline / Soft Glow on Active Selection (Pink to Blue gradient) */}
                   <div
                     aria-hidden="true"
                     className={`mt-1 h-[2px] rounded-full transition-all duration-200 ${
                       isSelected
-                        ? 'w-44 bg-gradient-to-r from-transparent via-amber-400 to-transparent shadow-[0_0_14px_rgba(245,158,11,0.8)]'
+                        ? 'w-48 bg-gradient-to-r from-transparent via-[#F05A9D] to-[#39BDF7] shadow-[0_0_16px_rgba(240,90,157,0.85)]'
                         : 'w-0 bg-transparent'
                     }`}
                   />
 
-                  {/* Campaign Progress & Current Level beneath Continue Investigation (and subtle context on active selection) */}
+                  {/* Campaign Progress & Current Level beneath Continue Investigation */}
                   {(isContinue || isSelected) && (
                     <span
-                      className={`mt-1 font-mono text-[11px] sm:text-xs tracking-wide [text-shadow:0_1px_4px_rgba(0,0,0,0.98)] transition-opacity duration-200 ${
+                      className={`mt-1 font-mono text-[11px] sm:text-xs tracking-wide [text-shadow:0_1px_4px_rgba(8,20,38,0.98)] transition-opacity duration-200 ${
                         isContinue
-                          ? 'text-amber-300/95 font-medium'
-                          : 'text-slate-300/85'
+                          ? 'text-[#F05A9D] font-medium'
+                          : 'text-[#F2F5FA]/85'
                       }`}
                     >
                       {item.meta}
@@ -526,7 +531,7 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
       <footer className="relative z-10 w-full max-w-6xl mx-auto px-6 sm:px-10 pb-6 pt-2 flex flex-col sm:flex-row items-center justify-between gap-4">
         {/* Left: Compact Player-Character Portrait & Investigator Status */}
         <div className="flex items-center gap-3.5">
-          <div className="w-11 h-11 rounded-full overflow-hidden border border-amber-400/60 bg-[#0D1527] shrink-0 shadow-[0_0_16px_rgba(0,0,0,0.85)]">
+          <div className="w-11 h-11 rounded-full overflow-hidden border border-[#39BDF7]/70 bg-[#081426] shrink-0 shadow-[0_0_16px_rgba(57,189,247,0.3)]">
             {portraitLoaded ? (
               <img
                 src={detectivePortraitImg}
@@ -536,20 +541,20 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
                 className="w-full h-full object-cover object-top"
               />
             ) : (
-              <div className="w-full h-full flex items-center justify-center font-heading font-bold text-xs text-amber-300">
+              <div className="w-full h-full flex items-center justify-center font-heading font-bold text-xs text-[#39BDF7]">
                 RV
               </div>
             )}
           </div>
-          <div className="[text-shadow:0_1px_4px_rgba(0,0,0,0.95)]">
-            <div className="flex items-center gap-2 text-xs sm:text-sm font-heading font-semibold text-white">
+          <div className="[text-shadow:0_1px_4px_rgba(8,20,38,0.95)]">
+            <div className="flex items-center gap-2 text-xs sm:text-sm font-heading font-semibold text-[#F2F5FA]">
               <span>Detective Rowan Vance</span>
               <span className="text-slate-400 font-normal">·</span>
-              <span className="text-amber-300/90 text-xs font-mono font-normal">
+              <span className="text-[#39BDF7] text-xs font-mono font-normal">
                 {investigatorRank}
               </span>
             </div>
-            <div className="font-mono text-[11px] text-slate-300/85 tabular-nums">
+            <div className="font-mono text-[11px] text-[#F2F5FA]/80 tabular-nums">
               {completedCount}/{totalLevels} Cases Solved · {totalCluesLoggedAcrossCampaign} Clues Logged
             </div>
           </div>
@@ -562,24 +567,24 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
             soundEngine.playGtaMenuSelect();
             setActiveSubModal('achievements');
           }}
-          className="flex items-center gap-3 text-left group cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 rounded-lg px-2 py-1 [text-shadow:0_1px_4px_rgba(0,0,0,0.95)]"
+          className="flex items-center gap-3 text-left group cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39BDF7] rounded-lg px-2 py-1 [text-shadow:0_1px_4px_rgba(8,20,38,0.95)]"
           title="View All Investigator Achievements"
         >
           <div
             className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border ${
               latestAchievement.earned
                 ? 'bg-emerald-500/20 border-emerald-400/50 text-emerald-300'
-                : 'bg-amber-400/15 border-amber-400/40 text-amber-300'
+                : 'bg-[#F05A9D]/20 border-[#F05A9D]/50 text-[#F05A9D]'
             }`}
           >
             <Award className="w-4 h-4" />
           </div>
           <div>
-            <div className="font-mono text-[10px] uppercase tracking-wider text-slate-300/80">
+            <div className="font-mono text-[10px] uppercase tracking-wider text-[#F2F5FA]/80">
               {latestAchievement.earned ? 'Latest Achievement' : 'Next Achievement Target'} ·{' '}
-              {latestAchievement.caseLabel}
+              <span className="text-[#F05A9D]">{latestAchievement.caseLabel}</span>
             </div>
-            <div className="font-heading font-semibold text-xs sm:text-sm text-white group-hover:text-amber-300 transition-colors">
+            <div className="font-heading font-semibold text-xs sm:text-sm text-[#F2F5FA] group-hover:text-[#39BDF7] transition-colors">
               {latestAchievement.badgeName}
             </div>
           </div>
@@ -591,32 +596,32 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
       ===================================================================== */}
       {activeSubModal === 'case-files' && (
         <div
-          className="fixed inset-0 z-40 bg-[#050914]/90 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 overflow-y-auto"
+          className="fixed inset-0 z-40 bg-[#081426]/94 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 overflow-y-auto"
           role="dialog"
           aria-modal="true"
           aria-label="Case Files"
         >
-          <div className="w-full max-w-5xl max-h-[90vh] bg-[#0B1222] border border-slate-700/80 rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+          <div className="w-full max-w-5xl max-h-[90vh] bg-[#081426] border border-[#39BDF7]/30 rounded-2xl shadow-[0_24px_64px_rgba(8,20,38,0.95)] flex flex-col overflow-hidden text-[#F2F5FA]">
             {/* Modal Header */}
-            <div className="px-6 py-4 border-b border-slate-800 flex flex-wrap items-center justify-between gap-4">
+            <div className="px-6 py-4 border-b border-[#39BDF7]/20 bg-[#060D1A] flex flex-wrap items-center justify-between gap-4">
               <div>
-                <span className="font-mono text-xs text-amber-400 block">
+                <span className="font-mono text-xs text-[#F05A9D] font-semibold tracking-wider block">
                   THE GLASSHOUSE FILES · 10 CONNECTED CASES
                 </span>
-                <h2 className="font-heading font-bold text-xl sm:text-2xl text-white">
+                <h2 className="font-heading font-bold text-xl sm:text-2xl text-[#F2F5FA]">
                   Investigation Case Files
                 </h2>
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
-                <div className="flex items-center gap-1 p-1 bg-[#111827] border border-slate-800 rounded-lg">
+                <div className="flex items-center gap-1 p-1 bg-[#081426] border border-[#39BDF7]/25 rounded-lg">
                   <button
                     type="button"
                     onClick={() => setCaseFilesTab('board')}
                     className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer ${
                       caseFilesTab === 'board'
-                        ? 'bg-amber-400 text-slate-950 font-semibold'
-                        : 'text-slate-300 hover:text-white'
+                        ? 'bg-[#F05A9D] text-white font-semibold shadow-[0_0_12px_rgba(240,90,157,0.45)]'
+                        : 'text-[#F2F5FA]/70 hover:text-white'
                     }`}
                   >
                     Case Board (10)
@@ -626,8 +631,8 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
                     onClick={() => setCaseFilesTab('script')}
                     className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer ${
                       caseFilesTab === 'script'
-                        ? 'bg-amber-400 text-slate-950 font-semibold'
-                        : 'text-slate-300 hover:text-white'
+                        ? 'bg-[#F05A9D] text-white font-semibold shadow-[0_0_12px_rgba(240,90,157,0.45)]'
+                        : 'text-[#F2F5FA]/70 hover:text-white'
                     }`}
                   >
                     All 30 Chapters
@@ -641,9 +646,9 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
                       soundEngine.playGtaMenuSelect();
                       onUnlockAllLevels();
                     }}
-                    className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-medium flex items-center gap-1.5 cursor-pointer"
+                    className="px-3 py-1.5 rounded-lg bg-[#081426] hover:bg-[#0E223D] border border-[#39BDF7]/40 text-[#F2F5FA] text-xs font-medium flex items-center gap-1.5 cursor-pointer"
                   >
-                    <Unlock className="w-3.5 h-3.5 text-amber-400" />
+                    <Unlock className="w-3.5 h-3.5 text-[#39BDF7]" />
                     <span>Unlock All</span>
                   </button>
                 )}
@@ -651,7 +656,7 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
                 <button
                   type="button"
                   onClick={() => setActiveSubModal('none')}
-                  className="p-2 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white cursor-pointer"
+                  className="p-2 rounded-lg bg-[#081426] hover:bg-[#0E223D] border border-[#39BDF7]/30 text-[#F2F5FA]/80 hover:text-white cursor-pointer"
                   title="Close Case Files (Esc)"
                 >
                   <X className="w-4 h-4" />
@@ -665,7 +670,7 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
                 <>
                   {/* Filter Bar */}
                   <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div className="flex items-center gap-1 p-1 bg-[#111827] border border-slate-800 rounded-lg">
+                    <div className="flex items-center gap-1 p-1 bg-[#060D1A] border border-[#39BDF7]/25 rounded-lg">
                       {(
                         [
                           { id: 'all', label: 'All Cases (10)' },
@@ -680,8 +685,8 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
                           onClick={() => setBoardFilter(tab.id)}
                           className={`px-3 py-1 rounded-md text-xs font-medium transition-colors cursor-pointer ${
                             boardFilter === tab.id
-                              ? 'bg-slate-700 text-white font-semibold'
-                              : 'text-slate-400 hover:text-white'
+                              ? 'bg-[#F05A9D]/25 border border-[#F05A9D]/60 text-[#F05A9D] font-semibold'
+                              : 'text-[#F2F5FA]/70 hover:text-white'
                           }`}
                         >
                           {tab.label}
@@ -706,17 +711,17 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
                           key={lvl.id}
                           className={`rounded-xl border p-5 flex flex-col justify-between gap-4 transition-all ${
                             isCurrent
-                              ? 'bg-[#131C31] border-amber-400'
+                              ? 'bg-[#0B1A33] border-[#F05A9D]/80 shadow-[0_8px_28px_rgba(240,90,157,0.2)]'
                               : isCompleted
-                              ? 'bg-[#0F1928] border-emerald-500/45'
-                              : 'bg-[#0E1422]/80 border-slate-800 opacity-75 hover:opacity-95'
+                              ? 'bg-[#081426] border-emerald-500/45'
+                              : 'bg-[#060D1A]/90 border-[#39BDF7]/20 opacity-80 hover:opacity-100'
                           }`}
                         >
                           <div className="space-y-2.5">
                             <div className="flex items-start justify-between gap-2">
                               <div>
-                                <div className="text-xs font-mono text-slate-400">
-                                  Case 0{levelNum} · {lvl.locationName} · {lvl.npcs[0]?.name}
+                                <div className="text-xs font-mono text-[#F2F5FA]/80">
+                                  <span className="text-[#F05A9D] font-semibold">Case 0{levelNum}</span> · {lvl.locationName} · {lvl.npcs[0]?.name}
                                 </div>
                                 <h3 className="font-heading font-bold text-base sm:text-lg text-white mt-0.5">
                                   {levelNum}. {cleanTitle}
@@ -730,14 +735,14 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
                                     Solved
                                   </span>
                                 ) : isCurrent ? (
-                                  <span className="text-amber-300 flex items-center gap-1">
+                                  <span className="text-[#F05A9D] flex items-center gap-1">
                                     <FolderOpen className="w-3.5 h-3.5" />
-                                    Active
+                                    Active Case
                                   </span>
                                 ) : isAvailable ? (
-                                  <span className="text-slate-300">Available</span>
+                                  <span className="text-[#39BDF7]">Available</span>
                                 ) : (
-                                  <span className="text-slate-500 flex items-center gap-1">
+                                  <span className="text-[#F2F5FA]/40 flex items-center gap-1">
                                     <Lock className="w-3.5 h-3.5" />
                                     Locked
                                   </span>
@@ -745,7 +750,7 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
                               </span>
                             </div>
 
-                            <p className="text-xs text-slate-300 leading-relaxed">
+                            <p className="text-xs text-[#F2F5FA]/85 leading-relaxed">
                               {lvl.objective}
                             </p>
 
@@ -765,9 +770,9 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
                                       setPreviewLevel(lvl);
                                     }
                                   }}
-                                  className="p-2 rounded-lg bg-[#090E1A] hover:bg-slate-800 border border-slate-800 text-left transition-colors cursor-pointer"
+                                  className="p-2 rounded-lg bg-[#060D1A] hover:bg-[#0E223D] border border-[#39BDF7]/20 hover:border-[#F05A9D]/60 text-left transition-colors cursor-pointer"
                                 >
-                                  <span className="block font-mono text-[10px] text-amber-300">
+                                  <span className="block font-mono text-[10px] text-[#F05A9D] font-semibold">
                                     Ch {ch.number} · {ch.phase.replace('The ', '')}
                                   </span>
                                   <span className="block font-heading text-xs text-white truncate">
@@ -778,8 +783,8 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
                             </div>
                           </div>
 
-                          <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between gap-2">
-                            <span className="font-mono text-[11px] text-slate-400 tabular-nums">
+                          <div className="pt-3 border-t border-[#39BDF7]/20 flex items-center justify-between gap-2">
+                            <span className="font-mono text-[11px] text-[#F2F5FA]/80 tabular-nums">
                               {isCompleted
                                 ? `${lvlCluesTotal}/${lvlCluesTotal} Clues Verified`
                                 : `${lvlCluesFound}/${lvlCluesTotal} Clues Logged`}
@@ -792,9 +797,9 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
                                   setPreviewChapterNum(1);
                                   setPreviewLevel(lvl);
                                 }}
-                                className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-200 flex items-center gap-1 cursor-pointer"
+                                className="px-3 py-1.5 rounded-lg bg-[#081426] hover:bg-[#0E223D] border border-[#39BDF7]/30 text-xs text-[#F2F5FA] flex items-center gap-1 cursor-pointer"
                               >
-                                <Eye className="w-3.5 h-3.5 text-amber-400" />
+                                <Eye className="w-3.5 h-3.5 text-[#F05A9D]" />
                                 <span>Notes</span>
                               </button>
 
@@ -806,7 +811,7 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
                                     setActiveSubModal('none');
                                     onSelectLevel(lvl.id, isCurrent ? resolvedChapterNum : 1);
                                   }}
-                                  className="px-3.5 py-1.5 rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 font-heading font-bold text-xs flex items-center gap-1 cursor-pointer"
+                                  className="px-3.5 py-1.5 rounded-lg bg-[#39BDF7] hover:bg-[#68CEF9] text-[#081426] font-heading font-bold text-xs flex items-center gap-1 cursor-pointer shadow-[0_0_16px_rgba(57,189,247,0.35)]"
                                 >
                                   <Play className="w-3 h-3 fill-current" />
                                   <span>
@@ -845,18 +850,18 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
       ===================================================================== */}
       {activeSubModal === 'achievements' && (
         <div
-          className="fixed inset-0 z-40 bg-[#050914]/90 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 overflow-y-auto"
+          className="fixed inset-0 z-40 bg-[#081426]/95 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 overflow-y-auto"
           role="dialog"
           aria-modal="true"
           aria-label="Investigator Achievements"
         >
-          <div className="w-full max-w-4xl max-h-[88vh] bg-[#0B1222] border border-slate-700/80 rounded-2xl shadow-2xl flex flex-col overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between">
+          <div className="w-full max-w-4xl max-h-[88vh] bg-[#081426] border border-[#39BDF7]/30 rounded-2xl shadow-2xl flex flex-col overflow-hidden text-[#F2F5FA]">
+            <div className="px-6 py-4 border-b border-[#39BDF7]/25 bg-[#060D1A] flex items-center justify-between">
               <div>
-                <span className="font-mono text-xs text-amber-400 block">
+                <span className="font-mono text-xs text-[#F05A9D] font-semibold tracking-wider block">
                   INVESTIGATOR RECORD · {earnedBadges.length} OF {totalLevels} EARNED
                 </span>
-                <h2 className="font-heading font-bold text-xl sm:text-2xl text-white">
+                <h2 className="font-heading font-bold text-xl sm:text-2xl text-[#F2F5FA]">
                   Achievements & Cyber-Safety Badges
                 </h2>
               </div>
@@ -864,7 +869,7 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
               <button
                 type="button"
                 onClick={() => setActiveSubModal('none')}
-                className="p-2 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white cursor-pointer"
+                className="p-2 rounded-lg bg-[#081426] hover:bg-[#0E223D] border border-[#39BDF7]/30 text-[#F2F5FA]/80 hover:text-white cursor-pointer"
                 title="Close Achievements (Esc)"
               >
                 <X className="w-4 h-4" />
@@ -883,10 +888,10 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
                     key={lvl.id}
                     className={`p-4 rounded-xl border flex items-start gap-3.5 ${
                       isEarned
-                        ? 'bg-[#101D2E] border-emerald-500/50'
+                        ? 'bg-[#0B1A33] border-emerald-500/50'
                         : isNextTarget
-                        ? 'bg-[#131C31] border-amber-400/50'
-                        : 'bg-[#0D1322]/75 border-slate-800 opacity-65'
+                        ? 'bg-[#0B1A33] border-[#F05A9D]/70 shadow-[0_0_20px_rgba(240,90,157,0.2)]'
+                        : 'bg-[#060D1A]/85 border-[#39BDF7]/20 opacity-70'
                     }`}
                   >
                     <div
@@ -894,8 +899,8 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
                         isEarned
                           ? 'bg-emerald-500/20 text-emerald-300'
                           : isNextTarget
-                          ? 'bg-amber-400/20 text-amber-300'
-                          : 'bg-slate-800 text-slate-500'
+                          ? 'bg-[#F05A9D]/20 text-[#F05A9D] border border-[#F05A9D]/50'
+                          : 'bg-[#081426] text-[#F2F5FA]/40'
                       }`}
                     >
                       {isEarned ? <Award className="w-5 h-5" /> : <Lock className="w-4 h-4" />}
@@ -903,20 +908,20 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
 
                     <div className="space-y-1 min-w-0">
                       <div className="flex items-center gap-2 text-[11px] font-mono">
-                        <span className="text-slate-400">Case 0{idx + 1}</span>
-                        <span>·</span>
+                        <span className="text-[#F05A9D]">Case 0{idx + 1}</span>
+                        <span className="text-slate-500">·</span>
                         {isEarned ? (
                           <span className="text-emerald-400 font-semibold">Earned</span>
                         ) : isNextTarget ? (
-                          <span className="text-amber-300 font-semibold">Current Target</span>
+                          <span className="text-[#F05A9D] font-semibold">Current Target</span>
                         ) : (
-                          <span className="text-slate-500">Locked Preview</span>
+                          <span className="text-[#F2F5FA]/50">Locked Preview</span>
                         )}
                       </div>
                       <h3 className="font-heading font-bold text-sm sm:text-base text-white">
                         {badgeTitle}
                       </h3>
-                      <p className="text-xs text-slate-300 leading-relaxed">
+                      <p className="text-xs text-[#F2F5FA]/80 leading-relaxed">
                         {isEarned
                           ? lvl.debrief.realWorldHabit
                           : `Solve Case 0${idx + 1} (${getCleanLevelTitle(
@@ -937,25 +942,25 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
       ===================================================================== */}
       {activeSubModal === 'new-confirm' && (
         <div
-          className="fixed inset-0 z-40 bg-[#050914]/88 backdrop-blur-md flex items-center justify-center p-4"
+          className="fixed inset-0 z-40 bg-[#081426]/95 backdrop-blur-md flex items-center justify-center p-4"
           role="dialog"
           aria-modal="true"
           aria-label="Start New Investigation"
         >
-          <div className="w-full max-w-md bg-[#0B1222] border border-slate-700 rounded-2xl p-6 space-y-4 shadow-2xl">
-            <div className="flex items-center gap-2.5 text-amber-300 font-heading font-bold text-lg">
+          <div className="w-full max-w-md bg-[#081426] border border-[#39BDF7]/35 rounded-2xl p-6 space-y-4 shadow-2xl text-[#F2F5FA]">
+            <div className="flex items-center gap-2.5 text-[#F05A9D] font-heading font-bold text-lg">
               <RotateCcw className="w-5 h-5" />
               <span>Start a New Investigation?</span>
             </div>
-            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+            <p className="text-xs sm:text-sm text-[#F2F5FA]/90 leading-relaxed">
               This will reset your current campaign journal ({completedCount}/{totalLevels} cases
-              solved) and begin fresh at <strong>Case 01: The Parcel That Never Came</strong>.
+              solved) and begin fresh at <strong className="text-white">Case 01: The Parcel That Never Came</strong>.
             </p>
             <div className="flex items-center justify-end gap-3 pt-2">
               <button
                 type="button"
                 onClick={() => setActiveSubModal('none')}
-                className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-medium text-slate-200 cursor-pointer"
+                className="px-4 py-2 rounded-lg bg-[#060D1A] hover:bg-[#0E223D] border border-[#39BDF7]/30 text-xs font-medium text-[#F2F5FA] cursor-pointer"
               >
                 Cancel
               </button>
@@ -970,7 +975,7 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
                     onSelectLevel('tutorial-delivery', 1);
                   }
                 }}
-                className="px-4 py-2 rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 font-heading font-bold text-xs flex items-center gap-1.5 cursor-pointer"
+                className="px-4 py-2 rounded-lg bg-[#39BDF7] hover:bg-[#68CEF9] text-[#081426] font-heading font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-[0_0_16px_rgba(57,189,247,0.35)]"
               >
                 <span>Begin New Investigation</span>
                 <ChevronRight className="w-4 h-4" />
@@ -985,19 +990,19 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
       ===================================================================== */}
       {activeSubModal === 'quit' && (
         <div
-          className="fixed inset-0 z-40 bg-[#050914]/92 backdrop-blur-md flex items-center justify-center p-4"
+          className="fixed inset-0 z-40 bg-[#081426]/95 backdrop-blur-md flex items-center justify-center p-4"
           role="dialog"
           aria-modal="true"
           aria-label="Quit Session"
         >
-          <div className="w-full max-w-md bg-[#0B1222] border border-slate-700 rounded-2xl p-6 space-y-4 shadow-2xl text-center">
+          <div className="w-full max-w-md bg-[#081426] border border-[#39BDF7]/35 rounded-2xl p-6 space-y-4 shadow-2xl text-center text-[#F2F5FA]">
             <div className="w-11 h-11 rounded-full bg-emerald-500/15 border border-emerald-400/40 text-emerald-300 flex items-center justify-center mx-auto">
               <ShieldCheck className="w-5 h-5" />
             </div>
             <h2 className="font-heading font-bold text-lg text-white">
               Case Progress Saved to Journal
             </h2>
-            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+            <p className="text-xs sm:text-sm text-[#F2F5FA]/90 leading-relaxed">
               Detective Rowan Vance’s case notes ({completedCount}/{totalLevels} cases solved,{' '}
               {totalCluesLoggedAcrossCampaign} clues logged) are safely stored in your browser.
               You can close this tab anytime or return to the desk.
@@ -1006,7 +1011,7 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
               <button
                 type="button"
                 onClick={() => setActiveSubModal('none')}
-                className="px-5 py-2 rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 font-heading font-bold text-xs cursor-pointer"
+                className="px-5 py-2 rounded-lg bg-[#39BDF7] hover:bg-[#68CEF9] text-[#081426] font-heading font-bold text-xs cursor-pointer shadow-[0_0_16px_rgba(57,189,247,0.35)]"
               >
                 Return to Main Menu
               </button>

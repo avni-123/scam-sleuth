@@ -429,7 +429,7 @@ export default function App() {
 
   return (
     <div
-      className={`w-screen h-screen bg-[#070D1E] text-white font-sans antialiased ${
+      className={`w-screen h-screen bg-[#081426] text-[#F2F5FA] font-sans antialiased ${
         currentView === 'title' ? 'overflow-y-auto overflow-x-hidden' : 'overflow-hidden'
       }`}
     >

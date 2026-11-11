@@ -112,7 +112,7 @@ export const LEVEL_INTRO_CUTSCENES: Record<string, LevelIntroCutscene> = {
         cameraShot: 'investigator_arrival',
         speaker: 'Detective Rowan Vance (You)',
         speakerRole: 'Neighborhood Investigator · Arriving at Apt 4B',
-        speakerColor: '#f59e0b',
+        speakerColor: '#39BDF7',
         subtitleText:
           '“Hold on before you tap that link, Alex. Let’s examine the phone and the building courier notice first.”',
         actionStageDirection: 'You step into Sunset Heights Apartment 4B as Alex turns toward you for help.',
@@ -190,7 +190,7 @@ export const LEVEL_INTRO_CUTSCENES: Record<string, LevelIntroCutscene> = {
         cameraShot: 'investigator_arrival',
         speaker: 'Detective Rowan Vance (You)',
         speakerRole: 'Neighborhood Investigator · Arriving on Scene',
-        speakerColor: '#f59e0b',
+        speakerColor: '#39BDF7',
         subtitleText:
           '“Don’t send the transfer yet, Alex. Let’s check the tablet chat against the household schedule on the wall.”',
         actionStageDirection: 'You arrive in the living room, ready to compare the chat message with the wall calendar.',
@@ -268,7 +268,7 @@ export const LEVEL_INTRO_CUTSCENES: Record<string, LevelIntroCutscene> = {
         cameraShot: 'investigator_arrival',
         speaker: 'Detective Rowan Vance (You)',
         speakerRole: 'Neighborhood Investigator · Arriving at Courtyard',
-        speakerColor: '#f59e0b',
+        speakerColor: '#39BDF7',
         subtitleText:
           '“Good catch keeping your hands off the keyboard, Maya. Let’s inspect the browser address bar and the Campus IT notice.”',
         actionStageDirection: 'You walk into the courtyard, ready to inspect Maya’s laptop and the IT kiosk.',
@@ -307,7 +307,7 @@ export const LEVEL_INTRO_CUTSCENES: Record<string, LevelIntroCutscene> = {
         cameraShot: 'character_medium',
         speaker: 'Marcus Vance',
         speakerRole: 'Artisan Woodworker · Café Lumière',
-        speakerColor: '#f59e0b',
+        speakerColor: '#39BDF7',
         subtitleText:
           '“I spent three weeks crafting this walnut side table, and a buyer online offered the full $320 without even haggling.”',
         actionStageDirection: 'Marcus stands on the Café Lumière patio beside his packaged handcrafted table.',
@@ -320,7 +320,7 @@ export const LEVEL_INTRO_CUTSCENES: Record<string, LevelIntroCutscene> = {
         cameraShot: 'device_closeup',
         speaker: 'Marcus Vance',
         speakerRole: 'Artisan Woodworker · Looking at Phone',
-        speakerColor: '#f59e0b',
+        speakerColor: '#39BDF7',
         subtitleText:
           '“They just pulled up to the curb, honked the horn, and texted me this picture of a receipt saying the $320 is ‘Sent & Held in Escrow.’”',
         actionStageDirection: 'Marcus’s phone displays the buyer’s image attachment with a green checkmark and a [GH-PRISM-04] stamp.',
@@ -333,7 +333,7 @@ export const LEVEL_INTRO_CUTSCENES: Record<string, LevelIntroCutscene> = {
         cameraShot: 'character_and_clue',
         speaker: 'Marcus Vance',
         speakerRole: 'Artisan Woodworker · Checking Real Balance',
-        speakerColor: '#f59e0b',
+        speakerColor: '#39BDF7',
         subtitleText:
           '“They’re waving at me to load the table into their van right now—but why does my actual payment app still say zero dollars?”',
         actionStageDirection: 'Marcus hesitates between the buyer’s screenshot and his own payment app ledger on the table.',
@@ -346,7 +346,7 @@ export const LEVEL_INTRO_CUTSCENES: Record<string, LevelIntroCutscene> = {
         cameraShot: 'investigator_arrival',
         speaker: 'Detective Rowan Vance (You)',
         speakerRole: 'Neighborhood Investigator · Arriving at Patio',
-        speakerColor: '#f59e0b',
+        speakerColor: '#39BDF7',
         subtitleText:
           '“Keep hold of that table, Marcus. Let’s compare their screenshot with your official payment app before anything leaves this patio.”',
         actionStageDirection: 'You step onto the Café Lumière patio as Marcus turns to show you the two screens.',
@@ -424,7 +424,7 @@ export const LEVEL_INTRO_CUTSCENES: Record<string, LevelIntroCutscene> = {
         cameraShot: 'investigator_arrival',
         speaker: 'Detective Rowan Vance (You)',
         speakerRole: 'Neighborhood Investigator · Arriving at Studio',
-        speakerColor: '#f59e0b',
+        speakerColor: '#39BDF7',
         subtitleText:
           '“Don’t enter a single detail on that form, Priya. Let’s inspect the onboarding page and the company’s official recruiting policy.”',
         actionStageDirection: 'You arrive at Co-Working Studio Desk 4 to examine Priya’s laptop and the verified careers notice.',
@@ -502,7 +502,7 @@ export const LEVEL_INTRO_CUTSCENES: Record<string, LevelIntroCutscene> = {
         cameraShot: 'investigator_arrival',
         speaker: 'Detective Rowan Vance (You)',
         speakerRole: 'Neighborhood Investigator · Stepping In',
-        speakerColor: '#f59e0b',
+        speakerColor: '#39BDF7',
         subtitleText:
           '“Keep that phone muted, Priya! Do not read those digits aloud—let’s inspect the text message and the two-factor guide right now.”',
         actionStageDirection: 'You step into the lounge beside Priya to examine the phone screen and security reference card.',
@@ -541,7 +541,7 @@ export const LEVEL_INTRO_CUTSCENES: Record<string, LevelIntroCutscene> = {
         cameraShot: 'character_medium',
         speaker: 'Marcus Vance',
         speakerRole: 'Community Volunteer · Courtyard',
-        speakerColor: '#f59e0b',
+        speakerColor: '#39BDF7',
         subtitleText:
           '“After last week’s storm damaged the old oaks in Oakridge Park, the whole neighborhood has been wanting to pitch in and help.”',
         actionStageDirection: 'Marcus stands in the Community Center Courtyard near the local nonprofit registry board.',
@@ -554,7 +554,7 @@ export const LEVEL_INTRO_CUTSCENES: Record<string, LevelIntroCutscene> = {
         cameraShot: 'device_closeup',
         speaker: 'Marcus Vance',
         speakerRole: 'Community Volunteer · Checking DM Alert',
-        speakerColor: '#f59e0b',
+        speakerColor: '#39BDF7',
         subtitleText:
           '“Then this direct message arrived: it says a 5x matching grant for the park expires in 20 minutes unless we donate right now!”',
         actionStageDirection: 'Marcus’s phone screen shows an emotional tree-planting appeal with a 20-minute countdown.',
@@ -567,7 +567,7 @@ export const LEVEL_INTRO_CUTSCENES: Record<string, LevelIntroCutscene> = {
         cameraShot: 'character_and_clue',
         speaker: 'Marcus Vance',
         speakerRole: 'Community Volunteer · Spotting Red Flags',
-        speakerColor: '#f59e0b',
+        speakerColor: '#39BDF7',
         subtitleText:
           '“I’ve got $50 ready to give—but why are they asking for prepaid gift card codes or a transfer to @GH-Prism-Give07?”',
         actionStageDirection: 'Marcus looks from the DM on his phone toward the Verified Community Charity Board.',
@@ -580,7 +580,7 @@ export const LEVEL_INTRO_CUTSCENES: Record<string, LevelIntroCutscene> = {
         cameraShot: 'investigator_arrival',
         speaker: 'Detective Rowan Vance (You)',
         speakerRole: 'Neighborhood Investigator · Arriving at Courtyard',
-        speakerColor: '#f59e0b',
+        speakerColor: '#39BDF7',
         subtitleText:
           '“Let’s make sure your donation actually reaches the park, Marcus. We’ll inspect that DM alongside the official charity directory.”',
         actionStageDirection: 'You join Marcus in the courtyard to verify the charity details before he donates.',
@@ -658,7 +658,7 @@ export const LEVEL_INTRO_CUTSCENES: Record<string, LevelIntroCutscene> = {
         cameraShot: 'investigator_arrival',
         speaker: 'Detective Rowan Vance (You)',
         speakerRole: 'Neighborhood Investigator · Arriving at Print Lounge',
-        speakerColor: '#f59e0b',
+        speakerColor: '#39BDF7',
         subtitleText:
           '“Hold up before you walk away from that terminal, Maya! Let’s inspect the active session and the library safety checklist.”',
         actionStageDirection: 'You arrive at the print lounge station to help Maya properly lock down the public computer.',
@@ -736,7 +736,7 @@ export const LEVEL_INTRO_CUTSCENES: Record<string, LevelIntroCutscene> = {
         cameraShot: 'investigator_arrival',
         speaker: 'Detective Rowan Vance (You)',
         speakerRole: 'Neighborhood Investigator · Arriving at Briefing Room',
-        speakerColor: '#f59e0b',
+        speakerColor: '#39BDF7',
         subtitleText:
           '“Never trust an unexpected voice note alone, Priya. Let’s inspect the audio metadata and the studio’s two-channel verification policy.”',
         actionStageDirection: 'You step into the briefing room to examine the voice note and the verification protocol board.',
@@ -788,7 +788,7 @@ export const LEVEL_INTRO_CUTSCENES: Record<string, LevelIntroCutscene> = {
         cameraShot: 'device_closeup',
         speaker: 'Marcus Vance & Priya Sharma',
         speakerRole: 'Community Safety Coalition · Reviewing Terminal',
-        speakerColor: '#f59e0b',
+        speakerColor: '#39BDF7',
         subtitleText:
           '“A mass message just went out to the whole neighborhood! It combines a 20-minute rebate timer, a look-alike login page, and a fake support caller asking for 6-digit codes.”',
         actionStageDirection: 'The terminal screen shows the layered [GH-PRISM-10] alert combining every trick from earlier cases.',
@@ -814,7 +814,7 @@ export const LEVEL_INTRO_CUTSCENES: Record<string, LevelIntroCutscene> = {
         cameraShot: 'investigator_arrival',
         speaker: 'Detective Rowan Vance (You)',
         speakerRole: 'Lead Investigator · Taking Command of the Hub',
-        speakerColor: '#f59e0b',
+        speakerColor: '#39BDF7',
         subtitleText:
           '“We know their exact formula now. Let’s inspect the Master Case Board and the terminal so we can protect the whole community.”',
         actionStageDirection: 'You step forward into the Investigation Hub as playable control begins.',

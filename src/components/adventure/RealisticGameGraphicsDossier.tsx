@@ -71,22 +71,10 @@ const Character3DPreviewStage: React.FC<Character3DPreviewStageProps> = ({
     if (!container) return;
 
     const width = container.clientWidth || 440;
-    const height = container.clientHeight || 360;
+    const height = container.clientHeight || 540;
 
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(34, width / height, 0.1, 20);
-    const initialIsCloseUp = viewAngleRef.current === 'handCloseUp';
-    camera.position.set(
-      initialIsCloseUp ? -0.222 : 0,
-      initialIsCloseUp ? 0.89 : 1.28,
-      initialIsCloseUp ? 0.46 : 2.7
-    );
-    const currentCamLook = new THREE.Vector3(
-      initialIsCloseUp ? -0.222 : 0,
-      initialIsCloseUp ? 0.89 : 1.18,
-      initialIsCloseUp ? 0.04 : 0
-    );
-    camera.lookAt(currentCamLook);
+    const camera = new THREE.PerspectiveCamera(28, width / height, 0.1, 25);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setSize(width, height);
@@ -110,13 +98,13 @@ const Character3DPreviewStage: React.FC<Character3DPreviewStageProps> = ({
     rimLight.position.set(-2.2, 2.1, -1.8);
     scene.add(rimLight);
 
-    const fillLight = new THREE.PointLight(0xf59e0b, 0.58, 5);
+    const fillLight = new THREE.PointLight(0x39bdf7, 0.58, 5);
     fillLight.position.set(-1.3, 1.2, 1.6);
     scene.add(fillLight);
 
     const floorGeo = new THREE.CircleGeometry(0.75, 48);
     const floorMat = new THREE.MeshStandardMaterial({
-      color: 0x0b1324,
+      color: 0x081426,
       roughness: 0.85,
       metalness: 0.15,
     });
@@ -127,9 +115,9 @@ const Character3DPreviewStage: React.FC<Character3DPreviewStageProps> = ({
 
     const ringGeo = new THREE.RingGeometry(0.68, 0.72, 48);
     const ringMat = new THREE.MeshBasicMaterial({
-      color: 0x38bdf8,
+      color: 0x39bdf7,
       transparent: true,
-      opacity: 0.32,
+      opacity: 0.45,
       side: THREE.DoubleSide,
     });
     const ringMesh = new THREE.Mesh(ringGeo, ringMat);
@@ -146,6 +134,50 @@ const Character3DPreviewStage: React.FC<Character3DPreviewStageProps> = ({
       isNpc: !isInvestigator,
     });
     scene.add(characterRig.group);
+
+    // Responsive full-body bounds framing
+    const closeUpCamPos = new THREE.Vector3(-0.24, 1.02, 0.52);
+    const closeUpCamLook = new THREE.Vector3(-0.24, 1.02, 0.04);
+
+    const computeFullBodyFraming = (aspectRatio: number) => {
+      characterRig.group.updateMatrixWorld(true);
+      const bbox = new THREE.Box3().setFromObject(characterRig.group);
+
+      const minY = Number.isFinite(bbox.min.y) ? Math.min(0, bbox.min.y) : 0;
+      const maxY = Number.isFinite(bbox.max.y) ? Math.max(1.82, bbox.max.y) : 1.84;
+      const minX = Number.isFinite(bbox.min.x) ? Math.min(-0.46, bbox.min.x) : -0.46;
+      const maxX = Number.isFinite(bbox.max.x) ? Math.max(0.46, bbox.max.x) : 0.46;
+
+      const charHeight = Math.max(1.5, maxY - minY);
+      const charWidth = Math.max(0.7, maxX - minX);
+      const centerY = minY + charHeight * 0.5; // Centers full body vertically (~0.92m)
+
+      // Clear headroom above top of cap and footroom beneath shoes:
+      // ~25% vertical padding ensures cap and shoes have clean space
+      // ~22% horizontal padding ensures coat hem, hands, phone, and elbows never clip
+      const paddedHeight = charHeight * 1.25;
+      const paddedWidth = charWidth * 1.22;
+
+      const fovRad = THREE.MathUtils.degToRad(camera.fov);
+      const tanHalfFov = Math.tan(fovRad * 0.5);
+
+      const distY = (paddedHeight * 0.5) / tanHalfFov;
+      const distX = (paddedWidth * 0.5) / (tanHalfFov * Math.max(0.1, aspectRatio));
+
+      const dist = Math.max(distY, distX);
+
+      return {
+        cameraPos: new THREE.Vector3(0, centerY, dist),
+        lookTarget: new THREE.Vector3(0, centerY, 0),
+      };
+    };
+
+    let fullBodyFraming = computeFullBodyFraming(width / height);
+
+    const initialIsCloseUp = viewAngleRef.current === 'handCloseUp';
+    camera.position.copy(initialIsCloseUp ? closeUpCamPos : fullBodyFraming.cameraPos);
+    const currentCamLook = (initialIsCloseUp ? closeUpCamLook : fullBodyFraming.lookTarget).clone();
+    camera.lookAt(currentCamLook);
 
     let frameId = 0;
     const clock = new THREE.Clock();
@@ -180,17 +212,13 @@ const Character3DPreviewStage: React.FC<Character3DPreviewStageProps> = ({
       }
       characterRig.group.rotation.y = yawOffsetRef.current;
 
-      // Smooth camera transition between full-body and hand/phone close-up
+      // Smooth camera transition between full-body framing and hand/phone close-up
       const isHandCloseUp = viewAngleRef.current === 'handCloseUp';
-      const targetCamPos = isHandCloseUp
-        ? new THREE.Vector3(-0.222, 0.89, 0.46)
-        : new THREE.Vector3(0, 1.28, 2.7);
-      const targetCamLook = isHandCloseUp
-        ? new THREE.Vector3(-0.222, 0.89, 0.04)
-        : new THREE.Vector3(0, 1.18, 0);
+      const targetCamPos = isHandCloseUp ? closeUpCamPos : fullBodyFraming.cameraPos;
+      const targetCamLook = isHandCloseUp ? closeUpCamLook : fullBodyFraming.lookTarget;
 
-      camera.position.lerp(targetCamPos, 0.1);
-      currentCamLook.lerp(targetCamLook, 0.1);
+      camera.position.lerp(targetCamPos, 0.08);
+      currentCamLook.lerp(targetCamLook, 0.08);
       camera.lookAt(currentCamLook);
 
       characterRig.update(dt, elapsed, {
@@ -210,19 +238,27 @@ const Character3DPreviewStage: React.FC<Character3DPreviewStageProps> = ({
     };
     animate();
 
-    const handleResize = () => {
+    const updateSize = () => {
       if (!container) return;
       const w = container.clientWidth || 440;
-      const h = container.clientHeight || 360;
+      const h = container.clientHeight || 540;
+      if (w === 0 || h === 0) return;
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
       renderer.setSize(w, h);
+      fullBodyFraming = computeFullBodyFraming(camera.aspect);
     };
-    window.addEventListener('resize', handleResize);
+
+    const resizeObserver = new ResizeObserver(() => {
+      updateSize();
+    });
+    resizeObserver.observe(container);
+    window.addEventListener('resize', updateSize);
 
     return () => {
       cancelAnimationFrame(frameId);
-      window.removeEventListener('resize', handleResize);
+      resizeObserver.disconnect();
+      window.removeEventListener('resize', updateSize);
       renderer.dispose();
     };
   }, [archetype, isInvestigator]);
@@ -247,7 +283,7 @@ const Character3DPreviewStage: React.FC<Character3DPreviewStageProps> = ({
       onPointerLeave={() => {
         isDraggingRef.current = false;
       }}
-      className="relative z-10 my-2 w-full h-[350px] flex items-center justify-center cursor-grab active:cursor-grabbing"
+      className="relative z-10 my-1 w-full h-[480px] sm:h-[540px] md:h-[580px] lg:h-[620px] flex items-center justify-center cursor-grab active:cursor-grabbing"
       title="Drag horizontally to rotate the 3D character model 360°"
     />
   );
@@ -358,23 +394,23 @@ export const RealisticGameGraphicsDossier: React.FC<RealisticGameGraphicsDossier
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/95 backdrop-blur-xl animate-fade-in pointer-events-auto select-none">
-      <div className="w-full max-w-6xl max-h-[92vh] bg-[#070D1E] border-2 border-white/15 rounded-3xl shadow-[0_0_60px_rgba(0,0,0,0.9)] flex flex-col overflow-hidden text-white">
+      <div className="w-full max-w-6xl max-h-[92vh] bg-[#070E22] border-2 border-sky-500/30 rounded-3xl shadow-[0_0_60px_rgba(0,0,0,0.9)] flex flex-col overflow-hidden text-[#F8FAFC]">
         {/* Top Header Bar */}
-        <header className="px-6 py-4 border-b border-white/10 flex items-center justify-between bg-black/40">
+        <header className="px-6 py-4 border-b border-sky-500/20 flex items-center justify-between bg-[#04091A]">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-amber-500/20 border border-amber-500/40 text-amber-400 flex items-center justify-center shadow-[0_0_15px_rgba(245,158,11,0.3)]">
+            <div className="w-10 h-10 rounded-2xl bg-pink-500/20 border border-pink-400/50 text-pink-300 flex items-center justify-center shadow-[0_0_15px_rgba(236,72,153,0.3)]">
               <Camera className="w-5 h-5" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="font-mono text-[10px] text-[#00F0FF] font-bold uppercase tracking-widest">
+                <span className="font-mono text-[10px] text-[#39BDF7] font-bold uppercase tracking-widest">
                   PRODUCTION ASSET DOSSIER
                 </span>
-                <span className="text-[10px] font-mono bg-white/10 text-white/80 px-2 py-0.5 rounded-full">
+                <span className="text-[10px] font-mono bg-pink-500/15 border border-pink-400/30 text-pink-200 px-2 py-0.5 rounded-full">
                   CINEMATIC 3D CRIME-DRAMA REALISM
                 </span>
               </div>
-              <h2 className="font-heading font-black text-lg sm:text-xl text-white leading-tight">
+              <h2 className="font-heading font-black text-lg sm:text-xl text-[#F8FAFC] leading-tight">
                 Scam Sleuth: Realistic Game Graphics & Art Direction
               </h2>
             </div>
@@ -393,13 +429,13 @@ export const RealisticGameGraphicsDossier: React.FC<RealisticGameGraphicsDossier
         </header>
 
         {/* Tab Selector Strip */}
-        <div className="flex items-center gap-2 px-6 py-3 bg-[#091124] border-b border-white/10 overflow-x-auto text-xs font-heading font-bold">
+        <div className="flex items-center gap-2 px-6 py-3 bg-[#09122B] border-b border-sky-500/20 overflow-x-auto text-xs font-heading font-bold">
           <button
             type="button"
             onClick={() => setActiveTab('protagonist')}
             className={`px-4 py-2 rounded-xl transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap ${
               activeTab === 'protagonist'
-                ? 'bg-amber-500 text-black shadow-[0_0_15px_rgba(245,158,11,0.4)]'
+                ? 'bg-pink-500 text-white shadow-[0_0_15px_rgba(236,72,153,0.4)]'
                 : 'text-[#94A3B8] hover:text-white hover:bg-white/5'
             }`}
           >
@@ -412,7 +448,7 @@ export const RealisticGameGraphicsDossier: React.FC<RealisticGameGraphicsDossier
             onClick={() => setActiveTab('supporting')}
             className={`px-4 py-2 rounded-xl transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap ${
               activeTab === 'supporting'
-                ? 'bg-amber-500 text-black shadow-[0_0_15px_rgba(245,158,11,0.4)]'
+                ? 'bg-pink-500 text-white shadow-[0_0_15px_rgba(236,72,153,0.4)]'
                 : 'text-[#94A3B8] hover:text-white hover:bg-white/5'
             }`}
           >
@@ -425,7 +461,7 @@ export const RealisticGameGraphicsDossier: React.FC<RealisticGameGraphicsDossier
             onClick={() => setActiveTab('environments')}
             className={`px-4 py-2 rounded-xl transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap ${
               activeTab === 'environments'
-                ? 'bg-amber-500 text-black shadow-[0_0_15px_rgba(245,158,11,0.4)]'
+                ? 'bg-pink-500 text-white shadow-[0_0_15px_rgba(236,72,153,0.4)]'
                 : 'text-[#94A3B8] hover:text-white hover:bg-white/5'
             }`}
           >
@@ -438,7 +474,7 @@ export const RealisticGameGraphicsDossier: React.FC<RealisticGameGraphicsDossier
             onClick={() => setActiveTab('evidence')}
             className={`px-4 py-2 rounded-xl transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap ${
               activeTab === 'evidence'
-                ? 'bg-amber-500 text-black shadow-[0_0_15px_rgba(245,158,11,0.4)]'
+                ? 'bg-pink-500 text-white shadow-[0_0_15px_rgba(236,72,153,0.4)]'
                 : 'text-[#94A3B8] hover:text-white hover:bg-white/5'
             }`}
           >
@@ -454,43 +490,10 @@ export const RealisticGameGraphicsDossier: React.FC<RealisticGameGraphicsDossier
           =================================================================== */}
           {activeTab === 'protagonist' && (
             <div className="space-y-6 animate-fade-in">
-              {/* Concept Overview Bar */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="p-4 rounded-2xl bg-[#0C152B] border border-white/10 space-y-1">
-                  <span className="font-mono text-[10px] text-[#00F0FF] uppercase tracking-wider font-bold block">
-                    Character Identity
-                  </span>
-                  <h3 className="font-heading font-black text-base text-white">Detective Rowan Vance</h3>
-                  <p className="text-xs text-[#94A3B8] leading-relaxed">
-                    Lead Cyber & Financial Fraud Investigator. Classic cinematic leading-man look: broad, refined facial contours, 90s textured curtain fringe cut with soft rounded volume on top, forward-flowing piecey feathered locks across the forehead, tapered sides in warm golden sandy dirty-blonde, clear light-blue eyes, expressive brows, and a confident, thoughtful gaze.
-                  </p>
-                </div>
-
-                <div className="p-4 rounded-2xl bg-[#0C152B] border border-white/10 space-y-1">
-                  <span className="font-mono text-[10px] text-amber-400 uppercase tracking-wider font-bold block">
-                    Wardrobe & Silhouette
-                  </span>
-                  <h3 className="font-heading font-black text-base text-white">Tailored Field Trench & Knit</h3>
-                  <p className="text-xs text-[#94A3B8] leading-relaxed">
-                    Charcoal wool-blend field jacket with woven twill texture and natural drapery folds over a slate-taupe crewneck shirt, dark chinos, leather satchel, and field watch.
-                  </p>
-                </div>
-
-                <div className="p-4 rounded-2xl bg-[#0C152B] border border-white/10 space-y-1">
-                  <span className="font-mono text-[10px] text-emerald-400 uppercase tracking-wider font-bold block">
-                    Art Consistency Rules
-                  </span>
-                  <h3 className="font-heading font-black text-base text-white">Unified Across Gameplay & Dossier</h3>
-                  <p className="text-xs text-[#94A3B8] leading-relaxed">
-                    Uses the exact same 3D humanoid rig, facial bone sculpt, PBR skin subsurface sheen, and cloth fold geometry across active scenes, cutscenes, and dossier inspection.
-                  </p>
-                </div>
-              </div>
-
               {/* 3D Character Turnaround & Action Preview Stage */}
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
                 {/* Left: Interactive 3D Model Render Window */}
-                <div className="lg:col-span-7 bg-[#050A16] border-2 border-white/15 rounded-3xl p-6 relative flex flex-col items-center justify-between min-h-[460px] shadow-2xl overflow-hidden">
+                <div className="lg:col-span-7 bg-[#050A16] border-2 border-[#39BDF7]/30 rounded-3xl p-4 sm:p-5 relative flex flex-col items-center justify-between min-h-[520px] sm:min-h-[560px] lg:min-h-[640px] shadow-2xl overflow-hidden">
                   {/* Subtle Studio Backdrop Lighting */}
                   <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-slate-800/40 via-[#070D1E] to-[#040812] pointer-events-none" />
 
@@ -505,29 +508,29 @@ export const RealisticGameGraphicsDossier: React.FC<RealisticGameGraphicsDossier
                         onClick={() => setInvestigatorViewAngle('front')}
                         className={`px-2.5 py-1 rounded-lg font-mono text-[10px] font-bold border transition-all cursor-pointer ${
                           investigatorViewAngle === 'front'
-                            ? 'bg-[#00F0FF]/20 border-[#00F0FF] text-white'
+                            ? 'bg-[#39BDF7]/20 border-[#39BDF7] text-white shadow-[0_0_12px_rgba(57,189,247,0.3)]'
                             : 'bg-black/50 border-white/15 text-[#94A3B8] hover:text-white'
                         }`}
                       >
-                        Front View
+                        Full Body Front
                       </button>
                       <button
                         type="button"
                         onClick={() => setInvestigatorViewAngle('threeQuarter')}
                         className={`px-2.5 py-1 rounded-lg font-mono text-[10px] font-bold border transition-all cursor-pointer ${
                           investigatorViewAngle === 'threeQuarter'
-                            ? 'bg-[#00F0FF]/20 border-[#00F0FF] text-white'
+                            ? 'bg-[#39BDF7]/20 border-[#39BDF7] text-white shadow-[0_0_12px_rgba(57,189,247,0.3)]'
                             : 'bg-black/50 border-white/15 text-[#94A3B8] hover:text-white'
                         }`}
                       >
-                        3/4 View
+                        Full Body 3/4
                       </button>
                       <button
                         type="button"
                         onClick={() => setInvestigatorViewAngle('handCloseUp')}
                         className={`px-2.5 py-1 rounded-lg font-mono text-[10px] font-bold border transition-all cursor-pointer ${
                           investigatorViewAngle === 'handCloseUp'
-                            ? 'bg-[#00F0FF]/20 border-[#00F0FF] text-white'
+                            ? 'bg-[#F05A9D]/20 border-[#F05A9D] text-white shadow-[0_0_12px_rgba(240,90,157,0.3)]'
                             : 'bg-black/50 border-white/15 text-[#94A3B8] hover:text-white'
                         }`}
                         title="Close-up inspection of the upright smartphone grip in right palm"
@@ -548,7 +551,7 @@ export const RealisticGameGraphicsDossier: React.FC<RealisticGameGraphicsDossier
 
                   {/* Character Model Scale & Stats Strip */}
                   <div className="relative z-10 w-full pt-3 border-t border-white/10 flex items-center justify-between text-[11px] font-mono text-[#94A3B8]">
-                    <span>Height: 178 cm · Drag to Orbit 360°</span>
+                    <span>Height: 178 cm · Full Body Framing · Drag to Orbit 360°</span>
                     <span className="text-emerald-400">Mood: {selectedExpression.toUpperCase()} · Active 3D Rig</span>
                   </div>
                 </div>
@@ -557,7 +560,7 @@ export const RealisticGameGraphicsDossier: React.FC<RealisticGameGraphicsDossier
                 <div className="lg:col-span-5 space-y-5">
                   {/* Expression Selector */}
                   <div className="p-4 rounded-2xl bg-[#0B152B] border border-white/10 space-y-3">
-                    <span className="font-mono text-[10px] text-amber-400 font-bold uppercase tracking-wider block">
+                    <span className="font-mono text-[10px] text-pink-300 font-bold uppercase tracking-wider block">
                       Facial Expression Matrix (Natural Emotions)
                     </span>
                     <div className="grid grid-cols-2 gap-2 text-xs">
@@ -573,7 +576,7 @@ export const RealisticGameGraphicsDossier: React.FC<RealisticGameGraphicsDossier
                           onClick={() => setSelectedExpression(item.id as any)}
                           className={`p-2.5 rounded-xl text-left border transition-all cursor-pointer ${
                             selectedExpression === item.id
-                              ? 'bg-amber-500/20 border-amber-400 text-white shadow-md'
+                              ? 'bg-pink-500/20 border-pink-400 text-white shadow-md'
                               : 'bg-white/5 border-white/10 text-[#94A3B8] hover:text-white'
                           }`}
                         >
@@ -586,7 +589,7 @@ export const RealisticGameGraphicsDossier: React.FC<RealisticGameGraphicsDossier
 
                   {/* Gameplay Action & Animation Poses */}
                   <div className="p-4 rounded-2xl bg-[#0B152B] border border-white/10 space-y-3">
-                    <span className="font-mono text-[10px] text-[#00F0FF] font-bold uppercase tracking-wider block">
+                    <span className="font-mono text-[10px] text-[#39BDF7] font-bold uppercase tracking-wider block">
                       Humanoid Skeleton Animations (6 States)
                     </span>
                     <div className="grid grid-cols-2 gap-2 text-xs">
@@ -604,7 +607,7 @@ export const RealisticGameGraphicsDossier: React.FC<RealisticGameGraphicsDossier
                           onClick={() => setSelectedPose(pose.id as DossierAnimationPose)}
                           className={`p-2.5 rounded-xl text-left border transition-all cursor-pointer ${
                             selectedPose === pose.id
-                              ? 'bg-[#00F0FF]/20 border-[#00F0FF] text-white shadow-md'
+                              ? 'bg-[#39BDF7]/20 border-[#39BDF7] text-white shadow-md'
                               : 'bg-white/5 border-white/10 text-[#94A3B8] hover:text-white'
                           }`}
                         >
@@ -620,21 +623,50 @@ export const RealisticGameGraphicsDossier: React.FC<RealisticGameGraphicsDossier
                     <span className="font-mono text-[10px] text-[#64748B] uppercase tracking-wider block font-bold">
                       Material & Geometry Calibration
                     </span>
-                    <div className="space-y-1.5 text-[11px] font-mono text-[#CBD5E1]">
-                      <div className="flex justify-between">
-                        <span>Skin Shading:</span>
-                        <span className="text-white">Subsurface sheen, micro-pore detail</span>
+                    <div className="grid grid-cols-2 gap-2 text-[11px] font-mono text-[#CBD5E1]">
+                      <div className="p-2 rounded-lg bg-black/40">
+                        <span className="text-white font-bold block">Rig Architecture:</span>
+                        <span>Full-body humanoid armature</span>
                       </div>
-                      <div className="flex justify-between">
-                        <span>Garment Drapery:</span>
-                        <span className="text-white">3D cloth folds + woven twill normal map</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Color Grading:</span>
-                        <span className="text-white">Cinematic ACES filmic, warm ambient key</span>
+                      <div className="p-2 rounded-lg bg-black/40">
+                        <span className="text-white font-bold block">Phone Attachment:</span>
+                        <span>RightHand palm bone socket</span>
                       </div>
                     </div>
                   </div>
+                </div>
+              </div>
+
+              {/* Concept Overview Bar */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="p-4 rounded-2xl bg-[#0C152B] border border-white/10 space-y-1">
+                  <span className="font-mono text-[10px] text-[#39BDF7] uppercase tracking-wider font-bold block">
+                    Character Identity
+                  </span>
+                  <h3 className="font-heading font-black text-base text-white">Detective Rowan Vance</h3>
+                  <p className="text-xs text-[#94A3B8] leading-relaxed">
+                    Lead Cyber & Financial Fraud Investigator. Classic cinematic leading-man look: broad, refined facial contours, side-parted textured haircut, clear light-blue eyes, expressive brows, and a confident, thoughtful gaze.
+                  </p>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-[#0C152B] border border-white/10 space-y-1">
+                  <span className="font-mono text-[10px] text-[#F05A9D] uppercase tracking-wider font-bold block">
+                    Wardrobe & Silhouette
+                  </span>
+                  <h3 className="font-heading font-black text-base text-white">Tailored Tan Trench Coat & Waistcoat</h3>
+                  <p className="text-xs text-[#94A3B8] leading-relaxed">
+                    Long, tailored tan trench coat with natural fabric folds and belt, charcoal-gray waistcoat over crisp white shirt, deep red tie, dark gray trousers, polished dark Oxford shoes, and muted gray-brown flat cap.
+                  </p>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-[#0C152B] border border-white/10 space-y-1">
+                  <span className="font-mono text-[10px] text-emerald-400 uppercase tracking-wider font-bold block">
+                    Art Consistency Rules
+                  </span>
+                  <h3 className="font-heading font-black text-base text-white">Unified Across Gameplay & Dossier</h3>
+                  <p className="text-xs text-[#94A3B8] leading-relaxed">
+                    Uses the exact same 3D humanoid rig, facial bone sculpt, PBR skin subsurface sheen, and cloth fold geometry across active scenes, cutscenes, and dossier inspection.
+                  </p>
                 </div>
               </div>
             </div>
@@ -654,21 +686,21 @@ export const RealisticGameGraphicsDossier: React.FC<RealisticGameGraphicsDossier
                     Ordinary people from Scam Sleuth’s world with distinct facial structures, hairstyles, fabric textures, and animations preserved across every scene.
                   </p>
                 </div>
-                <span className="font-mono text-xs text-amber-400 font-bold self-start sm:self-auto">
+                <span className="font-mono text-xs text-[#39BDF7] font-bold self-start sm:self-auto">
                   Identical 3D Rigs in Gameplay, Dialogue & Dossier
                 </span>
               </div>
 
               {/* Interactive 3D Supporting Character Inspector */}
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-                <div className="lg:col-span-7 bg-[#050A16] border-2 border-white/15 rounded-3xl p-6 relative flex flex-col items-center justify-between min-h-[440px] shadow-2xl overflow-hidden">
+                <div className="lg:col-span-7 bg-[#050A16] border-2 border-[#39BDF7]/30 rounded-3xl p-4 sm:p-6 relative flex flex-col items-center justify-between min-h-[580px] sm:min-h-[640px] lg:min-h-[720px] shadow-2xl overflow-hidden">
                   <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-slate-800/40 via-[#070D1E] to-[#040812] pointer-events-none" />
 
                   <div className="relative z-10 w-full flex items-center justify-between">
                     <span className="px-3 py-1 rounded-full bg-black/60 border border-white/15 font-mono text-xs text-white/90">
                       {activeCastProfile.name.toUpperCase()} · {activeCastProfile.badge.toUpperCase()}
                     </span>
-                    <span className="font-mono text-xs text-[#00F0FF] font-bold">
+                    <span className="font-mono text-xs text-[#39BDF7] font-bold">
                       Animation: {selectedCastPose.toUpperCase()}
                     </span>
                   </div>
@@ -691,7 +723,7 @@ export const RealisticGameGraphicsDossier: React.FC<RealisticGameGraphicsDossier
                 <div className="lg:col-span-5 space-y-4">
                   {/* Character Switcher */}
                   <div className="p-4 rounded-2xl bg-[#0B152B] border border-white/10 space-y-2.5">
-                    <span className="font-mono text-[10px] text-amber-400 font-bold uppercase tracking-wider block">
+                    <span className="font-mono text-[10px] text-[#F05A9D] font-bold uppercase tracking-wider block">
                       Select Recurring Character to Inspect in 3D
                     </span>
                     <div className="grid grid-cols-1 gap-2">
@@ -704,7 +736,7 @@ export const RealisticGameGraphicsDossier: React.FC<RealisticGameGraphicsDossier
                             onClick={() => setSelectedCastArchetype(npc.archetype)}
                             className={`p-2.5 rounded-xl text-left border transition-all flex items-center justify-between cursor-pointer ${
                               isSelected
-                                ? 'bg-amber-500/20 border-amber-400 text-white shadow-md'
+                                ? 'bg-[#F05A9D]/20 border-[#F05A9D] text-white shadow-md'
                                 : 'bg-white/5 border-white/10 text-[#94A3B8] hover:text-white'
                             }`}
                           >
@@ -720,7 +752,7 @@ export const RealisticGameGraphicsDossier: React.FC<RealisticGameGraphicsDossier
                                 <span className="text-[10px] text-[#CBD5E1] block">{npc.role}</span>
                               </div>
                             </div>
-                            <span className="font-mono text-[10px] text-[#00F0FF]">{npc.badge}</span>
+                            <span className="font-mono text-[10px] text-[#39BDF7]">{npc.badge}</span>
                           </button>
                         );
                       })}
@@ -729,7 +761,7 @@ export const RealisticGameGraphicsDossier: React.FC<RealisticGameGraphicsDossier
 
                   {/* Supporting Cast Animation Selector */}
                   <div className="p-4 rounded-2xl bg-[#0B152B] border border-white/10 space-y-2.5">
-                    <span className="font-mono text-[10px] text-[#00F0FF] font-bold uppercase tracking-wider block">
+                    <span className="font-mono text-[10px] text-[#39BDF7] font-bold uppercase tracking-wider block">
                       Preview Character Animation State
                     </span>
                     <div className="grid grid-cols-3 gap-2 text-xs">
@@ -747,7 +779,7 @@ export const RealisticGameGraphicsDossier: React.FC<RealisticGameGraphicsDossier
                           onClick={() => setSelectedCastPose(pose.id as DossierAnimationPose)}
                           className={`px-2.5 py-2 rounded-xl font-heading font-bold text-center border transition-all cursor-pointer ${
                             selectedCastPose === pose.id
-                              ? 'bg-[#00F0FF]/20 border-[#00F0FF] text-white'
+                              ? 'bg-[#39BDF7]/20 border-[#39BDF7] text-white'
                               : 'bg-white/5 border-white/10 text-[#94A3B8] hover:text-white'
                           }`}
                         >
@@ -767,13 +799,13 @@ export const RealisticGameGraphicsDossier: React.FC<RealisticGameGraphicsDossier
                     onClick={() => setSelectedCastArchetype(npc.archetype)}
                     className={`p-5 rounded-3xl bg-[#091329] border space-y-4 transition-all shadow-lg flex flex-col justify-between cursor-pointer ${
                       selectedCastArchetype === npc.archetype
-                        ? 'border-amber-400 ring-1 ring-amber-400/40'
-                        : 'border-white/10 hover:border-amber-400/50'
+                        ? 'border-[#F05A9D] ring-1 ring-[#F05A9D]/40'
+                        : 'border-white/10 hover:border-[#F05A9D]/50'
                     }`}
                   >
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
-                        <span className="font-mono text-[10px] text-[#00F0FF] uppercase tracking-wider font-bold">
+                        <span className="font-mono text-[10px] text-[#39BDF7] uppercase tracking-wider font-bold">
                           {npc.badge} · {npc.age}
                         </span>
                         <span
@@ -802,7 +834,7 @@ export const RealisticGameGraphicsDossier: React.FC<RealisticGameGraphicsDossier
                       <div className="text-xs space-y-2 text-[#CBD5E1] pt-1">
                         <p><strong className="text-white">Wardrobe:</strong> {npc.clothing}</p>
                         <p><strong className="text-white">Context:</strong> {npc.personality}</p>
-                        <p><strong className="text-amber-300">Key Expression:</strong> {npc.expression}</p>
+                        <p><strong className="text-[#F05A9D]">Key Expression:</strong> {npc.expression}</p>
                       </div>
                     </div>
 
@@ -835,12 +867,12 @@ export const RealisticGameGraphicsDossier: React.FC<RealisticGameGraphicsDossier
                     onClick={() => setSelectedEnvironment(env.id as any)}
                     className={`p-3 rounded-2xl text-left border transition-all cursor-pointer ${
                       selectedEnvironment === env.id
-                        ? 'bg-amber-500 text-black border-amber-400 shadow-[0_0_20px_rgba(245,158,11,0.4)]'
+                        ? 'bg-pink-500 text-white border-pink-400 shadow-[0_0_20px_rgba(236,72,153,0.4)]'
                         : 'bg-[#091329] border-white/10 text-white hover:bg-white/5'
                     }`}
                   >
                     <span className="font-heading font-black text-xs block">{env.label}</span>
-                    <span className={`text-[10px] font-mono block mt-0.5 ${selectedEnvironment === env.id ? 'text-black/80 font-bold' : 'text-[#94A3B8]'}`}>
+                    <span className={`text-[10px] font-mono block mt-0.5 ${selectedEnvironment === env.id ? 'text-pink-100 font-bold' : 'text-[#94A3B8]'}`}>
                       {env.sub}
                     </span>
                   </button>
@@ -852,15 +884,15 @@ export const RealisticGameGraphicsDossier: React.FC<RealisticGameGraphicsDossier
                 <div className="p-6 rounded-3xl bg-[#081022] border-2 border-white/15 space-y-6 shadow-2xl">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-white/10">
                     <div>
-                      <span className="font-mono text-xs text-[#00F0FF] font-bold uppercase tracking-widest block">
+                      <span className="font-mono text-xs text-[#39BDF7] font-bold uppercase tracking-widest block">
                         LOCATION 01 · CASE: THE DELIVERY TEXT
                       </span>
                       <h3 className="font-heading font-black text-xl text-white">
                         Sunset Heights Apartment 4B (Modest Living Room)
                       </h3>
                     </div>
-                    <span className="px-3 py-1 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-500/30 font-mono text-xs font-bold">
-                      Golden Hour Interior Lighting
+                    <span className="px-3 py-1 rounded-xl bg-[#F05A9D]/20 text-[#F05A9D] border border-[#F05A9D]/40 font-mono text-xs font-bold">
+                      Atmospheric Investigation Lighting
                     </span>
                   </div>
 
@@ -880,13 +912,13 @@ export const RealisticGameGraphicsDossier: React.FC<RealisticGameGraphicsDossier
                     <div className="space-y-3">
                       <h4 className="font-heading font-bold text-sm text-white">Cinematic Lighting & Color Palette</h4>
                       <div className="grid grid-cols-4 gap-2 font-mono text-[10px] text-center">
-                        <div className="p-2 rounded-xl bg-[#1E293B] border border-white/20 text-white font-bold">Charcoal #1E293B</div>
-                        <div className="p-2 rounded-xl bg-[#4A2F1B] border border-white/20 text-amber-200 font-bold">Walnut #4A2F1B</div>
-                        <div className="p-2 rounded-xl bg-[#F59E0B] text-black font-black">Sunset #F59E0B</div>
-                        <div className="p-2 rounded-xl bg-[#00F0FF] text-black font-black">Scanner #00F0FF</div>
+                        <div className="p-2 rounded-xl bg-[#081426] border border-white/20 text-[#F2F5FA] font-bold">Navy #081426</div>
+                        <div className="p-2 rounded-xl bg-[#0B1A33] border border-white/20 text-[#F2F5FA] font-bold">Studio #0B1A33</div>
+                        <div className="p-2 rounded-xl bg-[#39BDF7] text-[#081426] font-black">Electric #39BDF7</div>
+                        <div className="p-2 rounded-xl bg-[#F05A9D] text-[#081426] font-black">Accent #F05A9D</div>
                       </div>
                       <p className="text-[11px] leading-relaxed text-[#94A3B8]">
-                        Low-angle golden sunlight streams through sheer curtains, casting soft directional shadows across the rug and highlighting dust motes in the air.
+                        Rain-streaked window reflections with electric blue and vivid pink neon accents balanced against atmospheric navy shadow.
                       </p>
                     </div>
                   </div>
@@ -897,7 +929,7 @@ export const RealisticGameGraphicsDossier: React.FC<RealisticGameGraphicsDossier
                 <div className="p-6 rounded-3xl bg-[#081022] border-2 border-white/15 space-y-6 shadow-2xl">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-white/10">
                     <div>
-                      <span className="font-mono text-xs text-[#00F0FF] font-bold uppercase tracking-widest block">
+                      <span className="font-mono text-xs text-[#39BDF7] font-bold uppercase tracking-widest block">
                         LOCATION 02 · CASE: CAMPUS ACCOUNT ALERT
                       </span>
                       <h3 className="font-heading font-black text-xl text-white">
@@ -942,15 +974,15 @@ export const RealisticGameGraphicsDossier: React.FC<RealisticGameGraphicsDossier
                 <div className="p-6 rounded-3xl bg-[#081022] border-2 border-white/15 space-y-6 shadow-2xl">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-white/10">
                     <div>
-                      <span className="font-mono text-xs text-[#00F0FF] font-bold uppercase tracking-widest block">
+                      <span className="font-mono text-xs text-[#39BDF7] font-bold uppercase tracking-widest block">
                         LOCATION 03 · CASE: MARKETPLACE ESCROW TRAP
                       </span>
                       <h3 className="font-heading font-black text-xl text-white">
                         Little Seoul Urban Bistro & Café
                       </h3>
                     </div>
-                    <span className="px-3 py-1 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-500/30 font-mono text-xs font-bold">
-                      Warm Hospitality Mood
+                    <span className="px-3 py-1 rounded-xl bg-[#39BDF7]/20 text-[#39BDF7] border border-[#39BDF7]/40 font-mono text-xs font-bold">
+                      Atmospheric Neon & Espresso Mood
                     </span>
                   </div>
 
@@ -970,13 +1002,13 @@ export const RealisticGameGraphicsDossier: React.FC<RealisticGameGraphicsDossier
                     <div className="space-y-3">
                       <h4 className="font-heading font-bold text-sm text-white">Color & Contrast Rig</h4>
                       <div className="grid grid-cols-4 gap-2 font-mono text-[10px] text-center">
-                        <div className="p-2 rounded-xl bg-[#7C2D12] text-white font-bold">Brick #7C2D12</div>
+                        <div className="p-2 rounded-xl bg-[#081426] text-[#F2F5FA] font-bold">Navy #081426</div>
                         <div className="p-2 rounded-xl bg-[#1C1917] text-white font-bold">Espresso #1C1917</div>
-                        <div className="p-2 rounded-xl bg-[#F59E0B] text-black font-black">Edison #F59E0B</div>
-                        <div className="p-2 rounded-xl bg-[#38BDF8] text-black font-black">Bank App #38BDF8</div>
+                        <div className="p-2 rounded-xl bg-[#F05A9D] text-[#081426] font-black">Pink #F05A9D</div>
+                        <div className="p-2 rounded-xl bg-[#39BDF7] text-[#081426] font-black">Blue #39BDF7</div>
                       </div>
                       <p className="text-[11px] leading-relaxed text-[#94A3B8]">
-                        Rich, warm ambient glows with deep shadows, keeping dialogue and inspected phone screens crisp and readable without glare.
+                        Electric blue and vivid pink reflections over deep navy shadows, keeping dialogue and inspected phone screens crisp and readable.
                       </p>
                     </div>
                   </div>
@@ -987,7 +1019,7 @@ export const RealisticGameGraphicsDossier: React.FC<RealisticGameGraphicsDossier
                 <div className="p-6 rounded-3xl bg-[#081022] border-2 border-white/15 space-y-6 shadow-2xl">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-white/10">
                     <div>
-                      <span className="font-mono text-xs text-[#00F0FF] font-bold uppercase tracking-widest block">
+                      <span className="font-mono text-xs text-[#39BDF7] font-bold uppercase tracking-widest block">
                         LOCATION 04 · CASE: REMOTE JOB CHECK SCAM
                       </span>
                       <h3 className="font-heading font-black text-xl text-white">
@@ -1048,7 +1080,7 @@ export const RealisticGameGraphicsDossier: React.FC<RealisticGameGraphicsDossier
                   onClick={() => setMagnifierActive(!magnifierActive)}
                   className={`px-3.5 py-1.5 rounded-xl font-mono text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
                     magnifierActive
-                      ? 'bg-amber-500 text-black shadow-md'
+                      ? 'bg-pink-500 text-white shadow-[0_0_14px_rgba(236,72,153,0.4)]'
                       : 'bg-white/10 text-white hover:bg-white/20'
                   }`}
                 >
@@ -1062,7 +1094,7 @@ export const RealisticGameGraphicsDossier: React.FC<RealisticGameGraphicsDossier
                 {/* Evidence Item 1: Delivery SMS Phone Screen */}
                 <div className="p-5 rounded-3xl bg-[#0A1224] border-2 border-white/15 space-y-4">
                   <div className="flex items-center justify-between">
-                    <span className="font-mono text-xs text-[#00F0FF] font-bold">
+                    <span className="font-mono text-xs text-[#39BDF7] font-bold">
                       DEVICE 01: MOBILE SMS (CASE 1)
                     </span>
                     <span className="text-[10px] font-mono bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full">
@@ -1091,17 +1123,17 @@ export const RealisticGameGraphicsDossier: React.FC<RealisticGameGraphicsDossier
                     {/* Incoming SMS Bubble */}
                     <div className="p-3 rounded-2xl bg-[#1E293B] text-xs text-white space-y-2 relative">
                       <p className="leading-snug">
-                        GLOBAL-POST: Parcel #GP-8831 is <strong className="text-amber-400">ON HOLD</strong> due to unpaid address correction fee ($2.85).
+                        GLOBAL-POST: Parcel #GP-8831 is <strong className="text-pink-300">ON HOLD</strong> due to unpaid address correction fee ($2.85).
                       </p>
 
                       {/* Interactive Magnifier Callout Highlight */}
-                      <div className={`p-2 rounded-xl transition-all ${magnifierActive ? 'bg-amber-500/20 border border-amber-400 text-amber-200' : 'bg-black/30'}`}>
-                        <span className="text-[10px] font-mono text-[#00F0FF] block">
+                      <div className={`p-2 rounded-xl transition-all ${magnifierActive ? 'bg-pink-500/20 border border-pink-400 text-pink-100' : 'bg-black/30'}`}>
+                        <span className="text-[10px] font-mono text-[#39BDF7] block">
                           URL: http://globalpost-fee-pay.xyz/track
                         </span>
                         {magnifierActive && (
-                          <span className="text-[9px] text-amber-400 font-bold block mt-1">
-                            ★ Warning: Artificial urgency & unverified .xyz domain
+                          <span className="text-[9px] text-pink-300 font-bold block mt-1">
+                            ★ Clue Alert: Artificial urgency & unverified .xyz domain
                           </span>
                         )}
                       </div>
@@ -1140,7 +1172,7 @@ export const RealisticGameGraphicsDossier: React.FC<RealisticGameGraphicsDossier
 
                     {/* Portal Page Body */}
                     <div className="p-4 space-y-3 bg-[#0B1329]">
-                      <div className="flex items-center gap-2 text-amber-400 font-bold text-xs">
+                      <div className="flex items-center gap-2 text-pink-300 font-bold text-xs">
                         <Shield className="w-4 h-4" />
                         <span>CAMPUS IDENTITY VERIFICATION REQUIRED</span>
                       </div>
@@ -1149,10 +1181,10 @@ export const RealisticGameGraphicsDossier: React.FC<RealisticGameGraphicsDossier
                       </p>
 
                       {/* Highlighted Mismatched Domain */}
-                      <div className={`p-2.5 rounded-xl transition-all ${magnifierActive ? 'bg-amber-500/20 border border-amber-400' : 'bg-white/5'}`}>
+                      <div className={`p-2.5 rounded-xl transition-all ${magnifierActive ? 'bg-pink-500/20 border border-pink-400' : 'bg-white/5'}`}>
                         <div className="flex items-center justify-between text-[10px] font-mono text-[#94A3B8]">
                           <span>Real domain: university.edu</span>
-                          <span className="text-amber-400 font-bold">Mismatch: login-auth.example.test</span>
+                          <span className="text-pink-300 font-bold">Mismatch: login-auth.example.test</span>
                         </div>
                       </div>
 
@@ -1178,15 +1210,15 @@ export const RealisticGameGraphicsDossier: React.FC<RealisticGameGraphicsDossier
         </div>
 
         {/* Footer Bar */}
-        <footer className="px-6 py-3.5 border-t border-white/10 bg-black/40 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs font-mono text-[#64748B]">
+        <footer className="px-6 py-3.5 border-t border-sky-500/20 bg-[#04091A] flex flex-col sm:flex-row items-center justify-between gap-3 text-xs font-mono text-[#64748B]">
           <div className="flex items-center gap-2 text-[#94A3B8]">
             <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-            <span>Cohesive 3D Narrative Art Direction · Neutral Palette · No Real Links or PII</span>
+            <span>Cohesive 3D Narrative Art Direction · Blue & Pink Detective Theme · No Real Links</span>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-heading font-black text-xs uppercase tracking-wider transition-all cursor-pointer shadow-md"
+            className="px-5 py-2 rounded-xl bg-[#39BDF7] hover:bg-[#38BDF8] text-slate-950 font-heading font-black text-xs uppercase tracking-wider transition-all cursor-pointer shadow-[0_0_16px_rgba(0,240,255,0.28)]"
           >
             Return to Investigation
           </button>

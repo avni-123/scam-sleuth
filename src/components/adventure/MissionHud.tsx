@@ -231,15 +231,15 @@ export const MissionHud: React.FC<MissionHudProps> = ({
           <div className="w-1 h-1 pointer-events-none" />
         ) : (
           <div
-            className={`pointer-events-auto bg-[#070D1E]/90 border ${
-              settings.highContrast ? 'border-white' : 'border-slate-700/80'
-            } rounded-2xl px-3.5 py-2.5 backdrop-blur-md shadow-xl ${
+            className={`pointer-events-auto bg-[#060D20]/92 border ${
+              settings.highContrast ? 'border-white' : 'border-sky-500/25'
+            } rounded-2xl px-3.5 py-2.5 backdrop-blur-md shadow-[0_12px_32px_rgba(2,6,23,0.85)] ${
               isPanelCollapsed ? 'w-auto' : 'w-full max-w-[310px] sm:max-w-[335px]'
             } transition-all`}
           >
             {/* Compact Header Row: Chapter Progress Indicator + Collapse Button (Shortcut: H) */}
             <div className="flex items-center justify-between gap-2">
-              <span className="px-2 py-0.5 rounded-md bg-amber-400/20 border border-amber-400/40 text-amber-300 font-mono text-[11px] font-bold tracking-wide">
+              <span className="px-2 py-0.5 rounded-md bg-pink-500/15 border border-pink-400/45 text-pink-300 font-mono text-[11px] font-bold tracking-wide">
                 Chapter {activeChapter.number} of 3 — {shortPhaseName}
               </span>
 
@@ -247,11 +247,11 @@ export const MissionHud: React.FC<MissionHudProps> = ({
                 <button
                   type="button"
                   onClick={() => setIsPanelCollapsed((prev) => !prev)}
-                  className="px-2 py-0.5 rounded-lg bg-white/5 hover:bg-white/15 border border-white/10 text-slate-200 hover:text-white transition-colors cursor-pointer flex items-center gap-1.5 text-[11px] font-mono"
+                  className="px-2 py-0.5 rounded-lg bg-[#0B1630] hover:bg-[#13244A] border border-sky-500/25 text-slate-200 hover:text-white transition-colors cursor-pointer flex items-center gap-1.5 text-[11px] font-mono"
                   title={isPanelCollapsed ? 'Show Case Panel (Press H)' : 'Hide Case Panel (Press H)'}
                 >
                   <span>{isPanelCollapsed ? 'Show' : 'Hide'}</span>
-                  <span className="px-1.5 py-0.2 rounded bg-amber-400/20 border border-amber-400/40 text-amber-300 text-[10px] font-bold">
+                  <span className="px-1.5 py-0.2 rounded bg-pink-500/20 border border-pink-400/45 text-pink-300 text-[10px] font-bold">
                     H
                   </span>
                   {isPanelCollapsed ? (
@@ -267,7 +267,7 @@ export const MissionHud: React.FC<MissionHudProps> = ({
                     setIsPanelCollapsed(true);
                     setIsHideChipHidden(true);
                   }}
-                  className="px-1.5 py-0.5 rounded-lg bg-white/5 hover:bg-rose-500/20 border border-white/10 hover:border-rose-400/40 text-slate-400 hover:text-rose-200 transition-colors cursor-pointer text-[11px] font-mono"
+                  className="px-1.5 py-0.5 rounded-lg bg-[#0B1630] hover:bg-rose-500/20 border border-sky-500/20 hover:border-rose-400/40 text-slate-400 hover:text-rose-200 transition-colors cursor-pointer text-[11px] font-mono"
                   title="Hide this bar completely (Shift + H, press H to restore)"
                 >
                   ×
@@ -284,9 +284,9 @@ export const MissionHud: React.FC<MissionHudProps> = ({
 
           {/* Collapsible Body: Only Short Objective, Clue Progress, and Current-Chapter Action */}
           {!isPanelCollapsed && (
-            <div className="mt-2 pt-2 border-t border-white/10 space-y-2">
-              <p className="text-xs text-slate-200 leading-snug">
-                <span className="text-amber-300 font-semibold">Objective: </span>
+            <div className="mt-2 pt-2 border-t border-sky-500/20 space-y-2">
+              <p className="text-xs text-slate-100 leading-snug">
+                <span className="text-[#38BDF8] font-semibold">Objective: </span>
                 {currentObjectiveText}
               </p>
 
@@ -294,16 +294,24 @@ export const MissionHud: React.FC<MissionHudProps> = ({
               <div className="space-y-1">
                 <div className="flex items-center justify-between text-[11px] font-mono">
                   <span className="text-slate-300 flex items-center gap-1">
-                    <Sparkles className="w-3 h-3 text-amber-400" />
+                    <Sparkles className="w-3 h-3 text-pink-400" />
                     <span>Clue progress:</span>
                   </span>
-                  <span className="font-bold text-amber-300 tabular-nums">
+                  <span
+                    className={`font-bold tabular-nums ${
+                      foundCount >= totalClues ? 'text-emerald-300' : 'text-pink-300'
+                    }`}
+                  >
                     {foundCount}/{totalClues} clues found
                   </span>
                 </div>
-                <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                <div className="w-full h-1.5 bg-[#0B1630] rounded-full overflow-hidden border border-sky-500/15">
                   <div
-                    className="h-full bg-amber-400 transition-all duration-300 rounded-full"
+                    className={`h-full transition-all duration-300 rounded-full ${
+                      foundCount >= totalClues
+                        ? 'bg-emerald-400'
+                        : 'bg-gradient-to-r from-[#F05A9D] via-pink-400 to-[#39BDF7]'
+                    }`}
                     style={{
                       width: `${Math.min(100, (foundCount / Math.max(1, totalClues)) * 100)}%`,
                     }}
@@ -317,13 +325,13 @@ export const MissionHud: React.FC<MissionHudProps> = ({
                   <button
                     type="button"
                     onClick={onOpenChapterQuestion}
-                    className="w-full px-3 py-1.5 rounded-xl bg-[#0F1B38] hover:bg-[#162750] border border-[#38BDF8]/50 text-[#38BDF8] hover:text-white font-mono text-xs font-semibold flex items-center justify-between transition-colors cursor-pointer"
+                    className="w-full px-3 py-1.5 rounded-xl bg-[#081426] hover:bg-[#0B1A33] border border-[#39BDF7]/50 text-[#39BDF7] hover:text-white font-mono text-xs font-semibold flex items-center justify-between transition-colors cursor-pointer"
                   >
                     <span className="flex items-center gap-1.5">
-                      <Search className="w-3.5 h-3.5" />
+                      <Search className="w-3.5 h-3.5 text-[#F05A9D]" />
                       <span>Press Q to inspect clues</span>
                     </span>
-                    <span className="px-1.5 py-0.5 rounded bg-white/10 text-[10px] text-white font-bold">
+                    <span className="px-1.5 py-0.5 rounded bg-[#F05A9D]/20 border border-[#F05A9D]/40 text-[10px] text-[#F05A9D] font-bold">
                       Q
                     </span>
                   </button>
@@ -334,7 +342,7 @@ export const MissionHud: React.FC<MissionHudProps> = ({
                   <button
                     type="button"
                     onClick={onTriggerDecision}
-                    className="w-full px-3 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-heading font-bold text-xs flex items-center justify-between transition-colors cursor-pointer shadow-md"
+                    className="w-full px-3 py-2 rounded-xl bg-[#39BDF7] hover:bg-sky-300 text-slate-950 font-heading font-bold text-xs flex items-center justify-between transition-colors cursor-pointer shadow-[0_0_18px_rgba(57,189,247,0.3)]"
                   >
                     <span>Make Case Decision (4 Options)</span>
                     <ChevronRight className="w-4 h-4" />
@@ -347,12 +355,12 @@ export const MissionHud: React.FC<MissionHudProps> = ({
         )}
 
         {/* CENTER-TOP: Clear, Single-Line Current Objective Banner */}
-        <div className="pointer-events-auto mx-auto hidden lg:flex items-center gap-2.5 px-4 py-2 rounded-2xl bg-[#070D1E]/90 border border-amber-400/50 shadow-xl backdrop-blur-md max-w-lg">
-          <div className="w-6 h-6 rounded-lg bg-amber-400/20 border border-amber-400/40 flex items-center justify-center text-amber-300 shrink-0">
+        <div className="pointer-events-auto mx-auto hidden lg:flex items-center gap-2.5 px-4 py-2 rounded-2xl bg-[#081426]/95 border border-[#39BDF7]/40 shadow-[0_12px_32px_rgba(2,6,23,0.85)] backdrop-blur-md max-w-lg">
+          <div className="w-6 h-6 rounded-lg bg-[#39BDF7]/15 border border-[#39BDF7]/40 flex items-center justify-center text-[#39BDF7] shrink-0">
             <Target className="w-3.5 h-3.5" />
           </div>
           <div className="min-w-0">
-            <span className="block font-mono text-[10px] text-amber-300 uppercase tracking-wider font-bold">
+            <span className="block font-mono text-[10px] text-pink-300 uppercase tracking-wider font-bold">
               Current Objective · {foundCount}/{totalClues} clues found
             </span>
             <span className="block font-heading font-semibold text-xs sm:text-sm text-white truncate">
@@ -367,10 +375,10 @@ export const MissionHud: React.FC<MissionHudProps> = ({
             <button
               type="button"
               onClick={onReplayOpeningStory}
-              className="px-3 py-2 rounded-xl bg-[#070D1E]/90 hover:bg-[#111E3C] border border-amber-400/40 text-amber-300 hover:text-white transition-all shadow-lg flex items-center gap-1.5 cursor-pointer backdrop-blur-md"
+              className="px-3 py-2 rounded-xl bg-[#060D20]/92 hover:bg-[#101F42] border border-pink-400/45 text-pink-300 hover:text-white transition-all shadow-lg flex items-center gap-1.5 cursor-pointer backdrop-blur-md"
               title="Replay Pre-Investigation Opening Story"
             >
-              <Film className="w-4 h-4 text-amber-400" />
+              <Film className="w-4 h-4 text-pink-400" />
               <span className="hidden sm:inline font-mono text-xs font-semibold">
                 Opening Story
               </span>
@@ -380,10 +388,10 @@ export const MissionHud: React.FC<MissionHudProps> = ({
           <button
             type="button"
             onClick={onOpenJournal}
-            className="px-3 py-2 rounded-xl bg-[#070D1E]/90 hover:bg-[#111E3C] border border-slate-700/80 text-slate-100 hover:text-white transition-all shadow-lg flex items-center gap-1.5 cursor-pointer backdrop-blur-md"
+            className="px-3 py-2 rounded-xl bg-[#060D20]/92 hover:bg-[#101F42] border border-sky-500/30 text-slate-100 hover:text-white transition-all shadow-lg flex items-center gap-1.5 cursor-pointer backdrop-blur-md"
             title="Open Case Journal & Full Chapter List (J)"
           >
-            <BookOpen className="w-4 h-4 text-[#38BDF8]" />
+            <BookOpen className="w-4 h-4 text-[#00F0FF]" />
             <span className="font-mono text-xs font-semibold">
               Journal ({foundCount}/{totalClues})
             </span>
@@ -396,9 +404,9 @@ export const MissionHud: React.FC<MissionHudProps> = ({
       ===================================================================== */}
       {openingContextSummary && (
         <div className="pointer-events-auto self-center mt-2 w-full max-w-3xl px-2">
-          <div className="px-4 py-2.5 rounded-xl bg-[#070D1E]/95 border border-amber-400/50 shadow-2xl backdrop-blur-md flex items-center justify-between gap-3">
+          <div className="px-4 py-2.5 rounded-xl bg-[#060D20]/95 border border-pink-400/50 shadow-[0_12px_36px_rgba(2,6,23,0.9)] backdrop-blur-md flex items-center justify-between gap-3">
             <div className="flex items-center gap-2.5 min-w-0">
-              <span className="px-2 py-0.5 rounded bg-amber-400/20 border border-amber-400/40 text-amber-300 font-mono text-[10px] font-bold uppercase tracking-wider shrink-0">
+              <span className="px-2 py-0.5 rounded bg-pink-500/20 border border-pink-400/45 text-pink-300 font-mono text-[10px] font-bold uppercase tracking-wider shrink-0">
                 Case Context
               </span>
               <p className="font-sans text-xs sm:text-sm text-slate-100 truncate sm:whitespace-normal">
@@ -422,11 +430,11 @@ export const MissionHud: React.FC<MissionHudProps> = ({
       {/* Subtle Upper-Center Chapter Banner on Chapter Transition (Non-blocking) */}
       {showIntroSplash && !openingContextSummary && (
         <div className="pointer-events-none self-center mt-2 animate-fade-in">
-          <div className="px-4 py-2 rounded-2xl bg-[#070D1E]/95 border border-amber-400/60 shadow-2xl backdrop-blur-md text-center">
-            <span className="font-mono text-[10px] text-amber-300 uppercase tracking-widest block font-bold">
+          <div className="px-5 py-2.5 rounded-2xl bg-[#060D20]/95 border border-pink-400/65 shadow-[0_12px_36px_rgba(2,6,23,0.9),0_0_24px_rgba(236,72,153,0.22)] backdrop-blur-md text-center">
+            <span className="font-mono text-[10px] text-pink-300 uppercase tracking-widest block font-bold">
               Chapter {activeChapter.number} of 3 — {shortPhaseName}
             </span>
-            <span className="font-heading font-bold text-sm text-white block">
+            <span className="font-heading font-bold text-sm text-white block mt-0.5">
               {activeChapter.title}
             </span>
           </div>
@@ -434,18 +442,30 @@ export const MissionHud: React.FC<MissionHudProps> = ({
       )}
 
       {/* =====================================================================
-          SUBTLE CENTER RETICLE ONLY (Contextual prompt is anchored beside target in 3D view)
+          SUBTLE CENTER RETICLE ONLY (Pink for clues/objects, Electric Cyan for NPCs)
       ===================================================================== */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-20 flex items-center justify-center">
         {activeNearby ? (
           <div className="relative w-7 h-7 flex items-center justify-center transition-all duration-200">
-            <div className="w-2 h-2 rounded-full bg-[#00F0FF] shadow-[0_0_8px_#00F0FF]" />
-            <div className="absolute inset-0 rounded-full border border-[#00F0FF]/70" />
+            <div
+              className={`w-2 h-2 rounded-full ${
+                activeNearby.type === 'object'
+                  ? 'bg-[#F05A9D] shadow-[0_0_10px_#F05A9D]'
+                  : 'bg-[#39BDF7] shadow-[0_0_10px_#39BDF7]'
+              }`}
+            />
+            <div
+              className={`absolute inset-0 rounded-full border ${
+                activeNearby.type === 'object'
+                  ? 'border-[#F05A9D]/80'
+                  : 'border-[#39BDF7]/80'
+              }`}
+            />
           </div>
         ) : (
-          <div className="relative flex items-center justify-center opacity-70">
-            <div className="w-1.5 h-1.5 rounded-full bg-white shadow-[0_0_4px_rgba(255,255,255,0.9)]" />
-            <div className="absolute w-4 h-4 rounded-full border border-white/25" />
+          <div className="relative flex items-center justify-center opacity-75">
+            <div className="w-1.5 h-1.5 rounded-full bg-sky-100 shadow-[0_0_4px_rgba(255,255,255,0.9)]" />
+            <div className="absolute w-4 h-4 rounded-full border border-sky-300/30" />
           </div>
         )}
       </div>
@@ -460,7 +480,7 @@ export const MissionHud: React.FC<MissionHudProps> = ({
             <button
               type="button"
               onClick={onTriggerDecision}
-              className="px-5 py-2.5 rounded-2xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-heading font-black text-xs sm:text-sm uppercase tracking-wide shadow-[0_0_25px_rgba(245,158,11,0.5)] transition-all flex items-center gap-2 cursor-pointer"
+              className="px-5 py-2.5 rounded-2xl bg-[#39BDF7] hover:bg-sky-300 text-slate-950 font-heading font-black text-xs sm:text-sm uppercase tracking-wide shadow-[0_0_25px_rgba(57,189,247,0.45)] transition-all flex items-center gap-2 cursor-pointer"
             >
               <CheckCircle2 className="w-4 h-4" />
               <span>Chapter 3: Make Your Decision (4 Options)</span>
@@ -469,33 +489,33 @@ export const MissionHud: React.FC<MissionHudProps> = ({
           )}
 
           {/* Simplified, High-Contrast Bottom Control Strip */}
-          <div className="hidden md:flex items-center gap-3 px-4 py-2 rounded-xl bg-[#070D1E]/92 border border-slate-700/80 text-xs font-mono text-slate-200 backdrop-blur-md shadow-xl">
+          <div className="hidden md:flex items-center gap-3 px-4 py-2 rounded-xl bg-[#081426]/95 border border-[#39BDF7]/25 text-xs font-mono text-[#F2F5FA] backdrop-blur-md shadow-[0_8px_28px_rgba(2,6,23,0.85)]">
             <span>
               <strong className="text-white">WASD</strong> Move
             </span>
             <span className="text-slate-500">·</span>
             <span>
-              <strong className="text-[#00F0FF]">E</strong> Interact
+              <strong className="text-[#F05A9D]">E</strong> Inspect Clue
             </span>
             <span className="text-slate-500">·</span>
             <span>
-              <strong className="text-[#00F0FF]">T</strong> Talk
+              <strong className="text-[#39BDF7]">T</strong> Talk
             </span>
             <span className="text-slate-500">·</span>
             <span>
-              <strong className="text-[#00F0FF]">P</strong> Phone
+              <strong className="text-[#39BDF7]">P</strong> Phone
             </span>
             <span className="text-slate-500">·</span>
             <span>
-              <strong className="text-amber-300">Q</strong> Inspect Clues
+              <strong className="text-pink-300">Q</strong> Case Clues
             </span>
             <span className="text-slate-500">·</span>
             <span>
-              <strong className="text-amber-300">H</strong> Hide Panel
+              <strong className="text-pink-300">H</strong> Hide Panel
             </span>
             <span className="text-slate-500">·</span>
             <span>
-              <strong className="text-slate-300">J</strong> Journal
+              <strong className="text-[#38BDF8]">J</strong> Journal
             </span>
             <span className="text-slate-500">·</span>
             <span>
@@ -512,11 +532,11 @@ export const MissionHud: React.FC<MissionHudProps> = ({
             onTouchMove={handleJoystickMove}
             onTouchEnd={handleJoystickEnd}
             onTouchCancel={handleJoystickEnd}
-            className="pointer-events-auto w-20 h-20 rounded-full bg-[#070D1E]/85 border-2 border-white/25 relative flex items-center justify-center backdrop-blur-md touch-none"
+            className="pointer-events-auto w-20 h-20 rounded-full bg-[#060D20]/90 border-2 border-sky-400/35 relative flex items-center justify-center backdrop-blur-md touch-none shadow-lg"
           >
             <div
               className={`w-8 h-8 rounded-full transition-transform ${
-                isJoystickActive ? 'bg-[#00F0FF] shadow-[0_0_15px_#00F0FF]' : 'bg-white/40'
+                isJoystickActive ? 'bg-[#39BDF7] shadow-[0_0_15px_#39BDF7]' : 'bg-sky-200/45'
               }`}
               style={{
                 transform: `translate(${knobPos.x}px, ${knobPos.y}px)`,
@@ -529,9 +549,9 @@ export const MissionHud: React.FC<MissionHudProps> = ({
               <button
                 type="button"
                 onClick={onOpenChapterQuestion}
-                className="px-3 py-2.5 rounded-xl bg-[#070D1E]/90 border border-amber-400/50 text-amber-300 font-mono text-xs font-bold flex items-center gap-1.5 backdrop-blur-md"
+                className="px-3 py-2.5 rounded-xl bg-[#081426]/95 border border-[#F05A9D]/55 text-[#F05A9D] font-mono text-xs font-bold flex items-center gap-1.5 backdrop-blur-md shadow-lg"
               >
-                <Search className="w-3.5 h-3.5" />
+                <Search className="w-3.5 h-3.5 text-[#F05A9D]" />
                 <span>Clues (Q)</span>
               </button>
             )}
@@ -539,10 +559,10 @@ export const MissionHud: React.FC<MissionHudProps> = ({
             <button
               type="button"
               onClick={onToggleMobileJog}
-              className={`px-3 py-2.5 rounded-xl font-mono text-xs font-bold border transition-all flex items-center gap-1.5 backdrop-blur-md ${
+              className={`px-3 py-2.5 rounded-xl font-mono text-xs font-bold border transition-all flex items-center gap-1.5 backdrop-blur-md shadow-lg ${
                 isMobileJogging
-                  ? 'bg-amber-400 text-slate-950 border-amber-300'
-                  : 'bg-[#070D1E]/90 text-slate-300 border-white/20'
+                  ? 'bg-[#39BDF7] text-slate-950 border-sky-300'
+                  : 'bg-[#081426]/95 text-slate-200 border-[#39BDF7]/30'
               }`}
             >
               <Footprints className="w-3.5 h-3.5" />
@@ -554,12 +574,14 @@ export const MissionHud: React.FC<MissionHudProps> = ({
               onClick={onMobileInteract}
               className={`w-14 h-14 rounded-2xl font-heading font-black text-xs flex flex-col items-center justify-center border-2 transition-all shadow-xl backdrop-blur-md ${
                 activeNearby
-                  ? 'bg-[#00F0FF] text-slate-950 border-white shadow-[0_0_20px_rgba(0,240,255,0.6)]'
-                  : 'bg-[#070D1E]/90 text-slate-400 border-white/20'
+                  ? activeNearby.type === 'object'
+                    ? 'bg-[#F05A9D] text-white border-pink-300 shadow-[0_0_20px_rgba(240,90,157,0.65)]'
+                    : 'bg-[#39BDF7] text-slate-950 border-white shadow-[0_0_20px_rgba(57,189,247,0.6)]'
+                  : 'bg-[#081426]/95 text-slate-400 border-[#39BDF7]/25'
               }`}
             >
               <Hand className="w-4 h-4 mb-0.5" />
-              <span>E</span>
+              <span>{activeNearby?.type === 'npc' ? 'T' : 'E'}</span>
             </button>
           </div>
         </div>

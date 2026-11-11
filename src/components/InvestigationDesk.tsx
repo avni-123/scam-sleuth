@@ -230,15 +230,15 @@ export const InvestigationDesk: React.FC<InvestigationDeskProps> = ({
       return {
         step: 'Step 2: Connect the Clues',
         instruction: 'Drag or tap a clue from your Clue Tray to match its question on the Case Board.',
-        accent: 'text-[#00F0FF]',
-        border: 'border-[#00F0FF]/40 bg-[#0C1B38]',
+        accent: 'text-[#39BDF7]',
+        border: 'border-[#39BDF7]/40 bg-[#081426]',
       };
     }
     return {
       step: 'Step 1: Inspect Message',
       instruction: 'Tap anything that feels suspicious: look for urgency threats, strange senders, or payment demands.',
-      accent: 'text-[#F59E0B]',
-      border: 'border-[#F59E0B]/40 bg-[#1A1828]',
+      accent: 'text-[#F05A9D]',
+      border: 'border-[#F05A9D]/40 bg-[#081426]',
     };
   };
 
@@ -252,18 +252,18 @@ export const InvestigationDesk: React.FC<InvestigationDeskProps> = ({
           <button
             type="button"
             onClick={onBack}
-            className="p-2.5 rounded-xl bg-[#131E3A] hover:bg-[#1C2541] text-[#94A3B8] hover:text-white border border-[#1E293B] transition-colors cursor-pointer"
+            className="p-2.5 rounded-xl bg-[#081426] hover:bg-[#0B1A33] text-[#94A3B8] hover:text-white border border-[#1E293B] transition-colors cursor-pointer"
             title="Return to City Map"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div>
             <div className="flex items-center gap-2">
-              <span className="font-mono text-xs font-bold text-[#00F0FF] tracking-wider uppercase">
+              <span className="font-mono text-xs font-bold text-[#39BDF7] tracking-wider uppercase">
                 {currentCase.district || 'Cyber City'}
               </span>
               <span className="text-xs text-[#64748B]">·</span>
-              <span className="font-mono text-xs font-bold text-[#F59E0B] tracking-wider">
+              <span className="font-mono text-xs font-bold text-[#F05A9D] tracking-wider">
                 {currentCase.caseNumber}
               </span>
             </div>
@@ -283,15 +283,15 @@ export const InvestigationDesk: React.FC<InvestigationDeskProps> = ({
             }}
             className={`px-3 py-1.5 rounded-xl text-xs font-mono font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
               magnifierMode
-                ? 'bg-[#00F0FF]/20 text-[#00F0FF] border-2 border-[#00F0FF] shadow-[0_0_12px_rgba(0,240,255,0.3)]'
-                : 'bg-[#1C2541] text-[#94A3B8] border border-[#3A506B]/50'
+                ? 'bg-[#39BDF7]/20 text-[#39BDF7] border-2 border-[#39BDF7] shadow-[0_0_12px_rgba(57,189,247,0.3)]'
+                : 'bg-[#081426] text-[#94A3B8] border border-[#39BDF7]/30'
             }`}
           >
             <Search className="w-3.5 h-3.5" />
             <span>Magnifier: {magnifierMode ? 'ON' : 'OFF'}</span>
           </button>
 
-          <div className="bg-[#131E3A] border border-[#1E293B] px-3.5 py-1.5 rounded-xl flex items-center gap-2 text-xs font-mono">
+          <div className="bg-[#081426] border border-[#1E293B] px-3.5 py-1.5 rounded-xl flex items-center gap-2 text-xs font-mono">
             <span className="text-[#94A3B8]">Connected:</span>
             <span className="font-bold text-white">
               {connectedCount} of 3
@@ -305,10 +305,10 @@ export const InvestigationDesk: React.FC<InvestigationDeskProps> = ({
               else setActiveHintIndex((activeHintIndex + 1) % currentCase.clues.length);
               playAudioFx('clue');
             }}
-            className="px-3 py-1.5 bg-[#1C2541] hover:bg-[#233054] text-[#E2E8F0] border border-[#3A506B]/50 rounded-xl text-xs font-medium transition-colors flex items-center gap-1.5 cursor-pointer"
+            className="px-3 py-1.5 bg-[#081426] hover:bg-[#0B1A33] text-[#F2F5FA] border border-[#39BDF7]/30 rounded-xl text-xs font-medium transition-colors flex items-center gap-1.5 cursor-pointer"
             title="Get a detective nudge"
           >
-            <Lightbulb className="w-3.5 h-3.5 text-[#F59E0B]" />
+            <Lightbulb className="w-3.5 h-3.5 text-[#F05A9D]" />
             <span>Hint</span>
           </button>
         </div>
@@ -346,12 +346,12 @@ export const InvestigationDesk: React.FC<InvestigationDeskProps> = ({
 
       {/* Detective Hint Whisper Banner if active */}
       {activeHintIndex !== null && (
-        <div className="p-3.5 bg-[#1C2541] border border-[#F59E0B]/40 rounded-xl flex items-center justify-between text-xs text-[#E2E8F0] shadow-md animate-fade-in">
+        <div className="p-3.5 bg-[#081426] border border-[#F05A9D]/40 rounded-xl flex items-center justify-between text-xs text-[#F2F5FA] shadow-md animate-fade-in">
           <div className="flex items-center gap-2.5">
-            <Lightbulb className="w-4 h-4 text-[#F59E0B] shrink-0" />
+            <Lightbulb className="w-4 h-4 text-[#F05A9D] shrink-0" />
             <span>
               <strong>Chief Inspector Nova:</strong> &ldquo;Inspect the message closely for{' '}
-              <span className="text-[#F59E0B] font-semibold">
+              <span className="text-[#F05A9D] font-semibold">
                 {currentCase.clues[activeHintIndex].category.replace('_', ' ')}
               </span>{' '}
               warning signs. Look for phrasing like "{currentCase.clues[activeHintIndex].textSnippet.slice(0, 32)}..."&rdquo;
@@ -368,16 +368,16 @@ export const InvestigationDesk: React.FC<InvestigationDeskProps> = ({
 
       {/* Connection Error Coach Banner if mismatch occurred */}
       {connectionError && (
-        <div className="p-3.5 bg-amber-950/80 border border-amber-500/50 rounded-xl flex items-center justify-between text-xs text-amber-200 shadow-md animate-fade-in">
+        <div className="p-3.5 bg-[#F05A9D]/15 border border-[#F05A9D]/50 rounded-xl flex items-center justify-between text-xs text-[#F2F5FA] shadow-md animate-fade-in">
           <div className="flex items-center gap-2.5">
-            <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+            <AlertTriangle className="w-4 h-4 text-[#F05A9D] shrink-0" />
             <span>
-              <strong>Case Connection Check:</strong> {connectionError}
+              <strong className="text-[#F05A9D]">Case Connection Check:</strong> {connectionError}
             </span>
           </div>
           <button
             onClick={() => setConnectionError(null)}
-            className="text-amber-300 hover:text-white ml-2 p-1 cursor-pointer"
+            className="text-[#F05A9D] hover:text-white ml-2 p-1 cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
@@ -398,7 +398,7 @@ export const InvestigationDesk: React.FC<InvestigationDeskProps> = ({
         <div className="lg:col-span-3 space-y-3 order-2 lg:order-1">
           <div className="flex items-center justify-between text-xs font-mono text-[#94A3B8] px-1">
             <span className="flex items-center gap-1.5 font-bold text-white uppercase">
-              <Sparkles className="w-3.5 h-3.5 text-[#F59E0B]" />
+              <Sparkles className="w-3.5 h-3.5 text-[#F05A9D]" />
               <span>Clue Tray</span>
             </span>
             <span>{foundCount} of {totalClues}</span>
@@ -438,7 +438,7 @@ export const InvestigationDesk: React.FC<InvestigationDeskProps> = ({
                       isConnected
                         ? 'bg-[#0E223D]/60 border-emerald-500/40 opacity-75'
                         : isSelected
-                        ? 'bg-[#182C58] border-[#00F0FF] shadow-[0_0_15px_rgba(0,240,255,0.35)] scale-[1.02]'
+                        ? 'bg-[#182C58] border-[#39BDF7] shadow-[0_0_15px_rgba(57,189,247,0.35)] scale-[1.02]'
                         : 'bg-[#131E3A] border-[#3A506B]/50 hover:border-white/60 hover:bg-[#182648]'
                     }`}
                   >
@@ -447,9 +447,9 @@ export const InvestigationDesk: React.FC<InvestigationDeskProps> = ({
                         <span
                           className={`w-2 h-2 rounded-full ${
                             meta.category === 'sender'
-                              ? 'bg-[#00F0FF]'
+                              ? 'bg-[#39BDF7]'
                               : meta.category === 'payment'
-                              ? 'bg-[#F59E0B]'
+                              ? 'bg-[#F05A9D]'
                               : 'bg-[#EC4899]'
                           }`}
                         />
@@ -463,7 +463,7 @@ export const InvestigationDesk: React.FC<InvestigationDeskProps> = ({
                           CONNECTED
                         </span>
                       ) : (
-                        <span className="text-[9px] font-mono text-[#00F0FF] bg-[#00F0FF]/10 px-1.5 py-0.5 rounded border border-[#00F0FF]/30">
+                        <span className="text-[9px] font-mono text-[#39BDF7] bg-[#39BDF7]/10 px-1.5 py-0.5 rounded border border-[#39BDF7]/30">
                           {isSelected ? 'TAP TARGET SLOT' : 'DRAG OR TAP'}
                         </span>
                       )}
@@ -474,7 +474,7 @@ export const InvestigationDesk: React.FC<InvestigationDeskProps> = ({
                     </p>
 
                     <div className="flex items-center justify-between text-[10px] font-mono text-[#94A3B8]">
-                      <span className="capitalize text-[#F59E0B]">{meta.category}</span>
+                      <span className="capitalize text-[#F05A9D]">{meta.category}</span>
                       <span>Target: {meta.questionId === 'who' ? 'Who?' : meta.questionId === 'what' ? 'What?' : 'Action'}</span>
                     </div>
                   </div>
@@ -499,10 +499,10 @@ export const InvestigationDesk: React.FC<InvestigationDeskProps> = ({
         <div className="lg:col-span-5 space-y-3 order-1 lg:order-2">
           <div className="flex items-center justify-between text-xs font-mono text-[#94A3B8] px-1">
             <span className="flex items-center gap-1.5 text-white font-bold uppercase">
-              <Smartphone className="w-3.5 h-3.5 text-[#00F0FF]" />
+              <Smartphone className="w-3.5 h-3.5 text-[#39BDF7]" />
               <span>Incoming {currentCase.channel.toUpperCase()} Transmission</span>
             </span>
-            <span className="text-[#00F0FF]">Tap suspicious text</span>
+            <span className="text-[#39BDF7]">Tap suspicious text</span>
           </div>
 
           {/* Device Mockup Wrapper */}
@@ -521,18 +521,18 @@ export const InvestigationDesk: React.FC<InvestigationDeskProps> = ({
             {/* Cyber Magnifier Lens Reticle Floating Overlay */}
             {magnifierMode && mousePos && (
               <div
-                className="absolute pointer-events-none z-30 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-[#00F0FF] shadow-[0_0_20px_rgba(0,240,255,0.4)] backdrop-brightness-125 transition-transform duration-75 hidden md:flex items-center justify-center"
+                className="absolute pointer-events-none z-30 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-[#39BDF7] shadow-[0_0_20px_rgba(57,189,247,0.4)] backdrop-brightness-125 transition-transform duration-75 hidden md:flex items-center justify-center"
                 style={{
                   left: mousePos.x,
                   top: mousePos.y,
                   width: 110,
                   height: 110,
                   background:
-                    'radial-gradient(circle, rgba(0, 240, 255, 0.08) 0%, rgba(7, 13, 30, 0.25) 70%, rgba(0, 240, 255, 0.25) 100%)',
+                    'radial-gradient(circle, rgba(57, 189, 247, 0.08) 0%, rgba(8, 20, 38, 0.25) 70%, rgba(57, 189, 247, 0.25) 100%)',
                 }}
               >
-                <div className="w-1.5 h-1.5 rounded-full bg-[#00F0FF] shadow-[0_0_6px_#00F0FF]" />
-                <span className="absolute -bottom-6 px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-[#070D1E] text-[#00F0FF] border border-[#00F0FF]/40 uppercase tracking-widest whitespace-nowrap">
+                <div className="w-1.5 h-1.5 rounded-full bg-[#39BDF7] shadow-[0_0_6px_#39BDF7]" />
+                <span className="absolute -bottom-6 px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-[#081426] text-[#39BDF7] border border-[#39BDF7]/40 uppercase tracking-widest whitespace-nowrap">
                   MAGNIFIER LENS
                 </span>
               </div>
@@ -564,7 +564,7 @@ export const InvestigationDesk: React.FC<InvestigationDeskProps> = ({
                     </span>
                   </div>
                 </div>
-                <span className="text-[10px] font-mono text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/30">
+                <span className="text-[10px] font-mono text-[#F05A9D] bg-[#F05A9D]/10 px-2 py-0.5 rounded border border-[#F05A9D]/30">
                   Unverified
                 </span>
               </div>
@@ -578,7 +578,7 @@ export const InvestigationDesk: React.FC<InvestigationDeskProps> = ({
               )}
 
               {/* Message Segments (The core tap-to-inspect text) */}
-              <div className="p-4 sm:p-5 rounded-2xl bg-[#121F3E] border border-[#23355E] text-sm text-[#E2E8F0] leading-relaxed whitespace-pre-wrap shadow-inner selection:bg-amber-400/30">
+              <div className="p-4 sm:p-5 rounded-2xl bg-[#081426] border border-[#39BDF7]/30 text-sm text-[#F2F5FA] leading-relaxed whitespace-pre-wrap shadow-inner selection:bg-[#F05A9D]/30">
                 {currentCase.messageContent.segments.map((segment, idx) => {
                   const isClue = Boolean(segment.clueId);
                   const isFound = segment.clueId && discoveredClueIds.includes(segment.clueId);
@@ -591,14 +591,14 @@ export const InvestigationDesk: React.FC<InvestigationDeskProps> = ({
                         onClick={() => handleSegmentClick(segment)}
                         className={`inline text-left font-medium rounded-md px-1.5 py-0.5 my-0.5 transition-all cursor-pointer ${
                           isFound
-                            ? 'bg-[#F59E0B] text-[#070D1E] font-bold shadow-xs'
-                            : 'bg-[#F59E0B]/15 text-[#FBBF24] hover:bg-[#F59E0B]/35 border-b-2 border-dashed border-[#F59E0B] hover:scale-[1.01]'
+                            ? 'bg-[#39BDF7] text-[#081426] font-bold shadow-xs'
+                            : 'bg-[#F05A9D]/20 text-[#F05A9D] hover:bg-[#F05A9D]/35 border-b-2 border-dashed border-[#F05A9D] hover:scale-[1.01]'
                         }`}
                         title="Click to inspect this detail"
                       >
                         {segment.text}
                         {isFound && (
-                          <span className="ml-1 text-[9px] font-mono uppercase bg-[#070D1E] text-[#F59E0B] px-1 py-0.2 rounded inline-block">
+                          <span className="ml-1 text-[9px] font-mono uppercase bg-[#081426] text-[#39BDF7] px-1 py-0.2 rounded inline-block">
                             Pinned ✓
                           </span>
                         )}
@@ -629,9 +629,9 @@ export const InvestigationDesk: React.FC<InvestigationDeskProps> = ({
 
           {/* Neutral Feedback Alert if player clicked non-clue text */}
           {neutralFeedback && (
-            <div className="p-3.5 bg-[#121B33] border border-[#1E293B] rounded-2xl text-xs text-[#CBD5E1] flex items-start justify-between gap-3 shadow-md animate-fade-in">
+            <div className="p-3.5 bg-[#0B1A33] border border-[#39BDF7]/30 rounded-2xl text-xs text-[#F2F5FA] flex items-start justify-between gap-3 shadow-md animate-fade-in">
               <div className="flex items-start gap-2.5">
-                <Info className="w-4 h-4 text-[#F59E0B] shrink-0 mt-0.5" />
+                <Info className="w-4 h-4 text-[#39BDF7] shrink-0 mt-0.5" />
                 <span>{neutralFeedback}</span>
               </div>
               <button
@@ -695,8 +695,8 @@ export const InvestigationDesk: React.FC<InvestigationDeskProps> = ({
                       connectedClue
                         ? 'bg-[#0E253D] border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.2)]'
                         : isTargetForSelected
-                        ? 'bg-[#122347] border-[#00F0FF] border-dashed shadow-[0_0_15px_rgba(0,240,255,0.25)] animate-pulse cursor-pointer'
-                        : 'bg-[#0D1832] border-[#1E293B] border-dashed'
+                        ? 'bg-[#081426] border-[#39BDF7] border-dashed shadow-[0_0_15px_rgba(57,189,247,0.25)] animate-pulse cursor-pointer'
+                        : 'bg-[#081426] border-[#1E293B] border-dashed'
                     }`}
                   >
                     {/* Question Header */}
@@ -706,7 +706,7 @@ export const InvestigationDesk: React.FC<InvestigationDeskProps> = ({
                           className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs font-bold ${
                             connectedClue
                               ? 'bg-emerald-500 text-[#070D1E]'
-                              : 'bg-[#1C2541] text-[#94A3B8]'
+                              : 'bg-[#0B1A33] text-[#94A3B8]'
                           }`}
                         >
                           {connectedClue ? '✓' : '?'}
@@ -727,7 +727,7 @@ export const InvestigationDesk: React.FC<InvestigationDeskProps> = ({
 
                     {/* Slot Body: Connected Clue or Empty Prompt */}
                     {connectedClue && connectedMeta ? (
-                      <div className="p-2.5 rounded-xl bg-[#071324] border border-emerald-500/50 flex items-start justify-between gap-2 text-xs text-white">
+                      <div className="p-2.5 rounded-xl bg-[#081426] border border-emerald-500/50 flex items-start justify-between gap-2 text-xs text-white">
                         <div className="space-y-0.5">
                           <span className="font-heading font-bold text-emerald-300 block text-xs">
                             {connectedMeta.shortLabel}
@@ -750,9 +750,9 @@ export const InvestigationDesk: React.FC<InvestigationDeskProps> = ({
                         </button>
                       </div>
                     ) : (
-                      <div className="py-2.5 px-3 rounded-xl bg-[#070D1E]/60 border border-white/5 text-center text-xs font-mono text-[#64748B]">
+                      <div className="py-2.5 px-3 rounded-xl bg-[#081426]/60 border border-white/5 text-center text-xs font-mono text-[#64748B]">
                         {isTargetForSelected ? (
-                          <span className="text-[#00F0FF] font-bold">
+                          <span className="text-[#39BDF7] font-bold">
                             Tap here to connect selected clue!
                           </span>
                         ) : (
@@ -800,18 +800,18 @@ export const InvestigationDesk: React.FC<InvestigationDeskProps> = ({
       ========================================================================= */}
       {inspectingSegment && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-          <div className="bg-[#0F1B38] border-2 border-[#00F0FF] rounded-3xl max-w-lg w-full p-6 shadow-2xl relative text-[#E2E8F0] space-y-5">
+          <div className="bg-[#081426] border-2 border-[#39BDF7] rounded-3xl max-w-lg w-full p-6 shadow-2xl relative text-[#F2F5FA] space-y-5">
             {/* Modal Header */}
             <div className="flex items-start justify-between gap-3 pb-3 border-b border-white/10">
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-[#00F0FF]/20 border border-[#00F0FF]/40 flex items-center justify-center text-[#00F0FF]">
+                <div className="w-8 h-8 rounded-xl bg-[#39BDF7]/20 border border-[#39BDF7]/40 flex items-center justify-center text-[#39BDF7]">
                   <Search className="w-4 h-4" />
                 </div>
                 <div>
                   <h3 className="font-heading font-black text-sm text-white">
                     Inspect Warning Sign
                   </h3>
-                  <span className="text-[11px] font-mono text-[#00F0FF]">
+                  <span className="text-[11px] font-mono text-[#39BDF7]">
                     CLUE DISCOVERY PUZZLE
                   </span>
                 </div>
@@ -828,12 +828,12 @@ export const InvestigationDesk: React.FC<InvestigationDeskProps> = ({
 
             {/* Step 1 & 2: Highlighted Quote & One-Sentence Observation */}
             <div className="space-y-3">
-              <div className="p-3.5 rounded-2xl bg-[#070D1E] border border-white/10 font-mono text-xs text-[#FBBF24] italic">
+              <div className="p-3.5 rounded-2xl bg-[#060D1A] border border-white/10 font-mono text-xs text-[#39BDF7] italic">
                 &ldquo;{inspectingSegment.segment.text}&rdquo;
               </div>
 
-              <div className="p-3.5 rounded-2xl bg-[#142347] border border-[#00F0FF]/30 text-xs text-white space-y-1">
-                <span className="font-mono text-[10px] text-[#00F0FF] font-bold uppercase tracking-wider block">
+              <div className="p-3.5 rounded-2xl bg-[#0B1A33] border border-[#39BDF7]/30 text-xs text-white space-y-1">
+                <span className="font-mono text-[10px] text-[#39BDF7] font-bold uppercase tracking-wider block">
                   ★ DETECTIVE OBSERVATION
                 </span>
                 <p className="font-medium leading-relaxed">
@@ -852,14 +852,14 @@ export const InvestigationDesk: React.FC<InvestigationDeskProps> = ({
                 <button
                   type="button"
                   onClick={() => handleChooseCategory('pressure')}
-                  className="w-full text-left p-3.5 rounded-2xl bg-[#131E3A] hover:bg-[#1E2E55] border border-[#3A506B]/50 hover:border-[#EC4899] transition-all flex items-center justify-between gap-3 group cursor-pointer"
+                  className="w-full text-left p-3.5 rounded-2xl bg-[#0B1A33] hover:bg-[#122347] border border-[#39BDF7]/30 hover:border-[#F05A9D] transition-all flex items-center justify-between gap-3 group cursor-pointer"
                 >
                   <div className="flex items-center gap-2.5">
-                    <div className="w-7 h-7 rounded-lg bg-[#EC4899]/20 border border-[#EC4899]/40 flex items-center justify-center text-[#EC4899] shrink-0 font-bold text-xs">
+                    <div className="w-7 h-7 rounded-lg bg-[#F05A9D]/20 border border-[#F05A9D]/40 flex items-center justify-center text-[#F05A9D] shrink-0 font-bold text-xs">
                       ⚡
                     </div>
                     <div>
-                      <span className="font-heading font-bold text-xs text-white group-hover:text-[#EC4899] transition-colors block">
+                      <span className="font-heading font-bold text-xs text-white group-hover:text-[#F05A9D] transition-colors block">
                         Pressure tactic
                       </span>
                       <span className="text-[11px] text-[#94A3B8] block">
@@ -873,14 +873,14 @@ export const InvestigationDesk: React.FC<InvestigationDeskProps> = ({
                 <button
                   type="button"
                   onClick={() => handleChooseCategory('sender')}
-                  className="w-full text-left p-3.5 rounded-2xl bg-[#131E3A] hover:bg-[#1E2E55] border border-[#3A506B]/50 hover:border-[#00F0FF] transition-all flex items-center justify-between gap-3 group cursor-pointer"
+                  className="w-full text-left p-3.5 rounded-2xl bg-[#0B1A33] hover:bg-[#122347] border border-[#39BDF7]/30 hover:border-[#39BDF7] transition-all flex items-center justify-between gap-3 group cursor-pointer"
                 >
                   <div className="flex items-center gap-2.5">
-                    <div className="w-7 h-7 rounded-lg bg-[#00F0FF]/20 border border-[#00F0FF]/40 flex items-center justify-center text-[#00F0FF] shrink-0 font-bold text-xs">
+                    <div className="w-7 h-7 rounded-lg bg-[#39BDF7]/20 border border-[#39BDF7]/40 flex items-center justify-center text-[#39BDF7] shrink-0 font-bold text-xs">
                       👤
                     </div>
                     <div>
-                      <span className="font-heading font-bold text-xs text-white group-hover:text-[#00F0FF] transition-colors block">
+                      <span className="font-heading font-bold text-xs text-white group-hover:text-[#39BDF7] transition-colors block">
                         Sender identity
                       </span>
                       <span className="text-[11px] text-[#94A3B8] block">
@@ -894,14 +894,14 @@ export const InvestigationDesk: React.FC<InvestigationDeskProps> = ({
                 <button
                   type="button"
                   onClick={() => handleChooseCategory('payment')}
-                  className="w-full text-left p-3.5 rounded-2xl bg-[#131E3A] hover:bg-[#1E2E55] border border-[#3A506B]/50 hover:border-[#F59E0B] transition-all flex items-center justify-between gap-3 group cursor-pointer"
+                  className="w-full text-left p-3.5 rounded-2xl bg-[#131E3A] hover:bg-[#1E2E55] border border-[#3A506B]/50 hover:border-[#F05A9D] transition-all flex items-center justify-between gap-3 group cursor-pointer"
                 >
                   <div className="flex items-center gap-2.5">
-                    <div className="w-7 h-7 rounded-lg bg-[#F59E0B]/20 border border-[#F59E0B]/40 flex items-center justify-center text-[#F59E0B] shrink-0 font-bold text-xs">
+                    <div className="w-7 h-7 rounded-lg bg-[#F05A9D]/20 border border-[#F05A9D]/40 flex items-center justify-center text-[#F05A9D] shrink-0 font-bold text-xs">
                       💳
                     </div>
                     <div>
-                      <span className="font-heading font-bold text-xs text-white group-hover:text-[#F59E0B] transition-colors block">
+                      <span className="font-heading font-bold text-xs text-white group-hover:text-[#F05A9D] transition-colors block">
                         Payment or information request
                       </span>
                       <span className="text-[11px] text-[#94A3B8] block">
@@ -916,8 +916,8 @@ export const InvestigationDesk: React.FC<InvestigationDeskProps> = ({
 
             {/* Error Guidance inside Modal */}
             {inspectionFeedback && (
-              <div className="p-3 rounded-xl bg-amber-950/60 border border-amber-500/40 text-xs text-amber-200 animate-fade-in flex items-start gap-2">
-                <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+              <div className="p-3 rounded-xl bg-[#F05A9D]/15 border border-[#F05A9D]/40 text-xs text-[#F2F5FA] animate-fade-in flex items-start gap-2">
+                <AlertTriangle className="w-4 h-4 text-[#F05A9D] shrink-0 mt-0.5" />
                 <span>{inspectionFeedback}</span>
               </div>
             )}

@@ -166,16 +166,16 @@ export const DialogueOverlay: React.FC<DialogueOverlayProps> = ({
         settings={settings}
       />
 
-      {/* Minimal, box-free corner hint & optional Chapter 3 decision trigger kept well away from the subtitle safe area */}
+      {/* Minimal corner hint & optional Chapter 3 decision trigger kept well away from the subtitle safe area */}
       <div
-        className="fixed bottom-4 right-5 z-40 flex items-center gap-4 text-xs font-mono text-slate-300/80 [text-shadow:0_1px_3px_rgba(0,0,0,0.95)]"
+        className="fixed bottom-4 right-5 z-40 flex items-center gap-3 px-3.5 py-1.5 rounded-xl bg-[#081426]/90 border border-[#39BDF7]/30 backdrop-blur-md text-xs font-mono text-[#F2F5FA] shadow-lg"
         onClick={(e) => e.stopPropagation()}
       >
         {showDecisionAction && onTriggerDecision && (
           <button
             type="button"
             onClick={onTriggerDecision}
-            className="text-amber-300 hover:text-amber-200 underline underline-offset-4 font-semibold cursor-pointer"
+            className="text-[#F05A9D] hover:text-pink-200 underline underline-offset-4 font-semibold cursor-pointer"
           >
             Make Case Decision
           </button>
@@ -183,17 +183,18 @@ export const DialogueOverlay: React.FC<DialogueOverlayProps> = ({
         <button
           type="button"
           onClick={handleAdvance}
-          className="hover:text-white transition-colors cursor-pointer"
+          className="text-[#39BDF7] hover:text-white font-semibold transition-colors cursor-pointer"
         >
           Space · Next
         </button>
+        <span className="text-slate-600">·</span>
         <button
           type="button"
           onClick={() => {
             soundEngine.stopDialogueAudio();
             onClose();
           }}
-          className="hover:text-white transition-colors cursor-pointer"
+          className="text-[#F2F5FA]/80 hover:text-white transition-colors cursor-pointer"
         >
           Esc · Close
         </button>

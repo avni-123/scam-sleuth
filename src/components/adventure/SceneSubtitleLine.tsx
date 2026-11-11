@@ -85,35 +85,41 @@ export const SceneSubtitleLine: React.FC<SceneSubtitleLineProps> = ({
       ? 'text-xs sm:text-sm'
       : 'text-xs';
 
-  // Crisp dark outline + subtle shadow so white words read effortlessly on both bright plaster walls and dark scenes without any box
+  // Crisp dark outline + subtle midnight shadow so neutral white words read effortlessly on both bright walls and dark scenes
   const contrastShadowClass = settings?.highContrast
-    ? '[text-shadow:-1.5px_-1.5px_0_#000,1.5px_-1.5px_0_#000,-1.5px_1.5px_0_#000,1.5px_1.5px_0_#000,0_2px_8px_rgba(0,0,0,0.98)] font-semibold'
-    : '[text-shadow:0_1px_2px_rgba(0,0,0,0.98),0_0_5px_rgba(0,0,0,0.9),0_2px_10px_rgba(0,0,0,0.85)] font-medium';
+    ? '[text-shadow:-1.5px_-1.5px_0_#020617,1.5px_-1.5px_0_#020617,-1.5px_1.5px_0_#020617,1.5px_1.5px_0_#020617,0_2px_10px_rgba(2,6,23,0.98)] font-semibold'
+    : '[text-shadow:-1px_-1px_0_rgba(2,6,23,0.98),1px_-1px_0_rgba(2,6,23,0.98),-1px_1px_0_rgba(2,6,23,0.98),1px_1px_0_rgba(2,6,23,0.98),0_2px_12px_rgba(2,6,23,0.95)] font-medium';
 
   const speakerShadowClass =
-    '[text-shadow:0_1px_2px_rgba(0,0,0,0.98),0_0_4px_rgba(0,0,0,0.9)]';
+    '[text-shadow:-1px_-1px_0_rgba(2,6,23,0.98),1px_1px_0_rgba(2,6,23,0.98),0_1px_6px_rgba(2,6,23,0.95)]';
 
   const fadeTransitionClass = settings?.reducedMotion
     ? ''
     : 'transition-opacity duration-300 ease-in-out';
 
+  const isInvestigatorSpeaker = Boolean(
+    speaker && /detective|rowan|investigator/i.test(speaker)
+  );
+
   return (
     <div
-      className={`pointer-events-none fixed inset-x-0 bottom-14 sm:bottom-16 z-40 flex flex-col items-center justify-end px-6 sm:px-12 select-none ${fadeTransitionClass} ${
+      className={`pointer-events-none fixed inset-x-0 bottom-14 sm:bottom-16 z-40 flex flex-col items-center justify-end px-4 sm:px-12 select-none ${fadeTransitionClass} ${
         visible ? 'opacity-100' : 'opacity-0'
       }`}
       aria-live="polite"
     >
-      <div className="max-w-2xl w-full text-center space-y-1">
+      <div className="max-w-2xl w-full text-center space-y-1 px-4 py-2 rounded-2xl bg-[#04091A]/75 backdrop-blur-sm border border-sky-500/20 shadow-[0_8px_28px_rgba(2,6,23,0.8)]">
         {showSpeakerName && speaker && (
           <div
-            className={`font-sans ${speakerSizeClass} text-slate-200/90 tracking-wide font-normal ${speakerShadowClass}`}
+            className={`font-mono ${speakerSizeClass} ${
+              isInvestigatorSpeaker ? 'text-[#38BDF8]' : 'text-pink-300'
+            } tracking-wider font-semibold ${speakerShadowClass}`}
           >
             {speaker}
           </div>
         )}
         <p
-          className={`font-sans text-white ${textSizeClass} leading-snug tracking-normal ${contrastShadowClass}`}
+          className={`font-sans text-[#F8FAFC] ${textSizeClass} leading-snug tracking-normal ${contrastShadowClass}`}
         >
           {text}
         </p>

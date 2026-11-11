@@ -40,18 +40,18 @@ export const LevelDebriefModal: React.FC<LevelDebriefModalProps> = ({
   }, []);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/95 animate-fade-in pointer-events-auto select-none cursor-default">
-      <div className="w-full max-w-3xl bg-[#070D1E] border-2 border-amber-400/80 rounded-3xl p-6 sm:p-8 shadow-[0_0_60px_rgba(245,158,11,0.35)] relative text-white space-y-5 max-h-[92vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#040814]/92 backdrop-blur-md animate-fade-in pointer-events-auto select-none cursor-default">
+      <div className="w-full max-w-3xl bg-[#070E22] border-2 border-pink-400/65 rounded-3xl p-6 sm:p-8 shadow-[0_24px_64px_rgba(2,6,23,0.95),0_0_55px_rgba(236,72,153,0.25)] relative text-white space-y-5 max-h-[92vh] overflow-y-auto">
         {/* Header */}
-        <div className="text-center space-y-1.5 pb-4 border-b border-white/10">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 font-mono text-[10px] sm:text-xs font-bold uppercase tracking-widest">
-            <Sparkles className="w-3.5 h-3.5" />
+        <div className="text-center space-y-1.5 pb-4 border-b border-sky-500/20">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-pink-500/18 border border-pink-400/45 text-pink-300 font-mono text-[10px] sm:text-xs font-bold uppercase tracking-widest">
+            <Sparkles className="w-3.5 h-3.5 text-pink-400" />
             <span>
               THE GLASSHOUSE FILES · LEVEL {currentIdx >= 0 ? currentIdx + 1 : 1} OF {ADVENTURE_LEVELS.length} · ALL 3 CHAPTERS COMPLETE
             </span>
           </div>
 
-          <h1 className="font-heading font-black text-3xl sm:text-5xl uppercase tracking-tighter text-transparent bg-clip-text bg-gradient-to-b from-amber-200 via-amber-400 to-amber-600 drop-shadow-[0_4px_12px_rgba(0,0,0,0.9)]">
+          <h1 className="font-heading font-black text-3xl sm:text-5xl uppercase tracking-tighter text-transparent bg-clip-text bg-gradient-to-b from-white via-sky-200 to-pink-300 drop-shadow-[0_4px_12px_rgba(0,0,0,0.9)]">
             {currentLevel.title} — RESOLVED
           </h1>
 
@@ -88,34 +88,34 @@ export const LevelDebriefModal: React.FC<LevelDebriefModalProps> = ({
 
         {/* The 4 Core Debrief Pillars */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 text-xs">
-          <div className="p-3.5 rounded-2xl bg-[#0E1A38] border border-white/10 space-y-1 shadow-md">
+          <div className="p-3.5 rounded-2xl bg-[#0B1530] border border-sky-500/20 space-y-1 shadow-md">
             <span className="font-mono text-[10px] text-[#00F0FF] uppercase tracking-wider block font-bold">
               01. What Happened
             </span>
-            <p className="text-[#CBD5E1] font-medium leading-relaxed">
+            <p className="text-slate-200 font-medium leading-relaxed">
               {debrief.summary}
             </p>
           </div>
 
-          <div className="p-3.5 rounded-2xl bg-[#0E1A38] border border-white/10 space-y-1 shadow-md">
-            <span className="font-mono text-[10px] text-amber-400 uppercase tracking-wider block font-bold">
+          <div className="p-3.5 rounded-2xl bg-[#0B1530] border border-pink-400/30 space-y-1 shadow-md">
+            <span className="font-mono text-[10px] text-pink-300 uppercase tracking-wider block font-bold">
               02. Which Clue Mattered
             </span>
-            <p className="text-[#CBD5E1] font-medium leading-relaxed">
+            <p className="text-slate-200 font-medium leading-relaxed">
               {debrief.keyClue}
             </p>
           </div>
 
-          <div className="p-3.5 rounded-2xl bg-[#0E1A38] border border-white/10 space-y-1 shadow-md">
+          <div className="p-3.5 rounded-2xl bg-[#0B1530] border border-emerald-500/30 space-y-1 shadow-md">
             <span className="font-mono text-[10px] text-emerald-400 uppercase tracking-wider block font-bold">
               03. Why The Safe Choice Helped
             </span>
-            <p className="text-[#CBD5E1] font-medium leading-relaxed">
+            <p className="text-slate-200 font-medium leading-relaxed">
               {debrief.safeRationale}
             </p>
           </div>
 
-          <div className="p-3.5 rounded-2xl bg-[#14234C] border border-[#00F0FF]/40 space-y-1">
+          <div className="p-3.5 rounded-2xl bg-[#0F1F44] border border-[#00F0FF]/45 space-y-1">
             <span className="font-mono text-[10px] text-[#00F0FF] uppercase tracking-wider block font-bold">
               04. Real-World Habit To Remember
             </span>
@@ -127,20 +127,20 @@ export const LevelDebriefModal: React.FC<LevelDebriefModalProps> = ({
 
         {/* Glasshouse Files Thread */}
         {currentLevel.glasshouseClue && (
-          <div className="p-3.5 rounded-2xl bg-black/60 border border-[#00F0FF]/30 text-xs space-y-1">
-            <span className="font-mono text-[10px] text-[#00F0FF] uppercase font-bold block">
+          <div className="p-3.5 rounded-2xl bg-[#050A18] border border-pink-400/35 text-xs space-y-1">
+            <span className="font-mono text-[10px] text-pink-300 uppercase font-bold block">
               The Glasshouse Files Thread
             </span>
-            <p className="text-[#E2E8F0]">{currentLevel.glasshouseClue}</p>
+            <p className="text-slate-100">{currentLevel.glasshouseClue}</p>
           </div>
         )}
 
         {/* Next Unlocked Level in Campaign Order */}
         {nextLevel ? (
-          <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-500/15 via-[#0A1329] to-[#00F0FF]/15 border border-amber-400/40 space-y-1.5">
+          <div className="p-4 rounded-2xl bg-gradient-to-r from-pink-500/15 via-[#0A1329] to-[#00F0FF]/15 border border-pink-400/45 space-y-1.5">
             <div className="flex items-center justify-between gap-2">
-              <span className="font-mono text-[10px] text-amber-300 font-bold uppercase tracking-widest flex items-center gap-1.5">
-                <Network className="w-3.5 h-3.5" />
+              <span className="font-mono text-[10px] text-pink-300 font-bold uppercase tracking-widest flex items-center gap-1.5">
+                <Network className="w-3.5 h-3.5 text-pink-400" />
                 <span>NEXT CASE UNLOCKED · {nextLevel.levelNumber} (3 CHAPTERS)</span>
               </span>
               <span className="text-[10px] font-mono text-[#00F0FF] font-bold">
@@ -150,12 +150,12 @@ export const LevelDebriefModal: React.FC<LevelDebriefModalProps> = ({
             <div className="font-heading font-bold text-sm text-white">
               {nextLevel.title}
             </div>
-            <p className="text-xs text-[#CBD5E1] leading-relaxed">
+            <p className="text-xs text-slate-200 leading-relaxed">
               {nextLevel.chapters.map((c) => c.title).join(' · ')}
             </p>
           </div>
         ) : (
-          <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-500/20 via-[#0A1329] to-amber-500/20 border border-emerald-400/50 space-y-1.5">
+          <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-500/20 via-[#0A1329] to-pink-500/20 border border-emerald-400/50 space-y-1.5">
             <span className="font-mono text-[10px] text-emerald-300 font-bold uppercase tracking-widest flex items-center gap-1.5">
               <Network className="w-3.5 h-3.5" />
               <span>THE GLASSHOUSE FILES COMPLETE · ALL 10 LEVELS & 30 CHAPTERS SOLVED</span>
@@ -167,21 +167,21 @@ export const LevelDebriefModal: React.FC<LevelDebriefModalProps> = ({
         )}
 
         {/* Navigation & Action Bar */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-white/10">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-sky-500/20">
           <div className="flex items-center gap-2 w-full sm:w-auto">
             <button
               type="button"
               onClick={onReturnToMenu}
-              className="px-4 py-2.5 rounded-xl bg-[#131E3A] hover:bg-[#1C2A50] text-[#94A3B8] hover:text-white font-mono text-xs font-bold transition-colors cursor-pointer"
+              className="px-4 py-2.5 rounded-xl bg-[#0B1530] hover:bg-[#13244A] border border-sky-500/25 text-slate-200 hover:text-white font-mono text-xs font-bold transition-colors cursor-pointer"
             >
               10-Level Board
             </button>
             <button
               type="button"
               onClick={onReplayLevel}
-              className="px-4 py-2.5 rounded-xl bg-[#131E3A] hover:bg-[#1C2A50] text-[#94A3B8] hover:text-white font-mono text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer"
+              className="px-4 py-2.5 rounded-xl bg-[#0B1530] hover:bg-[#13244A] border border-sky-500/25 text-slate-200 hover:text-white font-mono text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer"
             >
-              <RotateCcw className="w-3.5 h-3.5" />
+              <RotateCcw className="w-3.5 h-3.5 text-pink-400" />
               <span>Replay Case</span>
             </button>
           </div>
@@ -190,7 +190,7 @@ export const LevelDebriefModal: React.FC<LevelDebriefModalProps> = ({
             <button
               type="button"
               onClick={onNextLevel}
-              className="w-full sm:w-auto px-7 py-3.5 rounded-2xl bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:brightness-110 active:scale-[0.98] text-black font-heading font-black text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer shadow-[0_0_25px_rgba(245,158,11,0.5)]"
+              className="w-full sm:w-auto px-7 py-3.5 rounded-2xl bg-[#00F0FF] hover:bg-sky-300 active:scale-[0.98] text-[#050A18] font-heading font-black text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer shadow-[0_0_25px_rgba(0,240,255,0.45)]"
             >
               <span>CONTINUE TO {nextLevel.title.toUpperCase()}</span>
               <ArrowRight className="w-4 h-4 stroke-[3]" />
@@ -199,7 +199,7 @@ export const LevelDebriefModal: React.FC<LevelDebriefModalProps> = ({
             <button
               type="button"
               onClick={onReturnToMenu}
-              className="w-full sm:w-auto px-7 py-3.5 rounded-2xl bg-gradient-to-r from-amber-400 to-amber-600 hover:brightness-110 active:scale-[0.98] text-black font-heading font-black text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg"
+              className="w-full sm:w-auto px-7 py-3.5 rounded-2xl bg-[#00F0FF] hover:bg-sky-300 active:scale-[0.98] text-[#050A18] font-heading font-black text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer shadow-[0_0_25px_rgba(0,240,255,0.45)]"
             >
               <span>ALL 10 LEVELS SOLVED · RETURN TO HUB</span>
             </button>

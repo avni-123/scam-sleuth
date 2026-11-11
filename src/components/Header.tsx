@@ -28,38 +28,38 @@ export const Header: React.FC<HeaderProps> = ({
   onQuickPlay,
 }) => {
   return (
-    <header className="sticky top-0 z-40 bg-[#070D1E]/95 backdrop-blur-md border-b border-[#1E293B] px-4 md:px-8 py-3 transition-all">
+    <header className="sticky top-0 z-40 bg-[#081426]/95 backdrop-blur-md border-b border-[#39BDF7]/20 px-4 md:px-8 py-3 transition-all text-[#F2F5FA]">
       <div className="max-w-7xl mx-auto flex items-center justify-between gap-4 sm:gap-8">
         {/* Zone 1: Brand Wordmark (Single text element with icon) */}
         <div
           onClick={() => onNavigate('map')}
           className="flex items-center gap-2.5 cursor-pointer group shrink-0"
         >
-          <div className="w-9 h-9 rounded-xl bg-[#1C2541] border border-[#00F0FF]/40 text-[#00F0FF] flex items-center justify-center shadow-[0_0_12px_rgba(0,240,255,0.25)] group-hover:border-[#00F0FF] transition-all">
-            <ShieldAlert className="w-5 h-5 text-[#00F0FF]" />
+          <div className="w-9 h-9 rounded-xl bg-[#081426] border border-[#39BDF7]/40 text-[#39BDF7] flex items-center justify-center shadow-[0_0_12px_rgba(57,189,247,0.3)] group-hover:border-[#F05A9D] transition-all">
+            <ShieldAlert className="w-5 h-5 text-[#39BDF7]" />
           </div>
           <div>
             <div className="flex items-center gap-1.5">
-              <span className="font-heading text-lg font-black tracking-tight text-white whitespace-nowrap block leading-tight">
+              <span className="font-heading text-lg font-black tracking-tight text-[#F2F5FA] whitespace-nowrap block leading-tight">
                 Scam Sleuth
               </span>
-              <span className="text-[10px] font-mono font-bold text-[#00F0FF] px-1.5 py-0.2 rounded bg-[#00F0FF]/10 border border-[#00F0FF]/30">
-                NEON
+              <span className="text-[10px] font-mono font-bold text-[#F05A9D] px-1.5 py-0.2 rounded bg-[#F05A9D]/15 border border-[#F05A9D]/40">
+                CYBER
               </span>
             </div>
-            <span className="text-[10px] font-mono text-[#94A3B8] tracking-wider block uppercase">
+            <span className="text-[10px] font-mono text-[#F2F5FA]/70 tracking-wider block uppercase">
               Cyber Detective Mystery Game
             </span>
           </div>
         </div>
 
         {/* Zone 2: Navigation Links (Single-line whitespace-nowrap) */}
-        <nav className="hidden lg:flex items-center gap-6 text-sm font-medium text-[#94A3B8]">
+        <nav className="hidden lg:flex items-center gap-6 text-sm font-medium text-[#F2F5FA]/70">
           <button
             onClick={() => onNavigate('map')}
             className={`transition-colors whitespace-nowrap shrink-0 hover:text-white flex items-center gap-1.5 cursor-pointer ${
               currentView === 'map'
-                ? 'text-[#00F0FF] font-bold border-b-2 border-[#00F0FF] pb-0.5'
+                ? 'text-[#39BDF7] font-bold border-b-2 border-[#39BDF7] pb-0.5'
                 : ''
             }`}
           >
@@ -71,7 +71,7 @@ export const Header: React.FC<HeaderProps> = ({
             onClick={() => onNavigate('cases')}
             className={`transition-colors whitespace-nowrap shrink-0 hover:text-white flex items-center gap-1.5 cursor-pointer ${
               currentView === 'cases' || currentView === 'investigate' || currentView === 'prologue'
-                ? 'text-[#F59E0B] font-bold border-b-2 border-[#F59E0B] pb-0.5'
+                ? 'text-[#F05A9D] font-bold border-b-2 border-[#F05A9D] pb-0.5'
                 : ''
             }`}
           >
@@ -83,7 +83,7 @@ export const Header: React.FC<HeaderProps> = ({
             onClick={() => onNavigate('locker')}
             className={`transition-colors whitespace-nowrap shrink-0 hover:text-white flex items-center gap-1.5 cursor-pointer ${
               currentView === 'locker'
-                ? 'text-[#F59E0B] font-bold border-b-2 border-[#F59E0B] pb-0.5'
+                ? 'text-[#F05A9D] font-bold border-b-2 border-[#F05A9D] pb-0.5'
                 : ''
             }`}
           >
@@ -95,11 +95,11 @@ export const Header: React.FC<HeaderProps> = ({
             onClick={() => onNavigate('lab')}
             className={`transition-colors whitespace-nowrap shrink-0 hover:text-white flex items-center gap-1.5 cursor-pointer ${
               currentView === 'lab'
-                ? 'text-[#F59E0B] font-bold border-b-2 border-[#F59E0B] pb-0.5'
+                ? 'text-[#39BDF7] font-bold border-b-2 border-[#39BDF7] pb-0.5'
                 : ''
             }`}
           >
-            <Sparkles className="w-3.5 h-3.5 text-[#F59E0B]" />
+            <Sparkles className="w-3.5 h-3.5 text-[#F05A9D]" />
             <span>Inspector Lab</span>
           </button>
         </nav>
@@ -109,7 +109,7 @@ export const Header: React.FC<HeaderProps> = ({
           {onQuickPlay && (
             <button
               onClick={onQuickPlay}
-              className="px-3.5 py-1.5 bg-gradient-to-r from-[#00F0FF] to-[#38BDF8] hover:brightness-110 active:scale-[0.98] text-[#070D1E] font-heading font-black text-xs rounded-xl shadow-[0_0_15px_rgba(0,240,255,0.3)] transition-all flex items-center gap-1.5 cursor-pointer"
+              className="px-3.5 py-1.5 bg-[#39BDF7] hover:bg-[#68CEF9] active:scale-[0.98] text-[#081426] font-heading font-black text-xs rounded-xl shadow-[0_0_15px_rgba(57,189,247,0.35)] transition-all flex items-center gap-1.5 cursor-pointer"
               title="Jump into first case immediately"
             >
               <Zap className="w-3.5 h-3.5 fill-current" />
@@ -118,13 +118,13 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
           )}
 
-          <div className="flex items-center gap-2 bg-[#1C2541] border border-[#3A506B]/40 px-3 py-1.5 rounded-xl text-xs">
-            <Award className="w-4 h-4 text-[#F59E0B]" />
+          <div className="flex items-center gap-2 bg-[#081426] border border-[#39BDF7]/30 px-3 py-1.5 rounded-xl text-xs">
+            <Award className="w-4 h-4 text-[#F05A9D]" />
             <div className="text-left">
-              <span className="text-[10px] text-[#94A3B8] block uppercase font-mono tracking-wider leading-none">
+              <span className="text-[10px] text-[#F2F5FA]/70 block uppercase font-mono tracking-wider leading-none">
                 {progress.rank}
               </span>
-              <span className="font-mono font-bold text-white text-xs leading-none">
+              <span className="font-mono font-bold text-[#F2F5FA] text-xs leading-none">
                 {progress.xp} XP
               </span>
             </div>
@@ -133,7 +133,7 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             onClick={onResetProgress}
             title="Reset training record"
-            className="p-2 text-[#64748B] hover:text-[#94A3B8] hover:bg-[#1C2541] rounded-xl transition-colors cursor-pointer"
+            className="p-2 text-[#F2F5FA]/50 hover:text-[#F2F5FA] hover:bg-[#081426] rounded-xl transition-colors cursor-pointer"
           >
             <RefreshCw className="w-3.5 h-3.5" />
           </button>

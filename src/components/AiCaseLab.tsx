@@ -92,17 +92,17 @@ export const AiCaseLab: React.FC<AiCaseLabProps> = ({
   ];
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-8 md:py-12 space-y-12">
+    <div className="max-w-5xl mx-auto px-4 py-8 md:py-12 space-y-12 text-[#F2F5FA]">
       {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#1E293B]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#39BDF7]/20">
         <div>
           <div className="flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-[#F59E0B]" />
-            <h1 className="font-heading text-2xl md:text-3xl font-bold text-white">
+            <Sparkles className="w-5 h-5 text-[#F05A9D]" />
+            <h1 className="font-heading text-2xl md:text-3xl font-bold text-[#F2F5FA]">
               Inspector's AI Lab
             </h1>
           </div>
-          <p className="text-xs sm:text-sm text-[#94A3B8] mt-1">
+          <p className="text-xs sm:text-sm text-[#F2F5FA]/80 mt-1">
             Generate novel training cases on demand or inspect suspicious message patterns with our detective intelligence engine.
           </p>
         </div>
@@ -110,28 +110,28 @@ export const AiCaseLab: React.FC<AiCaseLabProps> = ({
         <button
           type="button"
           onClick={onNavigateToCases}
-          className="self-start sm:self-auto px-4 py-2 bg-[#1C2541] hover:bg-[#233054] text-white text-xs font-semibold rounded-xl border border-[#3A506B]/50 transition-colors"
+          className="self-start sm:self-auto px-4 py-2 bg-[#081426] hover:bg-[#0E223D] text-[#F2F5FA] text-xs font-semibold rounded-xl border border-[#39BDF7]/40 transition-colors cursor-pointer"
         >
           Return to Case Room
         </button>
       </div>
 
       {/* TOOL 1: AI Case Generator */}
-      <div className="bg-[#131E3A] border border-[#1E293B] rounded-2xl p-6 sm:p-8 space-y-6 shadow-xl">
-        <div className="flex items-center gap-2 text-white">
-          <Bot className="w-5 h-5 text-[#F59E0B]" />
+      <div className="bg-[#0B1A33] border border-[#39BDF7]/25 rounded-2xl p-6 sm:p-8 space-y-6 shadow-xl">
+        <div className="flex items-center gap-2 text-[#F2F5FA]">
+          <Bot className="w-5 h-5 text-[#39BDF7]" />
           <h2 className="font-heading text-lg font-bold">
             Generate a Custom Training Mission
           </h2>
         </div>
 
-        <p className="text-xs text-[#94A3B8] leading-relaxed">
+        <p className="text-xs text-[#F2F5FA]/80 leading-relaxed">
           Powered by Gemini 3.8 Flash. Generates safe, completely fictional scenarios complying with all safety guidelines (only <code>.example</code> domains, no real numbers, clear clue anatomy).
         </p>
 
         {/* Preset quick buttons */}
         <div>
-          <span className="text-xs font-mono text-[#94A3B8] block mb-2">
+          <span className="text-xs font-mono text-[#F2F5FA]/70 block mb-2">
             Select a Scenario Template or Type Below:
           </span>
           <div className="flex flex-wrap gap-2">
@@ -140,10 +140,10 @@ export const AiCaseLab: React.FC<AiCaseLabProps> = ({
                 key={p}
                 type="button"
                 onClick={() => setTopic(p)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
                   topic === p
-                    ? 'bg-[#F59E0B] text-[#0B132B] font-bold shadow-xs'
-                    : 'bg-[#1C2541] text-[#94A3B8] hover:text-white border border-[#3A506B]/40'
+                    ? 'bg-[#F05A9D] text-white font-bold shadow-xs'
+                    : 'bg-[#081426] text-[#F2F5FA]/80 hover:text-white border border-[#39BDF7]/30'
                 }`}
               >
                 {p}
@@ -155,7 +155,7 @@ export const AiCaseLab: React.FC<AiCaseLabProps> = ({
         {/* Inputs */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="sm:col-span-2">
-            <label className="text-xs font-mono text-[#94A3B8] block mb-1.5">
+            <label className="text-xs font-mono text-[#F2F5FA]/70 block mb-1.5">
               Custom Topic / Scam Motif:
             </label>
             <input
@@ -163,18 +163,18 @@ export const AiCaseLab: React.FC<AiCaseLabProps> = ({
               value={topic}
               onChange={(e) => setTopic(e.target.value)}
               placeholder="e.g. Electricity Bill Disconnection Warning"
-              className="w-full bg-[#0B132B] border border-[#3A506B]/60 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-[#F59E0B]"
+              className="w-full bg-[#081426] border border-[#39BDF7]/40 rounded-xl px-4 py-2 text-sm text-[#F2F5FA] focus:outline-none focus:border-[#39BDF7]"
             />
           </div>
 
           <div>
-            <label className="text-xs font-mono text-[#94A3B8] block mb-1.5">
+            <label className="text-xs font-mono text-[#F2F5FA]/70 block mb-1.5">
               Target Communication Channel:
             </label>
             <select
               value={channel}
               onChange={(e) => setChannel(e.target.value as ScamChannel)}
-              className="w-full bg-[#0B132B] border border-[#3A506B]/60 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-[#F59E0B]"
+              className="w-full bg-[#081426] border border-[#39BDF7]/40 rounded-xl px-4 py-2 text-sm text-[#F2F5FA] focus:outline-none focus:border-[#39BDF7]"
             >
               <option value="email">Email Phishing</option>
               <option value="sms">SMS Text (Smishing)</option>
@@ -195,7 +195,7 @@ export const AiCaseLab: React.FC<AiCaseLabProps> = ({
           type="button"
           disabled={isGenerating}
           onClick={handleGenerateCase}
-          className="min-h-[44px] px-6 py-2.5 bg-[#F59E0B] hover:bg-[#D97706] active:scale-[0.98] text-[#0B132B] font-bold text-xs sm:text-sm rounded-xl transition-all shadow-md flex items-center justify-center gap-2 disabled:opacity-50"
+          className="min-h-[44px] px-6 py-2.5 bg-[#39BDF7] hover:bg-[#68CEF9] active:scale-[0.98] text-[#081426] font-bold text-xs sm:text-sm rounded-xl transition-all shadow-md flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
         >
           {isGenerating ? (
             <>
@@ -213,15 +213,15 @@ export const AiCaseLab: React.FC<AiCaseLabProps> = ({
       </div>
 
       {/* TOOL 2: Inspector Watson Message Scanner */}
-      <div className="bg-[#131E3A] border border-[#1E293B] rounded-2xl p-6 sm:p-8 space-y-6 shadow-xl">
-        <div className="flex items-center gap-2 text-white">
-          <Terminal className="w-5 h-5 text-[#F59E0B]" />
+      <div className="bg-[#0B1A33] border border-[#39BDF7]/25 rounded-2xl p-6 sm:p-8 space-y-6 shadow-xl">
+        <div className="flex items-center gap-2 text-[#F2F5FA]">
+          <Terminal className="w-5 h-5 text-[#39BDF7]" />
           <h2 className="font-heading text-lg font-bold">
             Chief Inspector Watson's Message Scanner
           </h2>
         </div>
 
-        <p className="text-xs text-[#94A3B8] leading-relaxed">
+        <p className="text-xs text-[#F2F5FA]/80 leading-relaxed">
           Test any simulated text, email snippet, or suspicious message to see an instant forensic breakdown of social engineering tactics and recommended safe habits.
         </p>
 
@@ -231,7 +231,7 @@ export const AiCaseLab: React.FC<AiCaseLabProps> = ({
             value={inspectText}
             onChange={(e) => setInspectText(e.target.value)}
             placeholder="Paste text here to analyze for urgency, spoofed links, or code demands..."
-            className="w-full bg-[#0B132B] border border-[#3A506B]/60 rounded-xl p-3.5 text-xs sm:text-sm font-mono text-white focus:outline-none focus:border-[#F59E0B]"
+            className="w-full bg-[#081426] border border-[#39BDF7]/40 rounded-xl p-3.5 text-xs sm:text-sm font-mono text-[#F2F5FA] focus:outline-none focus:border-[#39BDF7]"
           />
         </div>
 
@@ -239,48 +239,48 @@ export const AiCaseLab: React.FC<AiCaseLabProps> = ({
           type="button"
           disabled={isAnalyzing || !inspectText.trim()}
           onClick={handleInspectMessage}
-          className="min-h-[42px] px-5 py-2.5 bg-[#1C2541] hover:bg-[#233054] text-white border border-[#3A506B]/50 font-semibold text-xs sm:text-sm rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+          className="min-h-[42px] px-5 py-2.5 bg-[#081426] hover:bg-[#0E223D] text-[#F2F5FA] border border-[#39BDF7]/40 font-semibold text-xs sm:text-sm rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
         >
           {isAnalyzing ? (
             <>
-              <Loader2 className="w-4 h-4 animate-spin text-[#F59E0B]" />
+              <Loader2 className="w-4 h-4 animate-spin text-[#39BDF7]" />
               <span>Analyzing Manipulation Vectors...</span>
             </>
           ) : (
             <>
-              <Search className="w-4 h-4 text-[#F59E0B]" />
+              <Search className="w-4 h-4 text-[#39BDF7]" />
               <span>Analyze Message Risk</span>
             </>
           )}
         </button>
 
         {analysisResult && (
-          <div className="p-5 rounded-2xl bg-[#0B132B] border border-[#3A506B]/60 space-y-4 text-xs animate-fade-in">
-            <div className="flex items-center justify-between pb-3 border-b border-[#1E293B]">
-              <span className="font-heading font-bold text-white text-sm">
+          <div className="p-5 rounded-2xl bg-[#081426] border border-[#39BDF7]/30 space-y-4 text-xs animate-fade-in">
+            <div className="flex items-center justify-between pb-3 border-b border-[#39BDF7]/20">
+              <span className="font-heading font-bold text-[#F2F5FA] text-sm">
                 Inspector Watson's Verdict:
               </span>
               <span
                 className={`font-mono font-bold px-2.5 py-0.5 rounded text-xs ${
                   analysisResult.riskLevel === 'HIGH'
                     ? 'bg-red-500/20 text-red-400 border border-red-500/30'
-                    : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                    : 'bg-[#F05A9D]/20 text-[#F05A9D] border border-[#F05A9D]/40'
                 }`}
               >
                 {analysisResult.riskLevel} RISK SUSPECTED
               </span>
             </div>
 
-            <p className="text-white leading-relaxed">
+            <p className="text-[#F2F5FA] leading-relaxed">
               {analysisResult.summary}
             </p>
 
             {analysisResult.detectedSignals && analysisResult.detectedSignals.length > 0 && (
               <div className="space-y-1.5">
-                <span className="font-mono text-[#F59E0B] uppercase tracking-wider block">
+                <span className="font-mono text-[#F05A9D] uppercase tracking-wider block">
                   Identified Red Flags:
                 </span>
-                <ul className="list-disc list-inside space-y-1 text-[#CBD5E1]">
+                <ul className="list-disc list-inside space-y-1 text-[#F2F5FA]/80">
                   {analysisResult.detectedSignals.map((sig: string, i: number) => (
                     <li key={i}>{sig}</li>
                   ))}
@@ -289,11 +289,11 @@ export const AiCaseLab: React.FC<AiCaseLabProps> = ({
             )}
 
             {analysisResult.safeNextSteps && (
-              <div className="space-y-1.5 pt-2 border-t border-[#1E293B]">
-                <span className="font-mono text-[#10B981] uppercase tracking-wider block">
+              <div className="space-y-1.5 pt-2 border-t border-[#39BDF7]/20">
+                <span className="font-mono text-[#39BDF7] uppercase tracking-wider block">
                   Recommended Safe Actions:
                 </span>
-                <ul className="list-disc list-inside space-y-1 text-[#94A3B8]">
+                <ul className="list-disc list-inside space-y-1 text-[#F2F5FA]/80">
                   {analysisResult.safeNextSteps.map((step: string, i: number) => (
                     <li key={i}>{step}</li>
                   ))}
@@ -302,8 +302,8 @@ export const AiCaseLab: React.FC<AiCaseLabProps> = ({
             )}
 
             {analysisResult.detectiveTip && (
-              <div className="p-3 rounded-xl bg-[#131E3A] border border-[#1E293B] text-amber-200 font-mono">
-                💡 <strong>Habit:</strong> {analysisResult.detectiveTip}
+              <div className="p-3 rounded-xl bg-[#0B1A33] border border-[#39BDF7]/25 text-[#F2F5FA] font-mono">
+                <span className="text-[#F05A9D]">💡 Habit:</span> {analysisResult.detectiveTip}
               </div>
             )}
           </div>

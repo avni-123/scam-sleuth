@@ -109,7 +109,7 @@ export const GtaRadarMinimap: React.FC<GtaRadarMinimapProps> = ({
       ctx.lineWidth = 1.5;
       ctx.strokeRect(-4.5 * scale - playerX * scale, -4.5 * scale - playerZ * scale, 9 * scale, 9 * scale);
 
-      // Draw Evidence Blips (Amber diamond for uninspected clue, Emerald dot for inspected)
+      // Draw Evidence Blips (Soft Rose diamond for uninspected clue, Emerald dot for inspected)
       level.objects.forEach((obj) => {
         const isCollected = collectedClueIds.includes(obj.inspection.clueId);
         const ox = obj.position[0];
@@ -122,8 +122,8 @@ export const GtaRadarMinimap: React.FC<GtaRadarMinimapProps> = ({
           ctx.save();
           ctx.translate(screenRelX, screenRelZ);
           ctx.rotate(Math.PI / 4);
-          ctx.fillStyle = '#FBBF24';
-          ctx.shadowColor = '#F59E0B';
+          ctx.fillStyle = '#F472B6';
+          ctx.shadowColor = '#EC4899';
           ctx.shadowBlur = 5;
           ctx.fillRect(-3.5, -3.5, 7, 7);
           ctx.restore();
@@ -143,7 +143,7 @@ export const GtaRadarMinimap: React.FC<GtaRadarMinimapProps> = ({
         const screenRelX = nx * scale - playerX * scale;
         const screenRelZ = nz * scale - playerZ * scale;
 
-        ctx.fillStyle = '#38BDF8';
+        ctx.fillStyle = '#00F0FF';
         ctx.beginPath();
         ctx.arc(screenRelX, screenRelZ, 4.5, 0, Math.PI * 2);
         ctx.fill();
@@ -187,42 +187,42 @@ export const GtaRadarMinimap: React.FC<GtaRadarMinimapProps> = ({
   return (
     <div className="flex flex-col items-start gap-1.5 select-none pointer-events-none">
       {/* Compact Investigation Map & Case Progress Indicator (No HP/Armor Combat Bars) */}
-      <div className="rounded-2xl bg-[#070D1E]/90 p-2 border border-slate-700/80 shadow-xl backdrop-blur-md w-[168px] space-y-2">
+      <div className="rounded-2xl bg-[#060D20]/92 p-2 border border-sky-500/25 shadow-xl backdrop-blur-md w-[168px] space-y-2">
         <div className="flex items-center justify-between px-1 text-[10px] font-mono text-slate-300">
-          <span className="flex items-center gap-1 font-bold text-[#38BDF8]">
+          <span className="flex items-center gap-1 font-bold text-[#00F0FF]">
             <Compass className="w-3 h-3" />
             <span>ROOM MAP</span>
           </span>
-          <span className="text-amber-300 font-semibold">Ch {activeChapterNum}/3</span>
+          <span className="text-pink-300 font-semibold">Ch {activeChapterNum}/3</span>
         </div>
 
         <canvas
           ref={canvasRef}
           width={150}
           height={94}
-          className="rounded-xl block mx-auto border border-slate-800"
+          className="rounded-xl block mx-auto border border-sky-500/20"
         />
 
         {/* Legend for Witness & Clues */}
         <div className="flex items-center justify-between px-1 text-[9px] font-mono text-slate-300">
           <span className="flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full bg-[#38BDF8] inline-block" />
+            <span className="w-2 h-2 rounded-full bg-[#00F0FF] inline-block" />
             <span>{level.npcs[0]?.name.split(' ')[0] || 'Witness'}</span>
           </span>
           <span className="flex items-center gap-1">
-            <span className="w-2 h-2 rotate-45 bg-amber-400 inline-block" />
+            <span className="w-2 h-2 rotate-45 bg-pink-400 inline-block" />
             <span>Evidence</span>
           </span>
         </div>
 
         {/* Investigation Status: Clues Found & Case Progress */}
-        <div className="pt-1.5 border-t border-white/10 space-y-1.5 px-1">
+        <div className="pt-1.5 border-t border-sky-500/20 space-y-1.5 px-1">
           <div className="flex items-center justify-between text-[10px] font-mono">
             <span className="text-slate-300 flex items-center gap-1 font-semibold">
-              <Search className="w-3 h-3 text-amber-400" />
+              <Search className="w-3 h-3 text-pink-400" />
               <span>Clues found</span>
             </span>
-            <span className="font-bold text-amber-300 tabular-nums">
+            <span className="font-bold text-pink-300 tabular-nums">
               {foundCount} / {totalClues}
             </span>
           </div>
@@ -234,7 +234,7 @@ export const GtaRadarMinimap: React.FC<GtaRadarMinimapProps> = ({
                 <div
                   key={obj.id}
                   className={`h-1.5 flex-1 rounded-full transition-colors ${
-                    found ? 'bg-emerald-400' : 'bg-slate-700'
+                    found ? 'bg-emerald-400' : 'bg-pink-500/30'
                   }`}
                 />
               );
