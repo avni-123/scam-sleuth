@@ -4,7 +4,11 @@ import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { AdventureLevel, WorldObjectDef, NpcDef, GameSettings } from '../../types/adventure';
 import { ProceduralTextureGenerator } from '../../utils/proceduralTextures';
 import { soundEngine } from '../../utils/proceduralAudio';
-import { createHumanCharacter, HumanCharacterInstance } from './HumanCharacterBuilder';
+import {
+  createHumanCharacter,
+  disposeSceneResources,
+  HumanCharacterInstance,
+} from './HumanCharacterBuilder';
 import { CutsceneCameraShot } from '../../data/levelIntroCutscenes';
 
 export interface NearbyTarget {
@@ -27,6 +31,90 @@ interface ProjectedWorldMarker {
   planarDist: number;
   isCollected?: boolean;
   isVisible: boolean;
+}
+
+// Pre-allocated scratch vectors to eliminate per-frame GC allocations in animate()
+const _forwardDir = new THREE.Vector3();
+const _rightDir = new THREE.Vector3();
+const _moveVec = new THREE.Vector3();
+const _nextPos = new THREE.Vector3();
+const _desiredCamPos = new THREE.Vector3();
+const _desiredLookAt = new THREE.Vector3();
+const _handoffDir = new THREE.Vector3();
+const _npcWorldPos = new THREE.Vector3();
+const _toNpc = new THREE.Vector3();
+const _rightOfLine = new THREE.Vector3();
+const _desiredDialogueCam = new THREE.Vector3();
+const _dialogueLookTarget = new THREE.Vector3();
+const _lookDir = new THREE.Vector3();
+const _forwardCam = new THREE.Vector3();
+const _rightCam = new THREE.Vector3();
+const _lookAheadPoint = new THREE.Vector3();
+const _camPos = new THREE.Vector3();
+const _toFocus = new THREE.Vector3();
+const _currentLookDir = new THREE.Vector3();
+const _targetPos = new THREE.Vector3();
+const _toTarget = new THREE.Vector3();
+const _ringScale = new THREE.Vector3();
+const _projVec = new THREE.Vector3();
+
+function resolveEffectiveGraphicsQuality(
+  pref: GameSettings['graphicsQuality'],
+  isSoftwareGl: boolean
+): 'high' | 'medium' | 'low' {
+  if (isSoftwareGl) return 'low';
+  if (pref && pref !== 'auto') return pref;
+  if (typeof window !== 'undefined') {
+    const isSmallOrTouch =
+      window.innerWidth < 900 ||
+      (typeof navigator !== 'undefined' && navigator.maxTouchPoints > 1) ||
+      (typeof navigator !== 'undefined' &&
+        typeof navigator.hardwareConcurrency === 'number' &&
+        navigator.hardwareConcurrency <= 4);
+    if (isSmallOrTouch) return 'medium';
+  }
+  return 'high';
+}
+
+function haveVisibleMarkersChanged(
+  prev: ProjectedWorldMarker[],
+  next: ProjectedWorldMarker[]
+): boolean {
+  let prevVisibleCount = 0;
+  for (let i = 0; i < prev.length; i++) {
+    if (prev[i].isVisible) prevVisibleCount++;
+  }
+  let nextVisibleCount = 0;
+  for (let i = 0; i < next.length; i++) {
+    if (next[i].isVisible) nextVisibleCount++;
+  }
+  if (prevVisibleCount === 0 && nextVisibleCount === 0) {
+    return false;
+  }
+  if (prevVisibleCount !== nextVisibleCount || prev.length !== next.length) {
+    return true;
+  }
+  for (let i = 0; i < next.length; i++) {
+    const a = prev[i];
+    const b = next[i];
+    if (
+      !a ||
+      a.id !== b.id ||
+      a.isVisible !== b.isVisible ||
+      a.isCollected !== b.isCollected
+    ) {
+      return true;
+    }
+    if (
+      b.isVisible &&
+      (Math.abs(a.screenX - b.screenX) >= 1.5 ||
+        Math.abs(a.screenY - b.screenY) >= 1.5 ||
+        Math.abs(a.planarDist - b.planarDist) >= 0.08)
+    ) {
+      return true;
+    }
+  }
+  return false;
 }
 
 function formatCleanPromptAction(type: 'npc' | 'object', name: string, rawLabel: string): string {
@@ -77,7 +165,11 @@ export const AdventureWorld: React.FC<AdventureWorldProps> = ({
   const nearbyRef = useRef<NearbyTarget | null>(null);
   const [activeNearby, setActiveNearby] = useState<NearbyTarget | null>(null);
   const [worldMarkers, setWorldMarkers] = useState<ProjectedWorldMarker[]>([]);
+  const prevMarkersRef = useRef<ProjectedWorldMarker[]>([]);
   const lastMarkerUpdateRef = useRef<number>(0);
+  const lastNearestClueRef = useRef<string | null>(null);
+  const sunLightRef = useRef<THREE.DirectionalLight | null>(null);
+  const isSoftwareGlRef = useRef<boolean>(false);
 
   // Brief camera focus state when player presses E before opening dialogue/evidence
   const focusAnimRef = useRef<{
@@ -100,6 +192,26 @@ export const AdventureWorld: React.FC<AdventureWorldProps> = ({
 
   useEffect(() => {
     settingsRef.current = settings;
+    const renderer = rendererRef.current;
+    const sunLight = sunLightRef.current;
+    if (renderer) {
+      const quality = resolveEffectiveGraphicsQuality(
+        settings.graphicsQuality,
+        isSoftwareGlRef.current
+      );
+      const maxDpr = quality === 'high' ? 1.25 : quality === 'medium' ? 1.0 : 0.85;
+      renderer.setPixelRatio(
+        isSoftwareGlRef.current ? 0.85 : Math.min(window.devicePixelRatio || 1, maxDpr)
+      );
+      const enableShadows = !isSoftwareGlRef.current && quality !== 'low';
+      if (renderer.shadowMap.enabled !== enableShadows) {
+        renderer.shadowMap.enabled = enableShadows;
+        renderer.shadowMap.needsUpdate = true;
+      }
+      if (sunLight) {
+        sunLight.castShadow = enableShadows;
+      }
+    }
   }, [settings]);
 
   useEffect(() => {
@@ -373,6 +485,11 @@ export const AdventureWorld: React.FC<AdventureWorldProps> = ({
       gl.getExtension('WEBGL_lose_context')?.loseContext();
       return /SwiftShader|llvmpipe|softpipe|Software|Basic Render/i.test(gpu);
     })();
+    isSoftwareGlRef.current = isSoftwareGl;
+    const effectiveQuality = resolveEffectiveGraphicsQuality(
+      settingsRef.current.graphicsQuality,
+      isSoftwareGl
+    );
 
     // Scene
     const scene = new THREE.Scene();
@@ -410,28 +527,37 @@ export const AdventureWorld: React.FC<AdventureWorldProps> = ({
 
     // Renderer
     const renderer = new THREE.WebGLRenderer({
-      antialias: !isSoftwareGl,
+      antialias: !isSoftwareGl && effectiveQuality !== 'low',
       powerPreference: 'high-performance',
     });
     rendererRef.current = renderer;
     renderer.setSize(container.clientWidth, container.clientHeight);
-    renderer.setPixelRatio(isSoftwareGl ? 1 : Math.min(window.devicePixelRatio, 2));
+    const maxDpr =
+      effectiveQuality === 'high' ? 1.25 : effectiveQuality === 'medium' ? 1.0 : 0.85;
+    renderer.setPixelRatio(
+      isSoftwareGl ? 0.85 : Math.min(window.devicePixelRatio || 1, maxDpr)
+    );
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = level.setting === 'campus' ? 1.02 : 0.98;
-    renderer.shadowMap.enabled = !isSoftwareGl;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    const enableShadows = !isSoftwareGl && effectiveQuality !== 'low';
+    renderer.shadowMap.enabled = enableShadows;
+    renderer.shadowMap.type = THREE.PCFShadowMap;
     container.appendChild(renderer.domElement);
 
-    // Studio Reflection Environment
-    const pmremGenerator = new THREE.PMREMGenerator(renderer);
-    scene.environment = pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
-    pmremGenerator.dispose();
+    // Studio Reflection Environment (only generate PMREM on high quality to save startup & fragment shader cost)
+    let envTexture: THREE.Texture | null = null;
+    if (!isSoftwareGl && effectiveQuality === 'high') {
+      const pmremGenerator = new THREE.PMREMGenerator(renderer);
+      envTexture = pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
+      scene.environment = envTexture;
+      pmremGenerator.dispose();
+    }
 
     // -----------------------------------------------------------------------
-    // ATMOSPHERIC DETECTIVE BLUE LIGHTING RIG (Restrained, Moody, Natural Props)
+    // ATMOSPHERIC DETECTIVE BLUE LIGHTING RIG (Streamlined for Fast Shader Evaluation)
     // -----------------------------------------------------------------------
-    // Cool midnight-blue ambient fill for quiet investigation mood
+    // Cool midnight-blue ambient fill + hemisphere sky/ground bounce
     const ambientColor =
       level.setting === 'campus'
         ? 0x5b7da3
@@ -442,9 +568,13 @@ export const AdventureWorld: React.FC<AdventureWorldProps> = ({
         : 0x1e325c;
     const ambientLight = new THREE.AmbientLight(
       ambientColor,
-      level.setting === 'campus' ? 0.65 : 0.52
+      level.setting === 'campus' ? 0.72 : 0.62
     );
     scene.add(ambientLight);
+
+    const hemiLight = new THREE.HemisphereLight(0xdbeafe, 0x1e293b, 0.55);
+    hemiLight.position.set(0, 3.6, 0);
+    scene.add(hemiLight);
 
     // Directional Key Light (Moonlight / evening blue window key balanced for natural materials)
     const keyLightColor =
@@ -453,48 +583,34 @@ export const AdventureWorld: React.FC<AdventureWorldProps> = ({
         : level.setting === 'apartment'
         ? 0x93c5fd
         : 0xbfdbfe;
-    const sunLight = new THREE.DirectionalLight(keyLightColor, level.setting === 'campus' ? 1.55 : 1.35);
+    const sunLight = new THREE.DirectionalLight(keyLightColor, level.setting === 'campus' ? 1.65 : 1.48);
     sunLight.position.set(5.5, 8.0, 6.5);
-    sunLight.castShadow = !isSoftwareGl;
-    sunLight.shadow.mapSize.width = 2048;
-    sunLight.shadow.mapSize.height = 2048;
+    sunLight.castShadow = enableShadows;
+    const shadowMapDim = effectiveQuality === 'high' ? 1024 : 512;
+    sunLight.shadow.mapSize.width = shadowMapDim;
+    sunLight.shadow.mapSize.height = shadowMapDim;
     sunLight.shadow.bias = -0.0001;
     sunLight.shadow.normalBias = 0.02;
     sunLight.shadow.camera.near = 0.5;
-    sunLight.shadow.camera.far = 35;
-    sunLight.shadow.camera.left = -9;
-    sunLight.shadow.camera.right = 9;
-    sunLight.shadow.camera.top = 9;
-    sunLight.shadow.camera.bottom = -9;
+    sunLight.shadow.camera.far = 25;
+    sunLight.shadow.camera.left = -7;
+    sunLight.shadow.camera.right = 7;
+    sunLight.shadow.camera.top = 7;
+    sunLight.shadow.camera.bottom = -7;
     scene.add(sunLight);
+    sunLightRef.current = sunLight;
 
-    // Cool detective blue rim/fill bounce
-    const fillBounceLight = new THREE.DirectionalLight(0x38bdf8, 0.34);
-    fillBounceLight.position.set(-4, 3, -4);
-    scene.add(fillBounceLight);
-
-    // Grounded Interior Sconce / Lamp Light (keeps wood/fabric props looking natural, not neon)
+    // Grounded Interior Sconce / Lamp Light (single primary warm PointLight)
     const lampColor = level.setting === 'campus' ? 0x7dd3fc : 0xfde68a;
-    const lampLight = new THREE.PointLight(lampColor, 1.55, 8, 2);
+    const lampLight = new THREE.PointLight(lampColor, 1.65, 9, 2);
     lampLight.position.set(-3.2, 1.9, -3.2);
-    lampLight.castShadow = !isSoftwareGl;
-    lampLight.shadow.mapSize.width = 1024;
-    lampLight.shadow.mapSize.height = 1024;
-    lampLight.shadow.bias = -0.0005;
+    lampLight.castShadow = false;
     scene.add(lampLight);
 
-    // Overhead Downlight Fixture (Clean neutral-cool focus on evidence table)
-    const ceilingSpot = new THREE.SpotLight(0xe0f2fe, 1.25, 9, Math.PI / 4.5, 0.5, 2);
-    ceilingSpot.position.set(1.5, 3.4, 0.5);
-    ceilingSpot.target.position.set(1.5, 0.4, 0.5);
-    scene.add(ceilingSpot);
-    scene.add(ceilingSpot.target);
-
-    // -----------------------------------------------------------------------
     // -----------------------------------------------------------------------
     // BUILD HIGH-FIDELITY ENVIRONMENT
     // -----------------------------------------------------------------------
-    buildPhotorealisticEnvironment(scene, level.setting);
+    buildPhotorealisticEnvironment(scene, level.setting, effectiveQuality);
 
     // -----------------------------------------------------------------------
     // BUILD 3D PLAYER MODEL (Hidden during First-Person POV)
@@ -580,6 +696,10 @@ export const AdventureWorld: React.FC<AdventureWorldProps> = ({
       scene.add(prop);
       objectMeshesRef.current.set(obj.id, prop);
     });
+
+    if (!isSoftwareGl) {
+      renderer.compile(scene, camera);
+    }
 
     // -----------------------------------------------------------------------
     // AUTOMATIC IMMEDIATE MOUSE LOOK (No click required + full Pointer Lock support)
@@ -711,10 +831,26 @@ export const AdventureWorld: React.FC<AdventureWorldProps> = ({
     // ANIMATION & PHYSICS GAME LOOP
     // -----------------------------------------------------------------------
     let animationFrameId: number;
+    let paceTimerId: ReturnType<typeof setTimeout> | null = null;
+    let isDisposed = false;
+    let hasRenderedPausedFrame = false;
     let lastTime = performance.now();
+    let frameSampleCount = 0;
+    let frameSampleTotalMs = 0;
+    let adaptiveQualityStep = 0;
+
+    const afterDraw = isSoftwareGl
+      ? () => {
+          paceTimerId = setTimeout(() => {
+            if (!isDisposed) animationFrameId = requestAnimationFrame(animate);
+          }, 120);
+        }
+      : () => {
+          if (!isDisposed) animationFrameId = requestAnimationFrame(animate);
+        };
 
     const animate = (currentTime: number) => {
-      animationFrameId = requestAnimationFrame(animate);
+      if (isDisposed) return;
       const rawDeltaMs = currentTime - lastTime;
       const delta = Math.min(rawDeltaMs / 1000, 0.1);
       lastTime = currentTime;
@@ -728,8 +864,46 @@ export const AdventureWorld: React.FC<AdventureWorldProps> = ({
         if (lastFootstepTime.current > 0 && rawDeltaMs > 0) {
           lastFootstepTime.current += rawDeltaMs;
         }
-        renderer.render(scene, camera);
+        if (!hasRenderedPausedFrame) {
+          renderer.render(scene, camera);
+          hasRenderedPausedFrame = true;
+        }
+        afterDraw();
         return;
+      }
+      hasRenderedPausedFrame = false;
+
+      // Rolling frame-time monitor: automatically step down DPR and shadow map if device drops below ~41 FPS
+      if (
+        !isSoftwareGl &&
+        settingsRef.current.graphicsQuality === 'auto' &&
+        rawDeltaMs > 4 &&
+        rawDeltaMs < 150 &&
+        adaptiveQualityStep < 2
+      ) {
+        frameSampleCount++;
+        frameSampleTotalMs += rawDeltaMs;
+        if (frameSampleCount >= 24) {
+          const avgFrameMs = frameSampleTotalMs / frameSampleCount;
+          frameSampleCount = 0;
+          frameSampleTotalMs = 0;
+          if (avgFrameMs > 24) {
+            adaptiveQualityStep++;
+            if (adaptiveQualityStep === 1) {
+              renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.0));
+              if (renderer.shadowMap.enabled) {
+                renderer.shadowMap.enabled = false;
+                renderer.shadowMap.needsUpdate = true;
+                sunLight.castShadow = false;
+              }
+            } else if (adaptiveQualityStep === 2) {
+              renderer.setPixelRatio(0.85);
+              if (scene.environment) {
+                scene.environment = null;
+              }
+            }
+          }
+        }
       }
 
       animTime.current += delta;
@@ -751,12 +925,9 @@ export const AdventureWorld: React.FC<AdventureWorldProps> = ({
       // CALCULATE CAMERA-ALIGNED MOVEMENT (W: Forward, S: Backward, D: Right, A: Left)
       // ---------------------------------------------------------------------
       const currentYaw = cameraAngles.current.yaw;
-      // Planar forward direction (where camera is looking on the XZ ground plane)
-      const forwardDir = new THREE.Vector3(Math.sin(currentYaw), 0, Math.cos(currentYaw));
-      // Planar right direction (strictly 90 degrees clockwise to the right of camera gaze)
-      const rightDir = new THREE.Vector3(-Math.cos(currentYaw), 0, Math.sin(currentYaw));
-
-      const moveVec = new THREE.Vector3(0, 0, 0);
+      _forwardDir.set(Math.sin(currentYaw), 0, Math.cos(currentYaw));
+      _rightDir.set(-Math.cos(currentYaw), 0, Math.sin(currentYaw));
+      _moveVec.set(0, 0, 0);
 
       // W / ArrowUp: Forward
       if (
@@ -765,7 +936,7 @@ export const AdventureWorld: React.FC<AdventureWorldProps> = ({
         keysPressed.current['w'] ||
         keysPressed.current['W']
       ) {
-        moveVec.add(forwardDir);
+        _moveVec.add(_forwardDir);
       }
 
       // S / ArrowDown: Backward
@@ -775,7 +946,7 @@ export const AdventureWorld: React.FC<AdventureWorldProps> = ({
         keysPressed.current['s'] ||
         keysPressed.current['S']
       ) {
-        moveVec.sub(forwardDir);
+        _moveVec.sub(_forwardDir);
       }
 
       // D / ArrowRight: Right
@@ -785,7 +956,7 @@ export const AdventureWorld: React.FC<AdventureWorldProps> = ({
         keysPressed.current['d'] ||
         keysPressed.current['D']
       ) {
-        moveVec.add(rightDir);
+        _moveVec.add(_rightDir);
       }
 
       // A / ArrowLeft: Left
@@ -795,14 +966,13 @@ export const AdventureWorld: React.FC<AdventureWorldProps> = ({
         keysPressed.current['a'] ||
         keysPressed.current['A']
       ) {
-        moveVec.sub(rightDir);
+        _moveVec.sub(_rightDir);
       }
 
       // Mobile touch virtual joystick
       if (mobileMoveVector && (Math.abs(mobileMoveVector.x) > 0.08 || Math.abs(mobileMoveVector.y) > 0.08)) {
-        // Dragging stick UP (dy < 0) moves forward; dragging stick RIGHT (dx > 0) moves right
-        moveVec.addScaledVector(forwardDir, -mobileMoveVector.y);
-        moveVec.addScaledVector(rightDir, mobileMoveVector.x);
+        _moveVec.addScaledVector(_forwardDir, -mobileMoveVector.y);
+        _moveVec.addScaledVector(_rightDir, mobileMoveVector.x);
       }
 
       const isJogging =
@@ -816,22 +986,22 @@ export const AdventureWorld: React.FC<AdventureWorldProps> = ({
         !introCameraShotRef.current &&
         !activeDialogueNpcIdRef.current &&
         !isModalOpenRef.current &&
-        moveVec.lengthSq() > 0.001;
+        _moveVec.lengthSq() > 0.001;
 
       const prevFacing = playerFacing.current;
 
       if (isMoving && playerGroup) {
-        moveVec.normalize();
-        const nextPos = playerPos.current.clone().add(moveVec.clone().multiplyScalar(speed * delta));
+        _moveVec.normalize();
+        _nextPos.copy(playerPos.current).addScaledVector(_moveVec, speed * delta);
 
         // Soft room boundary collision clamp (-3.9 to 3.9 in x and z so camera never clips walls)
-        nextPos.x = Math.max(-3.9, Math.min(3.9, nextPos.x));
-        nextPos.z = Math.max(-3.9, Math.min(3.9, nextPos.z));
-        playerPos.current.copy(nextPos);
+        _nextPos.x = Math.max(-3.9, Math.min(3.9, _nextPos.x));
+        _nextPos.z = Math.max(-3.9, Math.min(3.9, _nextPos.z));
+        playerPos.current.copy(_nextPos);
         playerGroup.position.copy(playerPos.current);
 
         // Smoothly face movement direction (model front is +Z, so atan2(dx, dz) faces movement vector)
-        const targetRotation = Math.atan2(moveVec.x, moveVec.z);
+        const targetRotation = Math.atan2(_moveVec.x, _moveVec.z);
         let diff = targetRotation - playerFacing.current;
         while (diff < -Math.PI) diff += Math.PI * 2;
         while (diff > Math.PI) diff -= Math.PI * 2;
@@ -943,7 +1113,6 @@ export const AdventureWorld: React.FC<AdventureWorldProps> = ({
       // PRE-INVESTIGATION OPENING STORY, DIALOGUE & GAMEPLAY CAMERA CHOREOGRAPHY
       // ---------------------------------------------------------------------
       if (activeIntroShot) {
-        // Show the 3D Investigator in the scene during Beat 4 ('investigator_arrival')
         if (playerGroup) {
           playerGroup.visible = activeIntroShot === 'investigator_arrival';
         }
@@ -966,34 +1135,31 @@ export const AdventureWorld: React.FC<AdventureWorldProps> = ({
         const driftX = curSettings.reducedMotion ? 0 : Math.sin(animTime.current * 0.55) * 0.14;
         const driftY = curSettings.reducedMotion ? 0 : Math.cos(animTime.current * 0.45) * 0.03;
 
-        const desiredCamPos = new THREE.Vector3();
-        const desiredLookAt = new THREE.Vector3();
         let desiredFov = 58;
 
         if (activeIntroShot === 'character_medium') {
-          desiredCamPos.set(npcX * 0.45 + driftX, npcY + 1.54 + driftY, npcZ + 1.65);
-          desiredLookAt.set(npcX, npcY + 1.44, npcZ);
+          _desiredCamPos.set(npcX * 0.45 + driftX, npcY + 1.54 + driftY, npcZ + 1.65);
+          _desiredLookAt.set(npcX, npcY + 1.44, npcZ);
           desiredFov = 54;
         } else if (activeIntroShot === 'device_closeup') {
-          desiredCamPos.set(
+          _desiredCamPos.set(
             obj0X * 0.55 + driftX * 0.6,
             Math.max(1.22, obj0Y + 0.52) + driftY,
             obj0Z + 1.25
           );
-          desiredLookAt.set(obj0X * 0.68 + npcX * 0.32, Math.max(0.95, obj0Y + 0.22), obj0Z);
+          _desiredLookAt.set(obj0X * 0.68 + npcX * 0.32, Math.max(0.95, obj0Y + 0.22), obj0Z);
           desiredFov = 48;
         } else if (activeIntroShot === 'character_and_clue') {
-          desiredCamPos.set(driftX * 1.1, 1.66 + driftY, 1.95);
-          desiredLookAt.set((npcX + obj1X) * 0.42, Math.max(1.18, obj1Y + 0.35), (npcZ + obj1Z) * 0.45);
+          _desiredCamPos.set(driftX * 1.1, 1.66 + driftY, 1.95);
+          _desiredLookAt.set((npcX + obj1X) * 0.42, Math.max(1.18, obj1Y + 0.35), (npcZ + obj1Z) * 0.45);
           desiredFov = 58;
         } else {
-          // 'investigator_arrival' — frames the 3D Investigator arriving in the scene looking toward the witness
-          desiredCamPos.set(
+          _desiredCamPos.set(
             playerPos.current.x + 0.42 + driftX * 0.4,
             playerPos.current.y + 1.56,
             Math.min(4.2, playerPos.current.z + 1.55)
           );
-          desiredLookAt.set(
+          _desiredLookAt.set(
             playerPos.current.x * 0.55 + npcX * 0.45,
             playerPos.current.y + 1.36,
             playerPos.current.z * 0.4 + npcZ * 0.6
@@ -1001,60 +1167,56 @@ export const AdventureWorld: React.FC<AdventureWorldProps> = ({
           desiredFov = 58;
         }
 
-        // Strict room clamping so camera never clips into walls
-        desiredCamPos.x = THREE.MathUtils.clamp(desiredCamPos.x, -4.1, 4.1);
-        desiredCamPos.z = THREE.MathUtils.clamp(desiredCamPos.z, -4.1, 4.2);
-        desiredCamPos.y = THREE.MathUtils.clamp(desiredCamPos.y, 0.85, 2.8);
+        _desiredCamPos.x = THREE.MathUtils.clamp(_desiredCamPos.x, -4.1, 4.1);
+        _desiredCamPos.z = THREE.MathUtils.clamp(_desiredCamPos.z, -4.1, 4.2);
+        _desiredCamPos.y = THREE.MathUtils.clamp(_desiredCamPos.y, 0.85, 2.8);
 
         if (curSettings.reducedMotion) {
-          camera.position.copy(desiredCamPos);
-          cutsceneLookTargetRef.current.copy(desiredLookAt);
+          camera.position.copy(_desiredCamPos);
+          cutsceneLookTargetRef.current.copy(_desiredLookAt);
           camera.fov = desiredFov;
         } else {
           const lerpSpeed = activeIntroShot === 'investigator_arrival' ? 4.2 : 2.6;
-          camera.position.lerp(desiredCamPos, Math.min(1, delta * lerpSpeed));
-          cutsceneLookTargetRef.current.lerp(desiredLookAt, Math.min(1, delta * (lerpSpeed + 0.8)));
+          camera.position.lerp(_desiredCamPos, Math.min(1, delta * lerpSpeed));
+          cutsceneLookTargetRef.current.lerp(_desiredLookAt, Math.min(1, delta * (lerpSpeed + 0.8)));
           camera.fov = THREE.MathUtils.lerp(camera.fov, desiredFov, Math.min(1, delta * 3.5));
         }
         camera.updateProjectionMatrix();
         camera.lookAt(cutsceneLookTargetRef.current);
 
-        // Keep player cameraAngles synced with cutscene look direction so gameplay handoff is seamless
-        const handoffDir = cutsceneLookTargetRef.current.clone().sub(camera.position).normalize();
-        cameraAngles.current.yaw = Math.atan2(handoffDir.x, handoffDir.z);
-        cameraAngles.current.pitch = THREE.MathUtils.clamp(Math.asin(handoffDir.y), -0.35, 0.35);
+        _handoffDir.copy(cutsceneLookTargetRef.current).sub(camera.position).normalize();
+        cameraAngles.current.yaw = Math.atan2(_handoffDir.x, _handoffDir.z);
+        cameraAngles.current.pitch = THREE.MathUtils.clamp(Math.asin(_handoffDir.y), -0.35, 0.35);
       } else if (activeDialogueNpcIdRef.current) {
-        // DIALOGUE TWO-SHOT / OVER-THE-SHOULDER FRAMING: Both the 3D Investigator and 3D NPC remain visibly present
         if (playerGroup) playerGroup.visible = true;
         const dialogueNpc =
           level.npcs.find((n) => n.id === activeDialogueNpcIdRef.current) || level.npcs[0];
-        const npcWorldPos = dialogueNpc
-          ? new THREE.Vector3(dialogueNpc.position[0], dialogueNpc.position[1], dialogueNpc.position[2])
-          : new THREE.Vector3(0, 0, -2.0);
+        if (dialogueNpc) {
+          _npcWorldPos.set(dialogueNpc.position[0], dialogueNpc.position[1], dialogueNpc.position[2]);
+        } else {
+          _npcWorldPos.set(0, 0, -2.0);
+        }
 
-        const toNpc = npcWorldPos.clone().sub(playerPos.current);
-        toNpc.y = 0;
-        if (toNpc.lengthSq() < 0.01) toNpc.set(0, 0, -1);
-        toNpc.normalize();
-        const rightOfLine = new THREE.Vector3(-toNpc.z, 0, toNpc.x);
+        _toNpc.copy(_npcWorldPos).sub(playerPos.current);
+        _toNpc.y = 0;
+        if (_toNpc.lengthSq() < 0.01) _toNpc.set(0, 0, -1);
+        _toNpc.normalize();
+        _rightOfLine.set(-_toNpc.z, 0, _toNpc.x);
 
-        const desiredDialogueCam = playerPos.current
-          .clone()
-          .sub(toNpc.clone().multiplyScalar(1.35))
-          .add(rightOfLine.clone().multiplyScalar(0.58));
-        desiredDialogueCam.y = playerPos.current.y + 1.54;
-        desiredDialogueCam.x = THREE.MathUtils.clamp(desiredDialogueCam.x, -4.2, 4.2);
-        desiredDialogueCam.z = THREE.MathUtils.clamp(desiredDialogueCam.z, -4.2, 4.2);
+        _desiredDialogueCam
+          .copy(playerPos.current)
+          .addScaledVector(_toNpc, -1.35)
+          .addScaledVector(_rightOfLine, 0.58);
+        _desiredDialogueCam.y = playerPos.current.y + 1.54;
+        _desiredDialogueCam.x = THREE.MathUtils.clamp(_desiredDialogueCam.x, -4.2, 4.2);
+        _desiredDialogueCam.z = THREE.MathUtils.clamp(_desiredDialogueCam.z, -4.2, 4.2);
 
-        const dialogueLookTarget = playerPos.current
-          .clone()
-          .lerp(npcWorldPos, 0.65)
-          .add(new THREE.Vector3(0, 1.44, 0));
+        _dialogueLookTarget.copy(playerPos.current).lerp(_npcWorldPos, 0.65);
+        _dialogueLookTarget.y += 1.44;
 
-        camera.position.lerp(desiredDialogueCam, Math.min(1, 8 * delta));
-        camera.lookAt(dialogueLookTarget);
+        camera.position.lerp(_desiredDialogueCam, Math.min(1, 8 * delta));
+        camera.lookAt(_dialogueLookTarget);
       } else if (curSettings.isFirstPerson) {
-        // Optional First-Person POV (Toggled via V key)
         if (playerGroup) playerGroup.visible = false;
 
         const bobFrequency = isJogging ? 13 : 8.5;
@@ -1076,59 +1238,59 @@ export const AdventureWorld: React.FC<AdventureWorldProps> = ({
           clampedCamZ
         );
 
-        const lookDir = new THREE.Vector3(
-          Math.sin(cameraAngles.current.yaw) * Math.cos(cameraAngles.current.pitch),
-          Math.sin(cameraAngles.current.pitch),
-          Math.cos(cameraAngles.current.yaw) * Math.cos(cameraAngles.current.pitch)
-        ).normalize();
+        _lookDir
+          .set(
+            Math.sin(cameraAngles.current.yaw) * Math.cos(cameraAngles.current.pitch),
+            Math.sin(cameraAngles.current.pitch),
+            Math.cos(cameraAngles.current.yaw) * Math.cos(cameraAngles.current.pitch)
+          )
+          .normalize()
+          .add(camera.position);
 
-        camera.lookAt(camera.position.clone().add(lookDir));
+        camera.lookAt(_lookDir);
       } else {
-        // DEFAULT GROUNDED THIRD-PERSON INVESTIGATOR VIEW:
-        // Shows the fully modeled 3D human investigator in the active playable scene
         if (playerGroup) playerGroup.visible = true;
         const camDist = 1.65;
         const shoulderOffset = 0.38;
         const camHeight = 1.48;
 
-        const forwardCam = new THREE.Vector3(
+        _forwardCam.set(
           Math.sin(cameraAngles.current.yaw),
           0,
           Math.cos(cameraAngles.current.yaw)
         );
-        const rightCam = new THREE.Vector3(
+        _rightCam.set(
           -Math.cos(cameraAngles.current.yaw),
           0,
           Math.sin(cameraAngles.current.yaw)
         );
 
-        const lookAheadPoint = playerPos.current
-          .clone()
-          .add(forwardCam.clone().multiplyScalar(1.35))
-          .add(rightCam.clone().multiplyScalar(shoulderOffset * 0.35))
-          .add(new THREE.Vector3(0, camHeight + Math.sin(cameraAngles.current.pitch) * 1.1, 0));
+        _lookAheadPoint
+          .copy(playerPos.current)
+          .addScaledVector(_forwardCam, 1.35)
+          .addScaledVector(_rightCam, shoulderOffset * 0.35);
+        _lookAheadPoint.y += camHeight + Math.sin(cameraAngles.current.pitch) * 1.1;
 
-        const camPos = playerPos.current
-          .clone()
-          .sub(forwardCam.clone().multiplyScalar(camDist * Math.cos(cameraAngles.current.pitch)))
-          .add(rightCam.clone().multiplyScalar(shoulderOffset));
-        camPos.y = playerPos.current.y + camHeight - Math.sin(cameraAngles.current.pitch) * 0.75 + 0.12;
+        _camPos
+          .copy(playerPos.current)
+          .addScaledVector(_forwardCam, -camDist * Math.cos(cameraAngles.current.pitch))
+          .addScaledVector(_rightCam, shoulderOffset);
+        _camPos.y = playerPos.current.y + camHeight - Math.sin(cameraAngles.current.pitch) * 0.75 + 0.12;
 
-        // Room boundary clamping with minimum clearance from player mesh so it never clips the character
-        camPos.x = THREE.MathUtils.clamp(camPos.x, -4.35, 4.35);
-        camPos.z = THREE.MathUtils.clamp(camPos.z, -4.35, 4.35);
-        camPos.y = THREE.MathUtils.clamp(camPos.y, 0.75, 3.1);
+        _camPos.x = THREE.MathUtils.clamp(_camPos.x, -4.35, 4.35);
+        _camPos.z = THREE.MathUtils.clamp(_camPos.z, -4.35, 4.35);
+        _camPos.y = THREE.MathUtils.clamp(_camPos.y, 0.75, 3.1);
 
         const planarCamDist = Math.hypot(
-          camPos.x - playerPos.current.x,
-          camPos.z - playerPos.current.z
+          _camPos.x - playerPos.current.x,
+          _camPos.z - playerPos.current.z
         );
         if (planarCamDist < 0.75) {
-          camPos.addScaledVector(rightCam, 0.75 - planarCamDist);
+          _camPos.addScaledVector(_rightCam, 0.75 - planarCamDist);
         }
 
-        camera.position.lerp(camPos, Math.min(1, 14 * delta));
-        camera.lookAt(lookAheadPoint);
+        camera.position.lerp(_camPos, Math.min(1, 14 * delta));
+        camera.lookAt(_lookAheadPoint);
       }
 
       // ---------------------------------------------------------------------
@@ -1137,10 +1299,10 @@ export const AdventureWorld: React.FC<AdventureWorldProps> = ({
       if (!activeIntroShot && focusAnimRef.current) {
         const anim = focusAnimRef.current;
         const elapsed = currentTime - anim.startTime;
-        const toFocus = anim.focusWorldPos.clone().sub(camera.position);
-        const horizDist = Math.max(0.01, Math.hypot(toFocus.x, toFocus.z));
-        const desiredYaw = Math.atan2(toFocus.x, toFocus.z);
-        const desiredPitch = THREE.MathUtils.clamp(Math.atan2(toFocus.y, horizDist), -0.65, 0.65);
+        _toFocus.copy(anim.focusWorldPos).sub(camera.position);
+        const horizDist = Math.max(0.01, Math.hypot(_toFocus.x, _toFocus.z));
+        const desiredYaw = Math.atan2(_toFocus.x, _toFocus.z);
+        const desiredPitch = THREE.MathUtils.clamp(Math.atan2(_toFocus.y, horizDist), -0.65, 0.65);
 
         let yawDiff = desiredYaw - cameraAngles.current.yaw;
         while (yawDiff < -Math.PI) yawDiff += Math.PI * 2;
@@ -1167,75 +1329,75 @@ export const AdventureWorld: React.FC<AdventureWorldProps> = ({
 
       // ---------------------------------------------------------------------
       // PROXIMITY & GAZE-CONE TARGET DETECTION
-      // (Phone pops up specifically when very near the phone)
       // ---------------------------------------------------------------------
       let closestTarget: NearbyTarget | null = null;
       let highestTargetScore = 0;
 
-      const currentLookDir = new THREE.Vector3(
-        Math.sin(cameraAngles.current.yaw) * Math.cos(cameraAngles.current.pitch),
-        Math.sin(cameraAngles.current.pitch),
-        Math.cos(cameraAngles.current.yaw) * Math.cos(cameraAngles.current.pitch)
-      ).normalize();
+      _currentLookDir
+        .set(
+          Math.sin(cameraAngles.current.yaw) * Math.cos(cameraAngles.current.pitch),
+          Math.sin(cameraAngles.current.pitch),
+          Math.cos(cameraAngles.current.yaw) * Math.cos(cameraAngles.current.pitch)
+        )
+        .normalize();
 
-      // Check NPCs (Proximity range: approx 30cm from character boundary: planarDist <= 1.05m)
-      level.npcs.forEach((npc) => {
+      // Check NPCs
+      for (let i = 0; i < level.npcs.length; i++) {
+        const npc = level.npcs[i];
         const dx = npc.position[0] - playerPos.current.x;
         const dz = npc.position[2] - playerPos.current.z;
         const planarDist = Math.hypot(dx, dz);
-        const npcPos = new THREE.Vector3(npc.position[0], npc.position[1] + 1.4, npc.position[2]);
-        const toTarget = npcPos.clone().sub(camera.position).normalize();
-        const alignment = currentLookDir.dot(toTarget);
-        const planarAlignment =
-          planarDist > 0.05 ? (forwardDir.x * dx + forwardDir.z * dz) / planarDist : 1;
+        if (planarDist <= 1.05) {
+          _targetPos.set(npc.position[0], npc.position[1] + 1.4, npc.position[2]);
+          _toTarget.copy(_targetPos).sub(camera.position).normalize();
+          const alignment = _currentLookDir.dot(_toTarget);
+          const planarAlignment =
+            planarDist > 0.05 ? (_forwardDir.x * dx + _forwardDir.z * dz) / planarDist : 1;
 
-        // Pop when within approx 30cm of person and looking toward them
-        if (planarDist <= 1.05 && (alignment > 0.18 || planarAlignment > 0.22)) {
-          const score = (Math.max(alignment, planarAlignment) + 1.6) / (planarDist + 0.1);
-          if (score > highestTargetScore) {
-            highestTargetScore = score;
-            closestTarget = {
-              type: 'npc',
-              id: npc.id,
-              name: npc.name,
-              interactionLabel: formatCleanPromptAction('npc', npc.name, `Talk to ${npc.name}`),
-            };
+          if (alignment > 0.18 || planarAlignment > 0.22) {
+            const score = (Math.max(alignment, planarAlignment) + 1.6) / (planarDist + 0.1);
+            if (score > highestTargetScore) {
+              highestTargetScore = score;
+              closestTarget = {
+                type: 'npc',
+                id: npc.id,
+                name: npc.name,
+                interactionLabel: formatCleanPromptAction('npc', npc.name, `Talk to ${npc.name}`),
+              };
+            }
           }
         }
-      });
+      }
 
-      // Check World Evidence Objects (Approx 30cm from item/table edge: planarDist <= 1.05m)
-      level.objects.forEach((obj) => {
+      // Check World Evidence Objects
+      for (let i = 0; i < level.objects.length; i++) {
+        const obj = level.objects[i];
         const dx = obj.position[0] - playerPos.current.x;
         const dz = obj.position[2] - playerPos.current.z;
         const planarDist = Math.hypot(dx, dz);
-        const objPos = new THREE.Vector3(obj.position[0], obj.position[1] + 0.15, obj.position[2]);
-        const toTarget = objPos.clone().sub(camera.position).normalize();
-        const alignment = currentLookDir.dot(toTarget);
-        const planarAlignment =
-          planarDist > 0.05 ? (forwardDir.x * dx + forwardDir.z * dz) / planarDist : 1;
+        if (planarDist <= 1.05) {
+          _targetPos.set(obj.position[0], obj.position[1] + 0.15, obj.position[2]);
+          _toTarget.copy(_targetPos).sub(camera.position).normalize();
+          const alignment = _currentLookDir.dot(_toTarget);
+          const planarAlignment =
+            planarDist > 0.05 ? (_forwardDir.x * dx + _forwardDir.z * dz) / planarDist : 1;
 
-        // Pop when within approx 30cm of desk/object surface
-        const maxTriggerDist = 1.05;
+          if (planarAlignment > 0.15 || alignment > 0.15) {
+            const score =
+              (Math.max(alignment, planarAlignment) + 1.8) / (planarDist + 0.1);
 
-        if (
-          planarDist <= maxTriggerDist &&
-          (planarAlignment > 0.15 || alignment > 0.15)
-        ) {
-          const score =
-            (Math.max(alignment, planarAlignment) + 1.8) / (planarDist + 0.1);
-
-          if (score > highestTargetScore) {
-            highestTargetScore = score;
-            closestTarget = {
-              type: 'object',
-              id: obj.id,
-              name: obj.name,
-              interactionLabel: formatCleanPromptAction('object', obj.name, obj.interactionLabel),
-            };
+            if (score > highestTargetScore) {
+              highestTargetScore = score;
+              closestTarget = {
+                type: 'object',
+                id: obj.id,
+                name: obj.name,
+                interactionLabel: formatCleanPromptAction('object', obj.name, obj.interactionLabel),
+              };
+            }
           }
         }
-      });
+      }
 
       updateNearbyTarget(closestTarget);
 
@@ -1247,7 +1409,8 @@ export const AdventureWorld: React.FC<AdventureWorldProps> = ({
         if (ring && ring.material instanceof THREE.MeshBasicMaterial) {
           const isTargeted = closestTarget?.id === id;
           const targetScale = isTargeted ? 1.18 + Math.sin(animTime.current * 5) * 0.04 : 1.0;
-          ring.scale.lerp(new THREE.Vector3(targetScale, targetScale, 1), 10 * delta);
+          _ringScale.set(targetScale, targetScale, 1);
+          ring.scale.lerp(_ringScale, 10 * delta);
           ring.material.opacity = THREE.MathUtils.lerp(
             ring.material.opacity,
             isTargeted ? 0.95 : 0.35,
@@ -1261,7 +1424,8 @@ export const AdventureWorld: React.FC<AdventureWorldProps> = ({
         if (ring && ring.material instanceof THREE.MeshBasicMaterial) {
           const isTargeted = closestTarget?.id === id;
           const targetScale = isTargeted ? 1.22 + Math.sin(animTime.current * 5) * 0.05 : 1.0;
-          ring.scale.lerp(new THREE.Vector3(targetScale, targetScale, 1), 10 * delta);
+          _ringScale.set(targetScale, targetScale, 1);
+          ring.scale.lerp(_ringScale, 10 * delta);
           ring.material.opacity = THREE.MathUtils.lerp(
             ring.material.opacity,
             isTargeted ? 0.95 : 0.35,
@@ -1272,7 +1436,6 @@ export const AdventureWorld: React.FC<AdventureWorldProps> = ({
 
       // ---------------------------------------------------------------------
       // IN-HAND EVIDENCE PHONE VIEWMODEL UPDATE (Only used when in 1st-person POV)
-      // In default 3rd-person view, the 3D Investigator holds the phone directly in their right hand bone
       // ---------------------------------------------------------------------
       if (phoneViewmodelRef.current) {
         const shouldShowFirstPersonPhone =
@@ -1296,37 +1459,37 @@ export const AdventureWorld: React.FC<AdventureWorldProps> = ({
       }
 
       // ---------------------------------------------------------------------
-      // PROJECT NEARBY TARGETS TO 2D SCREEN COORDINATES (Clamped & Offset Beside Target)
+      // PROJECT NEARBY TARGETS TO 2D SCREEN COORDINATES (Only commit React state if changed)
       // ---------------------------------------------------------------------
-      if (!lastMarkerUpdateRef.current || currentTime - lastMarkerUpdateRef.current > 35) {
+      if (!lastMarkerUpdateRef.current || currentTime - lastMarkerUpdateRef.current > 50) {
         lastMarkerUpdateRef.current = currentTime;
         const w = container.clientWidth || 1;
         const h = container.clientHeight || 1;
         const nextMarkers: ProjectedWorldMarker[] = [];
 
-        level.npcs.forEach((npc) => {
+        for (let i = 0; i < level.npcs.length; i++) {
+          const npc = level.npcs[i];
           const dx = npc.position[0] - playerPos.current.x;
           const dz = npc.position[2] - playerPos.current.z;
           const planarDist = Math.hypot(dx, dz);
-          const planarAlignment =
-            planarDist > 0.05 ? (forwardDir.x * dx + forwardDir.z * dz) / planarDist : 1;
-
-          // Anchor at shoulder height and offset beside Alex so face is never covered
-          const worldPos = new THREE.Vector3(npc.position[0], npc.position[1] + 1.38, npc.position[2]);
-          const projected = worldPos.clone().project(camera);
-          // Only visible when near (approx 30cm from body boundary: planarDist <= 1.05m)
-          const isVisible =
-            planarDist <= 1.05 &&
-            ((projected.z < 1 &&
-              projected.x > -0.96 &&
-              projected.x < 0.96 &&
-              projected.y > -0.95 &&
-              projected.y < 0.95) ||
-              planarAlignment > 0.15);
-
-          const rawX = projected.z < 1 ? (projected.x * 0.5 + 0.5) * w : w * 0.5;
-          const clampedX = Math.max(130, Math.min(w - 130, rawX));
+          let isVisible = false;
+          let clampedX = w * 0.5;
           const clampedY = h - 86;
+
+          if (planarDist <= 1.05) {
+            const planarAlignment =
+              planarDist > 0.05 ? (_forwardDir.x * dx + _forwardDir.z * dz) / planarDist : 1;
+            _projVec.set(npc.position[0], npc.position[1] + 1.38, npc.position[2]).project(camera);
+            isVisible =
+              (_projVec.z < 1 &&
+                _projVec.x > -0.96 &&
+                _projVec.x < 0.96 &&
+                _projVec.y > -0.95 &&
+                _projVec.y < 0.95) ||
+              planarAlignment > 0.15;
+            const rawX = _projVec.z < 1 ? (_projVec.x * 0.5 + 0.5) * w : w * 0.5;
+            clampedX = Math.max(130, Math.min(w - 130, rawX));
+          }
 
           nextMarkers.push({
             id: npc.id,
@@ -1338,33 +1501,32 @@ export const AdventureWorld: React.FC<AdventureWorldProps> = ({
             planarDist,
             isVisible,
           });
-        });
+        }
 
-        level.objects.forEach((obj) => {
+        for (let i = 0; i < level.objects.length; i++) {
+          const obj = level.objects[i];
           const dx = obj.position[0] - playerPos.current.x;
           const dz = obj.position[2] - playerPos.current.z;
           const planarDist = Math.hypot(dx, dz);
-          const planarAlignment =
-            planarDist > 0.05 ? (forwardDir.x * dx + forwardDir.z * dz) / planarDist : 1;
-
-          // Raise anchor height slightly when very close so desk items below eye level stay comfortably on screen
-          const anchorLift = planarDist < 1.35 ? 0.52 : 0.38;
-          const worldPos = new THREE.Vector3(obj.position[0], obj.position[1] + anchorLift, obj.position[2]);
-          const projected = worldPos.clone().project(camera);
-
-          // Only visible when near the object (approx 30cm from desk edge / surface: planarDist <= 1.05m)
-          const isVisible =
-            planarDist <= 1.05 &&
-            ((projected.z < 1 &&
-              projected.x > -0.98 &&
-              projected.x < 0.98 &&
-              projected.y > -1.25 &&
-              projected.y < 0.98) ||
-              planarAlignment > 0.05);
-
-          const rawX = projected.z < 1 ? (projected.x * 0.5 + 0.5) * w : w * 0.5;
-          const clampedX = Math.max(130, Math.min(w - 130, rawX));
+          let isVisible = false;
+          let clampedX = w * 0.5;
           const clampedY = h - 86;
+
+          if (planarDist <= 1.05) {
+            const planarAlignment =
+              planarDist > 0.05 ? (_forwardDir.x * dx + _forwardDir.z * dz) / planarDist : 1;
+            const anchorLift = planarDist < 1.35 ? 0.52 : 0.38;
+            _projVec.set(obj.position[0], obj.position[1] + anchorLift, obj.position[2]).project(camera);
+            isVisible =
+              (_projVec.z < 1 &&
+                _projVec.x > -0.98 &&
+                _projVec.x < 0.98 &&
+                _projVec.y > -1.25 &&
+                _projVec.y < 0.98) ||
+              planarAlignment > 0.05;
+            const rawX = _projVec.z < 1 ? (_projVec.x * 0.5 + 0.5) * w : w * 0.5;
+            clampedX = Math.max(130, Math.min(w - 130, rawX));
+          }
 
           nextMarkers.push({
             id: obj.id,
@@ -1380,56 +1542,69 @@ export const AdventureWorld: React.FC<AdventureWorldProps> = ({
             isCollected: curCollectedClueIds.includes(obj.inspection.clueId),
             isVisible,
           });
-        });
+        }
 
-        setWorldMarkers(nextMarkers);
+        if (haveVisibleMarkersChanged(prevMarkersRef.current, nextMarkers)) {
+          prevMarkersRef.current = nextMarkers;
+          setWorldMarkers(nextMarkers);
+        }
       }
 
       // Find nearest undiscovered clue for gentle objective guidance if player gets stuck
-      let nearestUndiscoveredClueName: string | null = null;
-      let minUndiscoveredDist = Infinity;
-      level.objects.forEach((obj) => {
-        if (!curCollectedClueIds.includes(obj.inspection.clueId)) {
-          const d = Math.hypot(
-            obj.position[0] - playerPos.current.x,
-            obj.position[2] - playerPos.current.z
-          );
-          if (d < minUndiscoveredDist) {
-            minUndiscoveredDist = d;
-            nearestUndiscoveredClueName = obj.name;
+      if (!lastTelemetryTime.current || currentTime - lastTelemetryTime.current > 250) {
+        lastTelemetryTime.current = currentTime;
+        let nearestUndiscoveredClueName: string | null = null;
+        let minUndiscoveredDist = Infinity;
+        for (let i = 0; i < level.objects.length; i++) {
+          const obj = level.objects[i];
+          if (!curCollectedClueIds.includes(obj.inspection.clueId)) {
+            const d = Math.hypot(
+              obj.position[0] - playerPos.current.x,
+              obj.position[2] - playerPos.current.z
+            );
+            if (d < minUndiscoveredDist) {
+              minUndiscoveredDist = d;
+              nearestUndiscoveredClueName = obj.name;
+            }
           }
         }
-      });
 
-      // Telemetry dispatch for gentle stuck-player hint
-      if (!lastTelemetryTime.current || currentTime - lastTelemetryTime.current > 40) {
-        lastTelemetryTime.current = currentTime;
-        window.dispatchEvent(
-          new CustomEvent('sleuth-telemetry', {
-            detail: {
-              x: playerPos.current.x,
-              z: playerPos.current.z,
-              yaw: cameraAngles.current.yaw,
-              nearestUndiscoveredClueName,
-            },
-          })
-        );
+        if (nearestUndiscoveredClueName !== lastNearestClueRef.current) {
+          lastNearestClueRef.current = nearestUndiscoveredClueName;
+          window.dispatchEvent(
+            new CustomEvent('sleuth-telemetry', {
+              detail: {
+                x: playerPos.current.x,
+                z: playerPos.current.z,
+                yaw: cameraAngles.current.yaw,
+                nearestUndiscoveredClueName,
+              },
+            })
+          );
+        }
       }
 
       // Render
       renderer.render(scene, camera);
+      afterDraw();
     };
 
     animationFrameId = requestAnimationFrame(animate);
 
     return () => {
+      isDisposed = true;
       cancelAnimationFrame(animationFrameId);
+      if (paceTimerId !== null) clearTimeout(paceTimerId);
       container.removeEventListener('mousedown', handlePointerDown);
       window.removeEventListener('mousemove', handlePointerMove);
       window.removeEventListener('mouseup', handlePointerUp);
       window.removeEventListener('resize', handleResize);
       if (renderer.domElement && container.contains(renderer.domElement)) {
         container.removeChild(renderer.domElement);
+      }
+      disposeSceneResources(scene);
+      if (envTexture) {
+        envTexture.dispose();
       }
       renderer.dispose();
     };
@@ -1475,10 +1650,10 @@ export const AdventureWorld: React.FC<AdventureWorldProps> = ({
                   interactionLabel: primaryMarker.interactionLabel,
                 })
               }
-              className={`px-3 py-1.5 rounded-xl border backdrop-blur-md transition-all flex items-center gap-2 shadow-lg cursor-pointer hover:scale-105 active:scale-95 ${
+              className={`px-3 py-1.5 rounded-xl border transition-all flex items-center gap-2 shadow-lg cursor-pointer hover:scale-105 active:scale-95 ${
                 primaryMarker.type === 'npc'
-                  ? 'bg-[#060D20]/94 border-[#00F0FF]/85 text-[#F8FAFC] shadow-[0_4px_16px_rgba(0,0,0,0.7),0_0_16px_rgba(0,240,255,0.4)]'
-                  : 'bg-[#060D20]/94 border-pink-400/85 text-[#F8FAFC] shadow-[0_4px_16px_rgba(0,0,0,0.7),0_0_16px_rgba(236,72,153,0.45)]'
+                  ? 'bg-[#060D20]/96 border-[#00F0FF]/85 text-[#F8FAFC] shadow-[0_4px_16px_rgba(0,0,0,0.7),0_0_16px_rgba(0,240,255,0.4)]'
+                  : 'bg-[#060D20]/96 border-pink-400/85 text-[#F8FAFC] shadow-[0_4px_16px_rgba(0,0,0,0.7),0_0_16px_rgba(236,72,153,0.45)]'
               }`}
             >
               <span
@@ -1502,7 +1677,7 @@ export const AdventureWorld: React.FC<AdventureWorldProps> = ({
 
             {/* Small non-overlapping nearby-target list if multiple targets are equally close */}
             {secondaryCloseMarkers.length > 0 && (
-              <div className="mt-1 px-2 py-0.5 rounded-md bg-[#060D20]/92 border border-sky-500/30 text-[10px] font-mono text-slate-200 backdrop-blur-md">
+              <div className="mt-1 px-2 py-0.5 rounded-md bg-[#060D20]/95 border border-sky-500/30 text-[10px] font-mono text-slate-200">
                 Also nearby: {secondaryCloseMarkers.map((s) => s.interactionLabel).join(' · ')}
               </div>
             )}
@@ -1605,7 +1780,11 @@ function createInHandPhoneViewmodel(msgSender?: string, msgBody?: string): THREE
 // 3D PHOTOREALISTIC PROCEDURAL ENVIRONMENT BUILDERS
 // ---------------------------------------------------------------------------
 
-function buildPhotorealisticEnvironment(scene: THREE.Scene, setting: 'apartment' | 'campus' | 'cafe' | 'office') {
+function buildPhotorealisticEnvironment(
+  scene: THREE.Scene,
+  setting: 'apartment' | 'campus' | 'cafe' | 'office',
+  effectiveQuality: 'high' | 'medium' | 'low' = 'high'
+) {
   // Floor Geometry (10m x 10m)
   const floorGeo = new THREE.PlaneGeometry(10, 10);
   floorGeo.rotateX(-Math.PI / 2);
@@ -1762,17 +1941,13 @@ function buildPhotorealisticEnvironment(scene: THREE.Scene, setting: 'apartment'
 
   // Setting-Specific Detailed Real-Life Architecture & Props
   if (setting === 'apartment') {
-    // Dedicated Warm Fill Lighting for Right Wall
-    const rightWallFillLight = new THREE.DirectionalLight(0xfff7ed, 0.65);
-    rightWallFillLight.position.set(-3, 2.5, 0);
-    scene.add(rightWallFillLight);
-
-    // Modern Brass Wall Sconces with Up/Down Illumination on Right Wall
+    // Modern Brass Wall Sconces with Emissive Glass Shade on Right Wall (no extra PointLight shader loop)
     const sconceMat = new THREE.MeshStandardMaterial({ color: 0xd97706, metalness: 0.85, roughness: 0.2 });
-    const glassShadeMat = new THREE.MeshPhysicalMaterial({
+    const glassShadeMat = new THREE.MeshStandardMaterial({
       color: 0xfffbeb,
-      transmission: 0.85,
-      opacity: 0.9,
+      emissive: 0xffe4b5,
+      emissiveIntensity: 0.65,
+      opacity: 0.92,
       transparent: true,
       roughness: 0.2,
     });
@@ -1786,24 +1961,19 @@ function buildPhotorealisticEnvironment(scene: THREE.Scene, setting: 'apartment'
       const shade = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.26, 16), glassShadeMat);
       shade.position.set(4.7, 2.25, sz);
 
-      const sconceLight = new THREE.PointLight(0xffe8c6, 1.4, 6.5, 2);
-      sconceLight.position.set(4.68, 2.25, sz);
-
-      sconceGroup.add(mountPlate, arm, shade, sconceLight);
+      sconceGroup.add(mountPlate, arm, shade);
       scene.add(sconceGroup);
     }
 
     // 1. Large Panoramic Window on Right Wall with Outside City Skyline View
     const windowGroup = new THREE.Group();
     const frameMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.3, metalness: 0.8 });
-    const glassMat = new THREE.MeshPhysicalMaterial({
+    const glassMat = new THREE.MeshStandardMaterial({
       color: 0x82b4dc,
-      transmission: 0.9,
-      opacity: 0.85,
+      opacity: 0.28,
       transparent: true,
-      roughness: 0.05,
-      metalness: 0.1,
-      reflectivity: 0.9,
+      roughness: 0.08,
+      metalness: 0.2,
     });
 
     const winGlass = new THREE.Mesh(new THREE.PlaneGeometry(3.6, 2.6), glassMat);
@@ -1994,7 +2164,6 @@ function buildPhotorealisticEnvironment(scene: THREE.Scene, setting: 'apartment'
       for (const lz of [-0.45, 0.45]) {
         const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.02, 0.16, 12), woodLegMat);
         leg.position.set(lx, 0.08, lz);
-        leg.castShadow = true;
         sofaGroup.add(leg);
       }
     }
@@ -2008,17 +2177,15 @@ function buildPhotorealisticEnvironment(scene: THREE.Scene, setting: 'apartment'
     const coffeeTableGroup = new THREE.Group();
     const glassTop = new THREE.Mesh(
       new THREE.BoxGeometry(1.6, 0.03, 0.85),
-      new THREE.MeshPhysicalMaterial({
-        color: 0xffffff,
-        transmission: 0.88,
-        opacity: 0.9,
+      new THREE.MeshStandardMaterial({
+        color: 0xe0f2fe,
+        opacity: 0.38,
         transparent: true,
-        roughness: 0.05,
-        metalness: 0.1,
+        roughness: 0.08,
+        metalness: 0.2,
       })
     );
     glassTop.position.set(0, 0.42, 0);
-    glassTop.castShadow = true;
 
     // Lower Walnut Shelf holding magazine
     const lowerShelf = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.02, 0.75), new THREE.MeshStandardMaterial({ color: 0x3d2716, roughness: 0.35 }));
@@ -2036,7 +2203,6 @@ function buildPhotorealisticEnvironment(scene: THREE.Scene, setting: 'apartment'
       for (const sz of [-0.38, 0.38]) {
         const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.42, 12), steelLegMat);
         leg.position.set(sx, 0.21, sz);
-        leg.castShadow = true;
         coffeeTableGroup.add(leg);
       }
     }
@@ -2073,7 +2239,6 @@ function buildPhotorealisticEnvironment(scene: THREE.Scene, setting: 'apartment'
       for (const dz of [-0.42, 0.42]) {
         const dleg = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.72, 0.04), steelLegMat);
         dleg.position.set(dx, 0.36, dz);
-        dleg.castShadow = true;
         deskGroup.add(dleg);
       }
     }
@@ -2090,7 +2255,6 @@ function buildPhotorealisticEnvironment(scene: THREE.Scene, setting: 'apartment'
       const standLeg = new THREE.Mesh(new THREE.BoxGeometry(0.032, 0.44, 0.032), standLegMat);
       const angle = (s * Math.PI) / 2;
       standLeg.position.set(Math.cos(angle) * 0.24, 0.22, Math.sin(angle) * 0.24);
-      standLeg.castShadow = true;
       plantGroup.add(standLeg);
     }
     // Cross brace supporting pot
@@ -2171,7 +2335,6 @@ function buildPhotorealisticEnvironment(scene: THREE.Scene, setting: 'apartment'
       );
       leaf.rotation.set(-0.3, leafAngle + Math.PI / 2, 0.4);
       leaf.scale.set(0.85, 0.85, 0.85);
-      leaf.castShadow = true;
       plantGroup.add(leaf);
     }
 
@@ -2257,7 +2420,6 @@ function buildPhotorealisticEnvironment(scene: THREE.Scene, setting: 'apartment'
           new THREE.MeshStandardMaterial({ color: bookColors[b % bookColors.length], roughness: 0.65 })
         );
         book.position.set(-4.7 + (0.24 - bookD) * 0.5, shelfY + bookH / 2 + 0.018, -1.3 + b * 0.045);
-        book.castShadow = true;
         shelfGroup.add(book);
       }
 
@@ -2302,10 +2464,12 @@ function buildPhotorealisticEnvironment(scene: THREE.Scene, setting: 'apartment'
     lampHood.rotation.z = Math.PI / 1.35;
     lampHood.position.set(-1.38, 1.18, -2.35);
 
-    // Warm incandescent desk point light focusing on the evidence desk
-    const deskTaskLight = new THREE.PointLight(0xffe0a3, 1.4, 3.5, 2);
-    deskTaskLight.position.set(-1.4, 1.15, -2.15);
-    deskLampGroup.add(lampBase, lampStem, lampHood, deskTaskLight);
+    deskLampGroup.add(lampBase, lampStem, lampHood);
+    if (effectiveQuality !== 'low') {
+      const deskTaskLight = new THREE.PointLight(0xffe0a3, 1.4, 3.5, 2);
+      deskTaskLight.position.set(-1.4, 1.15, -2.15);
+      deskLampGroup.add(deskTaskLight);
+    }
     scene.add(deskLampGroup);
 
     // 11. Cork Bulletin Board above Alex's Desk with Sticky Notes & Delivery Notices
@@ -2454,7 +2618,7 @@ function buildPhotorealisticEnvironment(scene: THREE.Scene, setting: 'apartment'
 
     const glass = new THREE.Mesh(
       new THREE.BoxGeometry(0.08, 2.6, 4.2),
-      new THREE.MeshPhysicalMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.35, roughness: 0.1, transmission: 0.85 })
+      new THREE.MeshStandardMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.3, roughness: 0.1, metalness: 0.2 })
     );
     glass.position.set(-1.0, 1.3, 0);
     scene.add(glass);
@@ -2525,10 +2689,7 @@ function createPhotorealisticWorldObjectProp(obj: WorldObjectDef, isCollected: b
     screenMesh.position.set(0, 0.19, 0.029);
     screenMesh.rotation.x = -0.28;
 
-    const screenLight = new THREE.PointLight(0x38bdf8, 0.65, 1.4, 2);
-    screenLight.position.set(0, 0.25, 0.18);
-
-    standGroup.add(dockBase, phoneBody, screenMesh, screenLight);
+    standGroup.add(dockBase, phoneBody, screenMesh);
     group.add(standGroup);
   } else if (obj.type === 'laptop') {
     const baseGeo = new THREE.BoxGeometry(0.48, 0.016, 0.32);

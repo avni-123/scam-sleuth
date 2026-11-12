@@ -126,7 +126,8 @@ export const MissionHud: React.FC<MissionHudProps> = ({
     const handleTelemetry = (e: Event) => {
       const detail = (e as CustomEvent).detail;
       if (detail && 'nearestUndiscoveredClueName' in detail) {
-        setNearestUndiscoveredClueName(detail.nearestUndiscoveredClueName || null);
+        const nextVal = detail.nearestUndiscoveredClueName || null;
+        setNearestUndiscoveredClueName((prev) => (prev === nextVal ? prev : nextVal));
       }
     };
     window.addEventListener('sleuth-telemetry', handleTelemetry);
@@ -413,7 +414,7 @@ export const MissionHud: React.FC<MissionHudProps> = ({
       ===================================================================== */}
       {openingContextSummary && (
         <div className="pointer-events-auto self-center mt-2 w-full max-w-3xl px-2">
-          <div className="px-4 py-2.5 rounded-xl bg-[#060D20]/95 border border-pink-400/50 shadow-[0_12px_36px_rgba(2,6,23,0.9)] backdrop-blur-md flex items-center justify-between gap-3">
+          <div className="px-4 py-2.5 rounded-xl bg-[#060D20]/96 border border-pink-400/50 shadow-[0_12px_36px_rgba(2,6,23,0.9)] flex items-center justify-between gap-3">
             <div className="flex items-center gap-2.5 min-w-0">
               <span className="px-2 py-0.5 rounded bg-pink-500/20 border border-pink-400/45 text-pink-300 font-mono text-[10px] font-bold uppercase tracking-wider shrink-0">
                 Case Context
@@ -439,7 +440,7 @@ export const MissionHud: React.FC<MissionHudProps> = ({
       {/* Subtle Upper-Center Chapter Banner on Chapter Transition (Non-blocking) */}
       {showIntroSplash && !openingContextSummary && (
         <div className="pointer-events-none self-center mt-2 animate-fade-in">
-          <div className="px-5 py-2.5 rounded-2xl bg-[#060D20]/95 border border-pink-400/65 shadow-[0_12px_36px_rgba(2,6,23,0.9),0_0_24px_rgba(236,72,153,0.22)] backdrop-blur-md text-center">
+          <div className="px-5 py-2.5 rounded-2xl bg-[#060D20]/96 border border-pink-400/65 shadow-[0_12px_36px_rgba(2,6,23,0.9),0_0_24px_rgba(236,72,153,0.22)] text-center">
             <span className="font-mono text-[10px] text-pink-300 uppercase tracking-widest block font-bold">
               Chapter {activeChapter.number} of 3 — {shortPhaseName}
             </span>
@@ -541,7 +542,7 @@ export const MissionHud: React.FC<MissionHudProps> = ({
             onTouchMove={handleJoystickMove}
             onTouchEnd={handleJoystickEnd}
             onTouchCancel={handleJoystickEnd}
-            className="pointer-events-auto w-20 h-20 rounded-full bg-[#060D20]/90 border-2 border-sky-400/35 relative flex items-center justify-center backdrop-blur-md touch-none shadow-lg"
+            className="pointer-events-auto w-20 h-20 rounded-full bg-[#060D20]/95 border-2 border-sky-400/35 relative flex items-center justify-center touch-none shadow-lg"
           >
             <div
               className={`w-8 h-8 rounded-full transition-transform ${
@@ -558,7 +559,7 @@ export const MissionHud: React.FC<MissionHudProps> = ({
               <button
                 type="button"
                 onClick={onOpenChapterQuestion}
-                className="px-3 py-2.5 rounded-xl bg-[#081426]/95 border border-[#F05A9D]/55 text-[#F05A9D] font-mono text-xs font-bold flex items-center gap-1.5 backdrop-blur-md shadow-lg"
+                className="px-3 py-2.5 rounded-xl bg-[#081426]/96 border border-[#F05A9D]/55 text-[#F05A9D] font-mono text-xs font-bold flex items-center gap-1.5 shadow-lg"
               >
                 <Search className="w-3.5 h-3.5 text-[#F05A9D]" />
                 <span>Clues (Q)</span>
@@ -568,10 +569,10 @@ export const MissionHud: React.FC<MissionHudProps> = ({
             <button
               type="button"
               onClick={onToggleMobileJog}
-              className={`px-3 py-2.5 rounded-xl font-mono text-xs font-bold border transition-all flex items-center gap-1.5 backdrop-blur-md shadow-lg ${
+              className={`px-3 py-2.5 rounded-xl font-mono text-xs font-bold border transition-all flex items-center gap-1.5 shadow-lg ${
                 isMobileJogging
                   ? 'bg-[#39BDF7] text-slate-950 border-sky-300'
-                  : 'bg-[#081426]/95 text-slate-200 border-[#39BDF7]/30'
+                  : 'bg-[#081426]/96 text-slate-200 border-[#39BDF7]/30'
               }`}
             >
               <Footprints className="w-3.5 h-3.5" />
@@ -581,12 +582,12 @@ export const MissionHud: React.FC<MissionHudProps> = ({
             <button
               type="button"
               onClick={onMobileInteract}
-              className={`w-14 h-14 rounded-2xl font-heading font-black text-xs flex flex-col items-center justify-center border-2 transition-all shadow-xl backdrop-blur-md ${
+              className={`w-14 h-14 rounded-2xl font-heading font-black text-xs flex flex-col items-center justify-center border-2 transition-all shadow-xl ${
                 activeNearby
                   ? activeNearby.type === 'object'
                     ? 'bg-[#F05A9D] text-white border-pink-300 shadow-[0_0_20px_rgba(240,90,157,0.65)]'
                     : 'bg-[#39BDF7] text-slate-950 border-white shadow-[0_0_20px_rgba(57,189,247,0.6)]'
-                  : 'bg-[#081426]/95 text-slate-400 border-[#39BDF7]/25'
+                  : 'bg-[#081426]/96 text-slate-400 border-[#39BDF7]/25'
               }`}
             >
               <Hand className="w-4 h-4 mb-0.5" />

@@ -40,6 +40,7 @@ const DEFAULT_SETTINGS: GameSettings = {
   highContrast: false,
   textSize: 'normal',
   reducedMotion: false,
+  graphicsQuality: 'auto',
 };
 
 export default function App() {

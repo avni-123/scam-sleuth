@@ -104,7 +104,7 @@ export const SceneSubtitleLine: React.FC<SceneSubtitleLineProps> = ({
       }`}
       aria-live="polite"
     >
-      <div className="max-w-3xl w-full text-center space-y-1.5 px-4 py-2.5 rounded-2xl bg-[#04091A]/80 backdrop-blur-sm border border-sky-500/25 shadow-[0_8px_28px_rgba(2,6,23,0.85)]">
+      <div className="max-w-3xl w-full text-center space-y-1.5 px-4 py-2.5 rounded-2xl bg-[#04091A]/92 border border-sky-500/25 shadow-[0_8px_28px_rgba(2,6,23,0.85)]">
         {showSpeakerName && speaker && (
           <div
             className={`font-pixel ${speakerSizeClass} ${

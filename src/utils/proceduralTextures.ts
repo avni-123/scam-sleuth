@@ -2,8 +2,22 @@ import * as THREE from 'three';
 
 // Ultra-realistic procedural HTML5 canvas textures for Scam Sleuth PBR rendering
 export class ProceduralTextureGenerator {
+  private static singleTextureCache = new Map<string, THREE.CanvasTexture>();
+  private static pairTextureCache = new Map<
+    string,
+    { diffuse: THREE.CanvasTexture; roughness: THREE.CanvasTexture }
+  >();
+
+  private static markCached(tex: THREE.CanvasTexture): THREE.CanvasTexture {
+    tex.userData.isSharedCached = true;
+    return tex;
+  }
+
   // Photorealistic European Walnut / Oak Wood Floor (1024x1024)
   static createWoodFloorTexture(): { diffuse: THREE.CanvasTexture; roughness: THREE.CanvasTexture } {
+    const cached = this.pairTextureCache.get('wood_floor');
+    if (cached) return cached;
+
     const size = 1024;
     const canvas = document.createElement('canvas');
     canvas.width = size;
@@ -87,22 +101,27 @@ export class ProceduralTextureGenerator {
       roughCtx.fillRect(0, y, size, plankHeight);
     }
 
-    const diffuse = new THREE.CanvasTexture(canvas);
+    const diffuse = this.markCached(new THREE.CanvasTexture(canvas));
     diffuse.wrapS = THREE.RepeatWrapping;
     diffuse.wrapT = THREE.RepeatWrapping;
     diffuse.repeat.set(3, 3);
     diffuse.colorSpace = THREE.SRGBColorSpace;
 
-    const roughness = new THREE.CanvasTexture(roughCanvas);
+    const roughness = this.markCached(new THREE.CanvasTexture(roughCanvas));
     roughness.wrapS = THREE.RepeatWrapping;
     roughness.wrapT = THREE.RepeatWrapping;
     roughness.repeat.set(3, 3);
 
-    return { diffuse, roughness };
+    const result = { diffuse, roughness };
+    this.pairTextureCache.set('wood_floor', result);
+    return result;
   }
 
   // Moroccan Berber Area Rug Texture (512x512)
   static createRugTexture(): THREE.CanvasTexture {
+    const cached = this.singleTextureCache.get('rug');
+    if (cached) return cached;
+
     const canvas = document.createElement('canvas');
     canvas.width = 512;
     canvas.height = 512;
@@ -112,12 +131,12 @@ export class ProceduralTextureGenerator {
     ctx.fillStyle = '#ece5d8';
     ctx.fillRect(0, 0, 512, 512);
 
-    // Wool fiber noise
-    for (let i = 0; i < 15000; i++) {
+    // Wool fiber noise (optimized stipple batch)
+    for (let i = 0; i < 3600; i++) {
       const x = Math.random() * 512;
       const y = Math.random() * 512;
       ctx.fillStyle = Math.random() > 0.5 ? 'rgba(215, 205, 190, 0.35)' : 'rgba(255, 255, 255, 0.4)';
-      ctx.fillRect(x, y, 2, 2);
+      ctx.fillRect(x, y, 3, 3);
     }
 
     // Charcoal diamond geometric Berber pattern
@@ -142,13 +161,17 @@ export class ProceduralTextureGenerator {
     ctx.fillRect(0, 0, 512, 16);
     ctx.fillRect(0, 496, 512, 16);
 
-    const texture = new THREE.CanvasTexture(canvas);
+    const texture = this.markCached(new THREE.CanvasTexture(canvas));
     texture.colorSpace = THREE.SRGBColorSpace;
+    this.singleTextureCache.set('rug', texture);
     return texture;
   }
 
   // Italian Carrara White Marble Texture (1024x1024)
   static createMarbleTexture(): THREE.CanvasTexture {
+    const cached = this.singleTextureCache.get('marble');
+    if (cached) return cached;
+
     const canvas = document.createElement('canvas');
     canvas.width = 1024;
     canvas.height = 1024;
@@ -195,13 +218,17 @@ export class ProceduralTextureGenerator {
       }
     }
 
-    const texture = new THREE.CanvasTexture(canvas);
+    const texture = this.markCached(new THREE.CanvasTexture(canvas));
     texture.colorSpace = THREE.SRGBColorSpace;
+    this.singleTextureCache.set('marble', texture);
     return texture;
   }
 
   // Realistic Flemish Red-Brick Wall Texture (1024x1024)
   static createBrickWallTexture(): THREE.CanvasTexture {
+    const cached = this.singleTextureCache.get('brick_wall');
+    if (cached) return cached;
+
     const canvas = document.createElement('canvas');
     canvas.width = 1024;
     canvas.height = 1024;
@@ -241,16 +268,20 @@ export class ProceduralTextureGenerator {
       row++;
     }
 
-    const texture = new THREE.CanvasTexture(canvas);
+    const texture = this.markCached(new THREE.CanvasTexture(canvas));
     texture.wrapS = THREE.RepeatWrapping;
     texture.wrapT = THREE.RepeatWrapping;
     texture.repeat.set(2, 2);
     texture.colorSpace = THREE.SRGBColorSpace;
+    this.singleTextureCache.set('brick_wall', texture);
     return texture;
   }
 
   // Scandinavian Acoustic Slatted Wood Panel Texture (512x512)
   static createAcousticWoodSlatTexture(): THREE.CanvasTexture {
+    const cached = this.singleTextureCache.get('acoustic_slat');
+    if (cached) return cached;
+
     const canvas = document.createElement('canvas');
     canvas.width = 512;
     canvas.height = 512;
@@ -287,16 +318,20 @@ export class ProceduralTextureGenerator {
       }
     }
 
-    const texture = new THREE.CanvasTexture(canvas);
+    const texture = this.markCached(new THREE.CanvasTexture(canvas));
     texture.wrapS = THREE.RepeatWrapping;
     texture.wrapT = THREE.RepeatWrapping;
     texture.repeat.set(3, 1);
     texture.colorSpace = THREE.SRGBColorSpace;
+    this.singleTextureCache.set('acoustic_slat', texture);
     return texture;
   }
 
   // Campus Weathered Stone Paver Texture (1024x1024)
   static createCampusStoneTexture(): THREE.CanvasTexture {
+    const cached = this.singleTextureCache.get('campus_stone');
+    if (cached) return cached;
+
     const canvas = document.createElement('canvas');
     canvas.width = 1024;
     canvas.height = 1024;
@@ -333,16 +368,20 @@ export class ProceduralTextureGenerator {
       }
     }
 
-    const texture = new THREE.CanvasTexture(canvas);
+    const texture = this.markCached(new THREE.CanvasTexture(canvas));
     texture.wrapS = THREE.RepeatWrapping;
     texture.wrapT = THREE.RepeatWrapping;
     texture.repeat.set(4, 4);
     texture.colorSpace = THREE.SRGBColorSpace;
+    this.singleTextureCache.set('campus_stone', texture);
     return texture;
   }
 
   // Parisian Bistro Checkered Tile Floor (1024x1024)
   static createCafeTileTexture(): THREE.CanvasTexture {
+    const cached = this.singleTextureCache.get('cafe_tile');
+    if (cached) return cached;
+
     const canvas = document.createElement('canvas');
     canvas.width = 1024;
     canvas.height = 1024;
@@ -373,11 +412,12 @@ export class ProceduralTextureGenerator {
       }
     }
 
-    const texture = new THREE.CanvasTexture(canvas);
+    const texture = this.markCached(new THREE.CanvasTexture(canvas));
     texture.wrapS = THREE.RepeatWrapping;
     texture.wrapT = THREE.RepeatWrapping;
     texture.repeat.set(3, 3);
     texture.colorSpace = THREE.SRGBColorSpace;
+    this.singleTextureCache.set('cafe_tile', texture);
     return texture;
   }
 
@@ -387,6 +427,10 @@ export class ProceduralTextureGenerator {
     msgBody: string,
     highlightClues = false
   ): THREE.CanvasTexture {
+    const cacheKey = `phone_screen_${msgSender}_${msgBody}_${highlightClues ? 1 : 0}`;
+    const cached = this.singleTextureCache.get(cacheKey);
+    if (cached) return cached;
+
     const canvas = document.createElement('canvas');
     canvas.width = 512;
     canvas.height = 1024;
@@ -542,13 +586,18 @@ export class ProceduralTextureGenerator {
     ctx.roundRect(176, 990, 160, 6, 3);
     ctx.fill();
 
-    const texture = new THREE.CanvasTexture(canvas);
+    const texture = this.markCached(new THREE.CanvasTexture(canvas));
     texture.colorSpace = THREE.SRGBColorSpace;
+    this.singleTextureCache.set(cacheKey, texture);
     return texture;
   }
 
   // Photorealistic Laptop Display (1024x640)
   static createLaptopScreenTexture(url: string, title: string): THREE.CanvasTexture {
+    const cacheKey = `laptop_screen_${url}_${title}`;
+    const cached = this.singleTextureCache.get(cacheKey);
+    if (cached) return cached;
+
     const canvas = document.createElement('canvas');
     canvas.width = 1024;
     canvas.height = 640;
@@ -630,13 +679,17 @@ export class ProceduralTextureGenerator {
     ctx.font = 'bold 18px "Silkscreen", "Courier New", Courier, monospace';
     ctx.fillText('VERIFY ACCOUNT NOW', 76, 494);
 
-    const texture = new THREE.CanvasTexture(canvas);
+    const texture = this.markCached(new THREE.CanvasTexture(canvas));
     texture.colorSpace = THREE.SRGBColorSpace;
+    this.singleTextureCache.set(cacheKey, texture);
     return texture;
   }
 
   // Delivery package cardboard texture with barcode & shipping sticker (512x512)
   static createPackageTexture(): THREE.CanvasTexture {
+    const cached = this.singleTextureCache.get('package');
+    if (cached) return cached;
+
     const canvas = document.createElement('canvas');
     canvas.width = 512;
     canvas.height = 512;
@@ -646,10 +699,10 @@ export class ProceduralTextureGenerator {
     ctx.fillStyle = '#b37d45';
     ctx.fillRect(0, 0, 512, 512);
 
-    // Cardboard corrugated fibers
-    for (let i = 0; i < 4000; i++) {
+    // Cardboard corrugated fibers (optimized stipple batch)
+    for (let i = 0; i < 1200; i++) {
       ctx.fillStyle = Math.random() > 0.5 ? 'rgba(90, 50, 20, 0.12)' : 'rgba(255, 230, 180, 0.12)';
-      ctx.fillRect(Math.random() * 512, Math.random() * 512, 3, 1);
+      ctx.fillRect(Math.random() * 512, Math.random() * 512, 4, 2);
     }
 
     // Heavy-duty packing tape
@@ -678,13 +731,17 @@ export class ProceduralTextureGenerator {
       ctx.fillRect(x, 200, Math.random() > 0.5 ? 4 : 2, 75);
     }
 
-    const texture = new THREE.CanvasTexture(canvas);
+    const texture = this.markCached(new THREE.CanvasTexture(canvas));
     texture.colorSpace = THREE.SRGBColorSpace;
+    this.singleTextureCache.set('package', texture);
     return texture;
   }
 
   // Realistic Drywall Eggshell Plaster Texture (512x512)
   static createDrywallTexture(): THREE.CanvasTexture {
+    const cached = this.singleTextureCache.get('drywall');
+    if (cached) return cached;
+
     const canvas = document.createElement('canvas');
     canvas.width = 512;
     canvas.height = 512;
@@ -694,24 +751,28 @@ export class ProceduralTextureGenerator {
     ctx.fillStyle = '#e6ded4';
     ctx.fillRect(0, 0, 512, 512);
 
-    // Fine plaster orange-peel stippling
-    for (let i = 0; i < 25000; i++) {
+    // Fine plaster orange-peel stippling (optimized stipple batch)
+    for (let i = 0; i < 4500; i++) {
       const x = Math.random() * 512;
       const y = Math.random() * 512;
       ctx.fillStyle = Math.random() > 0.5 ? 'rgba(255, 255, 255, 0.08)' : 'rgba(120, 100, 80, 0.04)';
-      ctx.fillRect(x, y, 1.5, 1.5);
+      ctx.fillRect(x, y, 2.5, 2.5);
     }
 
-    const texture = new THREE.CanvasTexture(canvas);
+    const texture = this.markCached(new THREE.CanvasTexture(canvas));
     texture.wrapS = THREE.RepeatWrapping;
     texture.wrapT = THREE.RepeatWrapping;
     texture.repeat.set(4, 2);
     texture.colorSpace = THREE.SRGBColorSpace;
+    this.singleTextureCache.set('drywall', texture);
     return texture;
   }
 
   // Gallery Framed Landscape Canvas Art Texture (512x384)
   static createGalleryArtTexture(): THREE.CanvasTexture {
+    const cached = this.singleTextureCache.get('gallery_art');
+    if (cached) return cached;
+
     const canvas = document.createElement('canvas');
     canvas.width = 512;
     canvas.height = 384;
@@ -755,21 +816,25 @@ export class ProceduralTextureGenerator {
     ctx.arc(360, 120, 28, 0, Math.PI * 2);
     ctx.fill();
 
-    // Canvas linen texture weave
-    for (let i = 0; i < 9000; i++) {
+    // Canvas linen texture weave (optimized stipple batch)
+    for (let i = 0; i < 2400; i++) {
       const x = Math.random() * 512;
       const y = Math.random() * 384;
       ctx.fillStyle = Math.random() > 0.5 ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)';
-      ctx.fillRect(x, y, 2, 2);
+      ctx.fillRect(x, y, 2.5, 2.5);
     }
 
-    const texture = new THREE.CanvasTexture(canvas);
+    const texture = this.markCached(new THREE.CanvasTexture(canvas));
     texture.colorSpace = THREE.SRGBColorSpace;
+    this.singleTextureCache.set('gallery_art', texture);
     return texture;
   }
 
   // City Skyline Window Backdrop Texture (1024x512)
   static createCitySkylineTexture(): THREE.CanvasTexture {
+    const cached = this.singleTextureCache.get('city_skyline');
+    if (cached) return cached;
+
     const canvas = document.createElement('canvas');
     canvas.width = 1024;
     canvas.height = 512;
@@ -835,13 +900,17 @@ export class ProceduralTextureGenerator {
       }
     }
 
-    const texture = new THREE.CanvasTexture(canvas);
+    const texture = this.markCached(new THREE.CanvasTexture(canvas));
     texture.colorSpace = THREE.SRGBColorSpace;
+    this.singleTextureCache.set('city_skyline', texture);
     return texture;
   }
 
   // Soft Ambient Occlusion Contact Shadow Decal (128x128)
   static createContactShadowTexture(): THREE.CanvasTexture {
+    const cached = this.singleTextureCache.get('contact_shadow');
+    if (cached) return cached;
+
     const canvas = document.createElement('canvas');
     canvas.width = 128;
     canvas.height = 128;
@@ -856,12 +925,16 @@ export class ProceduralTextureGenerator {
     ctx.fillStyle = radGrad;
     ctx.fillRect(0, 0, 128, 128);
 
-    const texture = new THREE.CanvasTexture(canvas);
+    const texture = this.markCached(new THREE.CanvasTexture(canvas));
+    this.singleTextureCache.set('contact_shadow', texture);
     return texture;
   }
 
   // In-Hand Smartphone AMOLED Display showing the realistic Home Screen (512x1024)
   static createPhoneHomeScreenTexture(): THREE.CanvasTexture {
+    const cached = this.singleTextureCache.get('phone_home_screen');
+    if (cached) return cached;
+
     const canvas = document.createElement('canvas');
     canvas.width = 512;
     canvas.height = 1024;
@@ -1421,8 +1494,9 @@ export class ProceduralTextureGenerator {
     drawRoundBox(176, 985, 160, 6, 3);
     ctx.fill();
 
-    const texture = new THREE.CanvasTexture(canvas);
+    const texture = this.markCached(new THREE.CanvasTexture(canvas));
     texture.colorSpace = THREE.SRGBColorSpace;
+    this.singleTextureCache.set('phone_home_screen', texture);
     return texture;
   }
 
@@ -1434,6 +1508,10 @@ export class ProceduralTextureGenerator {
     msgSender = '+1 (555) 019-3382',
     msgBody = 'CityPost: $2.85 fee required to release parcel [GH-PRISM-01]. Verify now: citypost-track-id.net'
   ): THREE.CanvasTexture {
+    const cacheKey = `case_delivery_${msgSender}_${msgBody}`;
+    const cached = this.singleTextureCache.get(cacheKey);
+    if (cached) return cached;
+
     const w = 512;
     const h = 1024;
     const canvas = document.createElement('canvas');
@@ -1601,8 +1679,9 @@ export class ProceduralTextureGenerator {
     // Suppress unused parameter lint while keeping signature flexible
     void msgBody;
 
-    const texture = new THREE.CanvasTexture(canvas);
+    const texture = this.markCached(new THREE.CanvasTexture(canvas));
     texture.colorSpace = THREE.SRGBColorSpace;
+    this.singleTextureCache.set(cacheKey, texture);
     return texture;
   }
 
@@ -1620,6 +1699,10 @@ export class ProceduralTextureGenerator {
     diffuse: THREE.CanvasTexture;
     roughness: THREE.CanvasTexture;
   } {
+    const cacheKey = `skin_${baseHex}_${toneType}`;
+    const cached = this.pairTextureCache.get(cacheKey);
+    if (cached) return cached;
+
     const size = 512;
     const diffCanvas = document.createElement('canvas');
     diffCanvas.width = size;
@@ -1680,22 +1763,28 @@ export class ProceduralTextureGenerator {
       diffCtx.fill();
     }
 
-    const diffuse = new THREE.CanvasTexture(diffCanvas);
+    const diffuse = this.markCached(new THREE.CanvasTexture(diffCanvas));
     diffuse.wrapS = THREE.RepeatWrapping;
     diffuse.wrapT = THREE.RepeatWrapping;
     diffuse.repeat.set(2, 2);
     diffuse.colorSpace = THREE.SRGBColorSpace;
 
-    const roughness = new THREE.CanvasTexture(roughCanvas);
+    const roughness = this.markCached(new THREE.CanvasTexture(roughCanvas));
     roughness.wrapS = THREE.RepeatWrapping;
     roughness.wrapT = THREE.RepeatWrapping;
     roughness.repeat.set(2, 2);
 
-    return { diffuse, roughness };
+    const result = { diffuse, roughness };
+    this.pairTextureCache.set(cacheKey, result);
+    return result;
   }
 
   // Realistic Human Iris with Limbal Ring, Stroma Fibrils & Pupil (256x256)
   static createRealisticIrisTexture(irisHex = '#4a2f1c'): THREE.CanvasTexture {
+    const cacheKey = `iris_${irisHex}`;
+    const cached = this.singleTextureCache.get(cacheKey);
+    if (cached) return cached;
+
     const size = 256;
     const canvas = document.createElement('canvas');
     canvas.width = size;
@@ -1773,14 +1862,38 @@ export class ProceduralTextureGenerator {
     ctx.arc(cx - r * 0.16, cy - r * 0.18, r * 0.08, 0, Math.PI * 2);
     ctx.fill();
 
-    const texture = new THREE.CanvasTexture(canvas);
+    const texture = this.markCached(new THREE.CanvasTexture(canvas));
     texture.colorSpace = THREE.SRGBColorSpace;
+    this.singleTextureCache.set(cacheKey, texture);
     return texture;
+  }
+
+  private static weaveTileCache = new Map<number, HTMLCanvasElement>();
+
+  private static getWeavePatternTile(step: number): HTMLCanvasElement {
+    let tile = this.weaveTileCache.get(step);
+    if (tile) return tile;
+    tile = document.createElement('canvas');
+    tile.width = step * 2;
+    tile.height = step * 2;
+    const tCtx = tile.getContext('2d')!;
+    tCtx.fillStyle = 'rgba(255, 255, 255, 0.065)';
+    tCtx.fillRect(0, 0, step, step);
+    tCtx.fillRect(step, step, step, step);
+    tCtx.fillStyle = 'rgba(0, 0, 0, 0.056)';
+    tCtx.fillRect(step, 0, step, step);
+    tCtx.fillRect(0, step, step, step);
+    this.weaveTileCache.set(step, tile);
+    return tile;
   }
 
   // Realistic Everyday Fabric Weave & Cloth Texture (Gabardine / Wool Twill / Cotton Poplin)
   static createFabricClothTexture(baseHex = '#1e293b', isDenim = false): THREE.CanvasTexture {
-    const size = 512;
+    const cacheKey = `fabric_${baseHex}_${isDenim ? 1 : 0}`;
+    const cached = this.singleTextureCache.get(cacheKey);
+    if (cached) return cached;
+
+    const size = 256;
     const canvas = document.createElement('canvas');
     canvas.width = size;
     canvas.height = size;
@@ -1790,38 +1903,37 @@ export class ProceduralTextureGenerator {
     ctx.fillStyle = baseHex;
     ctx.fillRect(0, 0, size, size);
 
-    // Microscopic cross-hatch textile weave
+    // Fast hardware-accelerated pattern fill for microscopic cross-hatch textile weave
     const step = isDenim ? 4 : 3;
-    for (let y = 0; y < size; y += step) {
-      for (let x = 0; x < size; x += step) {
-        const isWarp = (Math.floor(x / step) + Math.floor(y / step)) % 2 === 0;
-        const alpha = isWarp ? 0.065 : 0.035;
-        ctx.fillStyle = isWarp ? `rgba(255, 255, 255, ${alpha})` : `rgba(0, 0, 0, ${alpha * 1.6})`;
-        ctx.fillRect(x, y, step, step);
-      }
+    const tile = this.getWeavePatternTile(step);
+    const pattern = ctx.createPattern(tile, 'repeat');
+    if (pattern) {
+      ctx.fillStyle = pattern;
+      ctx.fillRect(0, 0, size, size);
     }
 
     // Diagonal gabardine / wool-twill ribs & subtle herringbone texture
     if (isDenim) {
       ctx.strokeStyle = 'rgba(255, 255, 255, 0.06)';
       ctx.lineWidth = 1.25;
-      for (let d = -size; d < size * 2; d += 6) {
-        ctx.beginPath();
+      ctx.beginPath();
+      for (let d = -size; d < size * 2; d += 8) {
         ctx.moveTo(d, 0);
         ctx.lineTo(d + size, size);
-        ctx.stroke();
       }
+      ctx.stroke();
+
       ctx.strokeStyle = 'rgba(0, 0, 0, 0.06)';
-      for (let d = -size + 3; d < size * 2; d += 6) {
-        ctx.beginPath();
+      ctx.beginPath();
+      for (let d = -size + 4; d < size * 2; d += 8) {
         ctx.moveTo(d, 0);
         ctx.lineTo(d + size, size);
-        ctx.stroke();
       }
+      ctx.stroke();
     }
 
     // Vertical and horizontal organic cloth fold shadows and creases
-    for (let c = 0; c < 8; c++) {
+    for (let c = 0; c < 4; c++) {
       const grad = ctx.createLinearGradient(0, c * 64, 0, (c + 1) * 64);
       grad.addColorStop(0, 'rgba(0, 0, 0, 0.07)');
       grad.addColorStop(0.45, 'rgba(255, 255, 255, 0.04)');
@@ -1830,37 +1942,33 @@ export class ProceduralTextureGenerator {
       ctx.fillRect(0, c * 64, size, 64);
     }
 
-    for (let v = 0; v < 6; v++) {
-      const vGrad = ctx.createLinearGradient(v * 85, 0, (v + 1) * 85, 0);
-      vGrad.addColorStop(0, 'rgba(0, 0, 0, 0.05)');
-      vGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0.035)');
-      vGrad.addColorStop(1, 'rgba(0, 0, 0, 0.06)');
-      ctx.fillStyle = vGrad;
-      ctx.fillRect(v * 85, 0, 85, size);
-    }
-
     // Subtle double topstitch seam lines along panel borders
     ctx.strokeStyle = 'rgba(0, 0, 0, 0.14)';
     ctx.lineWidth = 1.5;
     ctx.setLineDash([5, 4]);
-    for (const sx of [64, 256, 448]) {
-      ctx.beginPath();
+    ctx.beginPath();
+    for (const sx of [32, 128, 224]) {
       ctx.moveTo(sx, 0);
       ctx.lineTo(sx, size);
-      ctx.stroke();
     }
+    ctx.stroke();
     ctx.setLineDash([]);
 
-    const texture = new THREE.CanvasTexture(canvas);
+    const texture = this.markCached(new THREE.CanvasTexture(canvas));
     texture.wrapS = THREE.RepeatWrapping;
     texture.wrapT = THREE.RepeatWrapping;
     texture.repeat.set(isDenim ? 4 : 3, isDenim ? 4 : 3);
     texture.colorSpace = THREE.SRGBColorSpace;
+    this.singleTextureCache.set(cacheKey, texture);
     return texture;
   }
 
   // Directional Hair Strand Texture (256x256)
   static createHairStrandTexture(baseHex = '#1a1410'): THREE.CanvasTexture {
+    const cacheKey = `hair_${baseHex}`;
+    const cached = this.singleTextureCache.get(cacheKey);
+    if (cached) return cached;
+
     const size = 256;
     const canvas = document.createElement('canvas');
     canvas.width = size;
@@ -1905,11 +2013,12 @@ export class ProceduralTextureGenerator {
       ctx.stroke();
     }
 
-    const texture = new THREE.CanvasTexture(canvas);
+    const texture = this.markCached(new THREE.CanvasTexture(canvas));
     texture.wrapS = THREE.RepeatWrapping;
     texture.wrapT = THREE.RepeatWrapping;
     texture.repeat.set(2, 2);
     texture.colorSpace = THREE.SRGBColorSpace;
+    this.singleTextureCache.set(cacheKey, texture);
     return texture;
   }
 }

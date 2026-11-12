@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useLayoutEffect } from 'react';
 import {
   Settings as SettingsIcon,
   ArrowLeft,
@@ -45,6 +45,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [currentPage, setCurrentPage] = useState<'main' | 'settings'>(
     isPauseMenu ? 'main' : 'settings'
   );
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  useLayoutEffect(() => {
+    if (panelRef.current) {
+      panelRef.current.scrollTop = 0;
+    }
+  }, [currentPage, isPauseMenu]);
 
   const handleSelectResume = () => {
     soundEngine.playGtaMenuSelect();
@@ -78,7 +85,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           : 'Settings'
       }
     >
-      <div className="w-full max-w-2xl pixel-panel border-4 border-[#0D1C34] p-4 sm:p-7 relative text-[#F2F5FA] space-y-5 max-h-[92dvh] overflow-y-auto animate-block-reveal rounded-none shadow-[0_20px_50px_rgba(2,6,23,0.95),0_0_24px_rgba(57,189,247,0.2)]">
+      <div
+        ref={panelRef}
+        className="w-full max-w-2xl pixel-panel border-4 border-[#0D1C34] p-4 sm:p-7 relative text-[#F2F5FA] space-y-5 max-h-[92dvh] overflow-y-auto animate-block-reveal rounded-none shadow-[0_20px_50px_rgba(2,6,23,0.95),0_0_24px_rgba(57,189,247,0.2)]"
+      >
         {/* Pixel Corner Pins */}
         <div className="absolute top-1.5 left-1.5 w-2 h-2 bg-[#39BDF7] pointer-events-none" />
         <div className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#F05A9D] pointer-events-none" />
@@ -264,7 +274,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
                 <button
                   type="button"
-                  autoFocus
                   onClick={handleSelectResume}
                   className="pixel-btn-action px-6 py-2.5 text-[#081426] font-pixel text-xs tracking-wider cursor-pointer rounded-none flex items-center gap-2 shadow-[0_0_20px_rgba(57,189,247,0.45)]"
                 >
@@ -548,6 +557,50 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     }
                     className="w-full accent-[#39BDF7] cursor-pointer"
                   />
+                </div>
+
+                {/* 9. Adaptive Graphics Quality */}
+                <div className="p-3 pixel-slot rounded-none flex items-center justify-between gap-3 sm:col-span-2">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <Sparkles className="w-4 h-4 text-[#39BDF7] shrink-0" />
+                    <div className="min-w-0">
+                      <span className="font-pixel text-[11px] text-[#F2F5FA] block">
+                        GRAPHICS QUALITY
+                      </span>
+                      <span className="text-[11px] text-[#94A3B8] block">
+                        Adaptive resolution, shadows & 3D fidelity
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-1.5 shrink-0 flex-wrap justify-end">
+                    {(
+                      [
+                        { id: 'auto', label: 'AUTO' },
+                        { id: 'high', label: 'HIGH' },
+                        { id: 'medium', label: 'MED' },
+                        { id: 'low', label: 'LOW' },
+                      ] as const
+                    ).map((tier) => {
+                      const activeTier = settings.graphicsQuality || 'auto';
+                      return (
+                        <button
+                          key={tier.id}
+                          type="button"
+                          onClick={() =>
+                            onUpdateSettings({ graphicsQuality: tier.id })
+                          }
+                          className={`pixel-btn px-2.5 py-1 font-pixel text-[9px] transition-all cursor-pointer rounded-none border ${
+                            activeTier === tier.id
+                              ? 'bg-[#39BDF7] text-[#081426] border-[#39BDF7]'
+                              : 'bg-[#0B1A33] text-slate-300 border-[#1B2F4D] hover:text-white'
+                          }`}
+                        >
+                          {tier.label}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
 

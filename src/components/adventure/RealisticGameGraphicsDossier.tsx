@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import {
   createHumanCharacter,
+  disposeSceneResources,
   HumanCharacterInstance,
   CharacterArchetypeId,
   CHARACTER_ARCHETYPE_CATALOG,
@@ -214,10 +215,10 @@ const Character3DPreviewStage: React.FC<Character3DPreviewStageProps> = ({
       const dt = Math.min(clock.getDelta(), 0.05);
       const elapsed = clock.getElapsedTime();
 
-      // Refresh framing during initial load ticks as 3D model geometry resolves
-      if (frameCount < 90) {
+      // Refresh framing once after initial model attach
+      if (frameCount < 15) {
         frameCount++;
-        if (frameCount % 6 === 0) {
+        if (frameCount === 12) {
           fullBodyFraming = computeFullBodyFraming(camera.aspect);
         }
       }
@@ -294,6 +295,7 @@ const Character3DPreviewStage: React.FC<Character3DPreviewStageProps> = ({
       cancelAnimationFrame(frameId);
       resizeObserver.disconnect();
       window.removeEventListener('resize', updateSize);
+      disposeSceneResources(scene);
       renderer.dispose();
     };
   }, [archetype, isInvestigator]);

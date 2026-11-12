@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { NpcDef, GameSettings } from '../../types/adventure';
 import { soundEngine } from '../../utils/proceduralAudio';
 import {
@@ -37,8 +37,8 @@ export const DialogueOverlay: React.FC<DialogueOverlayProps> = ({
   );
 
   const [lineIndex, setLineIndex] = useState<number>(0);
-  const [lineElapsedMs, setLineElapsedMs] = useState<number>(0);
   const [isLineVisible, setIsLineVisible] = useState<boolean>(true);
+  const lineElapsedMsRef = useRef<number>(0);
 
   const activeLineText = shortLines[lineIndex] || shortLines[0] || '';
   const wordCount = useMemo(
@@ -54,8 +54,8 @@ export const DialogueOverlay: React.FC<DialogueOverlayProps> = ({
   // (Pausing/resuming does not re-run this effect, preserving voice playback position)
   useEffect(() => {
     if (!currentNode) return;
+    lineElapsedMsRef.current = 0;
     setLineIndex(0);
-    setLineElapsedMs(0);
     setIsLineVisible(true);
     soundEngine.stopDialogueAudio();
     if (settings?.voiceAudioEnabled !== false) {
@@ -81,14 +81,14 @@ export const DialogueOverlay: React.FC<DialogueOverlayProps> = ({
     if (isPaused) return;
     if (lineIndex < shortLines.length - 1) {
       if (settings?.reducedMotion) {
+        lineElapsedMsRef.current = 0;
         setLineIndex((idx) => idx + 1);
-        setLineElapsedMs(0);
         setIsLineVisible(true);
       } else {
         setIsLineVisible(false);
         setTimeout(() => {
+          lineElapsedMsRef.current = 0;
           setLineIndex((idx) => idx + 1);
-          setLineElapsedMs(0);
           setIsLineVisible(true);
         }, 160);
       }
@@ -97,38 +97,34 @@ export const DialogueOverlay: React.FC<DialogueOverlayProps> = ({
     }
   }, [isPaused, lineIndex, shortLines.length, settings?.reducedMotion, advanceNodeOrClose]);
 
-  // Increment elapsed subtitle time only while not paused so pausing preserves exact subtitle progress
+  // Increment elapsed subtitle time in ref while not paused, only committing state when visibility or lineIndex changes
   useEffect(() => {
     if (!activeLineText || isPaused) return;
     const stepMs = 60;
-    const interval = setInterval(() => {
-      setLineElapsedMs((prev) => prev + stepMs);
-    }, stepMs);
-    return () => clearInterval(interval);
-  }, [activeLineText, isPaused]);
-
-  // Evaluate subtitle visibility and line progression from accumulated elapsed time
-  useEffect(() => {
-    if (!activeLineText || isPaused) return;
     const fadeStartMs = Math.max(400, lineDurationMs - 240);
 
-    if (lineElapsedMs >= lineDurationMs) {
-      if (lineIndex < shortLines.length - 1) {
-        setLineIndex((idx) => idx + 1);
-        setLineElapsedMs(0);
-        setIsLineVisible(true);
-      } else if (settings?.subtitleAutoAdvance !== false) {
-        advanceNodeOrClose();
-      } else {
-        setIsLineVisible(true);
+    const interval = setInterval(() => {
+      const next = lineElapsedMsRef.current + stepMs;
+      if (next >= lineDurationMs) {
+        lineElapsedMsRef.current = 0;
+        if (lineIndex < shortLines.length - 1) {
+          setLineIndex((idx) => idx + 1);
+          setIsLineVisible(true);
+        } else if (settings?.subtitleAutoAdvance !== false) {
+          advanceNodeOrClose();
+        } else {
+          setIsLineVisible((prev) => (prev ? prev : true));
+        }
+        return;
       }
-    } else if (lineElapsedMs >= fadeStartMs && !settings?.reducedMotion) {
-      setIsLineVisible(false);
-    } else {
-      setIsLineVisible(true);
-    }
+
+      lineElapsedMsRef.current = next;
+      const nextVisible = !(next >= fadeStartMs && !settings?.reducedMotion);
+      setIsLineVisible((prev) => (prev === nextVisible ? prev : nextVisible));
+    }, stepMs);
+
+    return () => clearInterval(interval);
   }, [
-    lineElapsedMs,
     lineDurationMs,
     activeLineText,
     isPaused,
@@ -192,7 +188,7 @@ export const DialogueOverlay: React.FC<DialogueOverlayProps> = ({
 
       {/* Minimal corner hint & optional Chapter 3 decision trigger kept well away from the subtitle safe area */}
       <div
-        className="fixed bottom-4 right-5 z-40 flex items-center gap-3 px-3.5 py-1.5 rounded-xl bg-[#081426]/90 border border-[#39BDF7]/30 backdrop-blur-md text-xs font-mono text-[#F2F5FA] shadow-lg"
+        className="fixed bottom-4 right-5 z-40 flex items-center gap-3 px-3.5 py-1.5 rounded-xl bg-[#081426]/95 border border-[#39BDF7]/30 text-xs font-mono text-[#F2F5FA] shadow-lg"
         onClick={(e) => e.stopPropagation()}
       >
         {showDecisionAction && onTriggerDecision && (

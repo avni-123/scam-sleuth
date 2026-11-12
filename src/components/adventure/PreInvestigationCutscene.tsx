@@ -48,8 +48,9 @@ export const PreInvestigationCutscene: React.FC<PreInvestigationCutsceneProps> =
 }) => {
   const [beatIndex, setBeatIndex] = useState<number>(0);
   const [isPaused, setIsPaused] = useState<boolean>(false);
-  const [beatElapsedMs, setBeatElapsedMs] = useState<number>(0);
+  const [lineIndex, setLineIndex] = useState<number>(0);
   const [isLineVisible, setIsLineVisible] = useState<boolean>(true);
+  const beatElapsedMsRef = useRef<number>(0);
   const onBeatChangeRef = useRef(onBeatChange);
 
   useEffect(() => {
@@ -69,30 +70,14 @@ export const PreInvestigationCutscene: React.FC<PreInvestigationCutsceneProps> =
     [currentBeat.subtitleText]
   );
 
-  // Determine which short line is active based on elapsed time in the current beat
-  const lineIndex = useMemo(() => {
-    if (shortLines.length <= 1) return 0;
-    const progressRatio = Math.min(0.999, Math.max(0, beatElapsedMs / Math.max(1, currentBeatDurationMs)));
-    return Math.min(shortLines.length - 1, Math.floor(progressRatio * shortLines.length));
-  }, [beatElapsedMs, currentBeatDurationMs, shortLines.length]);
-
   const activeLineText = shortLines[lineIndex] || shortLines[0] || '';
-
-  // Gentle fade out right before a short line or beat transitions
-  useEffect(() => {
-    if (settings.reducedMotion) {
-      setIsLineVisible(true);
-      return;
-    }
-    const segmentDurationMs = currentBeatDurationMs / Math.max(1, shortLines.length);
-    const elapsedInSegment = beatElapsedMs % segmentDurationMs;
-    const shouldFade = segmentDurationMs - elapsedInSegment < 220;
-    setIsLineVisible(!shouldFade);
-  }, [beatElapsedMs, currentBeatDurationMs, shortLines.length, settings.reducedMotion]);
 
   // Notify parent 3D scene of current camera shot and speaking state, and trigger voice audio
   // (Uses onBeatChangeRef so pausing/resuming in App.tsx never re-runs this effect)
   useEffect(() => {
+    beatElapsedMsRef.current = 0;
+    setLineIndex(0);
+    setIsLineVisible(true);
     const isCharacterSpeaking = Boolean(currentBeat.isNpcSpeaking);
     onBeatChangeRef.current(currentBeat.cameraShot, isCharacterSpeaking);
     soundEngine.stopDialogueAudio();
@@ -108,43 +93,59 @@ export const PreInvestigationCutscene: React.FC<PreInvestigationCutsceneProps> =
 
   // Reset to Beat 0 when level changes
   useEffect(() => {
+    beatElapsedMsRef.current = 0;
     setBeatIndex(0);
-    setBeatElapsedMs(0);
+    setLineIndex(0);
+    setIsLineVisible(true);
     setIsPaused(false);
   }, [level.id]);
 
   // Smooth timer for auto-advancing through the 4 story beats (~27s total)
+  // Tracks elapsed ms in a ref and only commits React state when lineIndex, visibility, or beatIndex changes
   useEffect(() => {
     if (effectivePaused) return;
     const stepMs = 80;
     const interval = setInterval(() => {
-      setBeatElapsedMs((prev) => {
-        const next = prev + stepMs;
-        if (next >= currentBeatDurationMs) {
-          if (beatIndex < beats.length - 1) {
-            setBeatIndex((idx) => Math.min(beats.length - 1, idx + 1));
-            return 0;
-          } else {
-            clearInterval(interval);
-            soundEngine.stopDialogueAudio();
-            onComplete();
-            return currentBeatDurationMs;
-          }
+      const next = beatElapsedMsRef.current + stepMs;
+      if (next >= currentBeatDurationMs) {
+        beatElapsedMsRef.current = 0;
+        if (beatIndex < beats.length - 1) {
+          setBeatIndex((idx) => Math.min(beats.length - 1, idx + 1));
+        } else {
+          clearInterval(interval);
+          soundEngine.stopDialogueAudio();
+          onComplete();
         }
-        return next;
-      });
+        return;
+      }
+
+      beatElapsedMsRef.current = next;
+      const lineCount = Math.max(1, shortLines.length);
+      const progressRatio = Math.min(0.999, Math.max(0, next / Math.max(1, currentBeatDurationMs)));
+      const nextLineIdx = lineCount <= 1 ? 0 : Math.min(lineCount - 1, Math.floor(progressRatio * lineCount));
+      setLineIndex((prev) => (prev === nextLineIdx ? prev : nextLineIdx));
+
+      if (settings.reducedMotion) {
+        setIsLineVisible((prev) => (prev ? prev : true));
+      } else {
+        const segmentDurationMs = currentBeatDurationMs / lineCount;
+        const elapsedInSegment = next % segmentDurationMs;
+        const nextVisible = !(segmentDurationMs - elapsedInSegment < 220);
+        setIsLineVisible((prev) => (prev === nextVisible ? prev : nextVisible));
+      }
     }, stepMs);
 
     return () => clearInterval(interval);
-  }, [beatIndex, beats.length, currentBeatDurationMs, effectivePaused, onComplete]);
+  }, [beatIndex, beats.length, currentBeatDurationMs, effectivePaused, onComplete, shortLines.length, settings.reducedMotion]);
 
   const handleNextBeat = useCallback(() => {
     if (effectivePaused) return;
     soundEngine.stopDialogueAudio();
     soundEngine.playInteract();
     if (beatIndex < beats.length - 1) {
+      beatElapsedMsRef.current = 0;
       setBeatIndex((idx) => idx + 1);
-      setBeatElapsedMs(0);
+      setLineIndex(0);
     } else {
       onComplete();
     }
@@ -155,8 +156,9 @@ export const PreInvestigationCutscene: React.FC<PreInvestigationCutsceneProps> =
     soundEngine.stopDialogueAudio();
     soundEngine.playInteract();
     if (beatIndex > 0) {
+      beatElapsedMsRef.current = 0;
       setBeatIndex((idx) => idx - 1);
-      setBeatElapsedMs(0);
+      setLineIndex(0);
     }
   }, [effectivePaused, beatIndex]);
 
@@ -215,7 +217,7 @@ export const PreInvestigationCutscene: React.FC<PreInvestigationCutsceneProps> =
       ===================================================================== */}
       <div className="flex flex-wrap items-center justify-between gap-2 w-full max-w-6xl mx-auto">
         {/* Left: Compact Time & Place Text over Scene */}
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#081426]/90 border border-[#39BDF7]/30 backdrop-blur-md text-xs font-mono text-[#F2F5FA] shadow-lg">
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#081426]/95 border border-[#39BDF7]/30 text-xs font-mono text-[#F2F5FA] shadow-lg">
           <Clock className="w-3.5 h-3.5 text-[#F05A9D] shrink-0" />
           <span className="text-[#F05A9D] font-semibold">{cutscene.levelNumberLabel}</span>
           <span className="text-slate-500">·</span>
@@ -246,13 +248,13 @@ export const PreInvestigationCutscene: React.FC<PreInvestigationCutsceneProps> =
       <div className="my-auto flex items-start justify-end max-w-6xl w-full mx-auto pb-24 pointer-events-none">
         {showDeviceCard && (
           <div
-            className={`pointer-events-auto w-full max-w-sm rounded-2xl bg-[#060D20]/94 border ${
+            className={`pointer-events-auto w-full max-w-sm rounded-2xl bg-[#060D20]/96 border ${
               accentMode === 'rose'
                 ? 'border-rose-500/70 shadow-[0_16px_40px_rgba(2,6,23,0.9),0_0_24px_rgba(244,63,94,0.2)]'
                 : accentMode === 'cyan'
                 ? 'border-[#00F0FF]/70 shadow-[0_16px_40px_rgba(2,6,23,0.9),0_0_24px_rgba(0,240,255,0.2)]'
                 : 'border-pink-400/70 shadow-[0_16px_40px_rgba(2,6,23,0.9),0_0_24px_rgba(236,72,153,0.22)]'
-            } p-3.5 backdrop-blur-xl ${
+            } p-3.5 ${
               settings.reducedMotion ? '' : 'transition-opacity duration-300'
             }`}
           >
@@ -323,7 +325,7 @@ export const PreInvestigationCutscene: React.FC<PreInvestigationCutsceneProps> =
           {isFinalBeat ? `Objective: ${cutscene.startingObjective}` : cutscene.compellingQuestion}
         </span>
 
-        <div className="flex items-center gap-3 ml-auto px-3.5 py-1.5 rounded-xl bg-[#081426]/90 border border-[#39BDF7]/30 backdrop-blur-md">
+        <div className="flex items-center gap-3 ml-auto px-3.5 py-1.5 rounded-xl bg-[#081426]/95 border border-[#39BDF7]/30">
           <button
             type="button"
             onClick={handlePrevBeat}

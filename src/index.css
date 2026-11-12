@@ -600,34 +600,22 @@ body.gameplay-cursor-none * {
     3px 3px 0 #03070F;
 }
 
-/* Restrained Signal Flicker for Electric-Blue "SCAM" */
+/* Restrained Signal Flicker for Electric-Blue "SCAM" (GPU Compositor Opacity Only) */
 @keyframes neonSignalScam {
   0%, 100% {
     opacity: 1;
-    text-shadow:
-      0 0 2px #FFFFFF,
-      0 0 6px #39BDF7,
-      0 0 14px #39BDF7,
-      0 0 26px rgba(57, 189, 247, 0.85),
-      6px 0 18px rgba(240, 90, 157, 0.32),
-      3px 3px 0 #03070F;
   }
   41% {
     opacity: 1;
   }
   41.4% {
-    opacity: 0.86;
-    text-shadow:
-      -1px 0 0 #F05A9D,
-      1px 0 4px #39BDF7,
-      0 0 10px rgba(57, 189, 247, 0.55),
-      3px 3px 0 #03070F;
+    opacity: 0.84;
   }
   41.8% {
     opacity: 1;
   }
   42.2% {
-    opacity: 0.92;
+    opacity: 0.91;
   }
   42.5% {
     opacity: 1;
@@ -636,40 +624,23 @@ body.gameplay-cursor-none * {
     opacity: 1;
   }
   83.3% {
-    opacity: 0.88;
-    text-shadow:
-      0 0 3px #39BDF7,
-      0 0 16px rgba(57, 189, 247, 0.7),
-      1px 0 0 #F05A9D,
-      3px 3px 0 #03070F;
+    opacity: 0.87;
   }
   83.6% {
     opacity: 1;
   }
 }
 
-/* Restrained Signal Flicker for Hot-Pink "SLEUTH" */
+/* Restrained Signal Flicker for Hot-Pink "SLEUTH" (GPU Compositor Opacity Only) */
 @keyframes neonSignalSleuth {
   0%, 100% {
     opacity: 1;
-    text-shadow:
-      0 0 2px #FFFFFF,
-      0 0 6px #F05A9D,
-      0 0 14px #F05A9D,
-      0 0 28px rgba(240, 90, 157, 0.9),
-      -6px 0 18px rgba(57, 189, 247, 0.32),
-      3px 3px 0 #03070F;
   }
   18% {
     opacity: 1;
   }
   18.3% {
-    opacity: 0.85;
-    text-shadow:
-      1px 0 0 #39BDF7,
-      -1px 0 4px #F05A9D,
-      0 0 10px rgba(240, 90, 157, 0.55),
-      3px 3px 0 #03070F;
+    opacity: 0.84;
   }
   18.7% {
     opacity: 1;
@@ -678,15 +649,10 @@ body.gameplay-cursor-none * {
     opacity: 1;
   }
   64.3% {
-    opacity: 0.9;
+    opacity: 0.89;
   }
   64.6% {
-    opacity: 0.82;
-    text-shadow:
-      0 0 4px #F05A9D,
-      0 0 14px rgba(240, 90, 157, 0.65),
-      -1px 0 0 #39BDF7,
-      3px 3px 0 #03070F;
+    opacity: 0.81;
   }
   65% {
     opacity: 1;
@@ -695,10 +661,12 @@ body.gameplay-cursor-none * {
 
 .animate-neon-scam {
   animation: neonSignalScam 8.5s infinite ease-in-out;
+  will-change: opacity;
 }
 
 .animate-neon-sleuth {
   animation: neonSignalSleuth 7.2s infinite ease-in-out;
+  will-change: opacity;
 }
 
 /* Faint Cyber-Forensic Scan Sweep Across the Title Frame */

@@ -443,6 +443,128 @@ function getCachedContactShadowTexture(): THREE.CanvasTexture {
   return cachedContactShadowTex;
 }
 
+interface CachedOutfitGeometries {
+  outerJacketGeo: THREE.BufferGeometry;
+  innerShirtGeo: THREE.BufferGeometry;
+  waistcoatGeo?: THREE.BufferGeometry;
+  tieGeo?: THREE.BufferGeometry;
+  buttonsGeo?: THREE.BufferGeometry;
+  buckleGeo?: THREE.BufferGeometry;
+}
+
+interface CachedHeadGeometries {
+  sculptedHeadGeo: THREE.BufferGeometry;
+  scalpGeo: THREE.BufferGeometry;
+  beardGeo: THREE.BufferGeometry | null;
+}
+
+interface CachedPosedRightHandData {
+  handGeo: THREE.BufferGeometry;
+  palmBackingGeo: THREE.BufferGeometry;
+  wristBridgeGeo: THREE.BufferGeometry;
+  thenarCradleGeo: THREE.BufferGeometry;
+  fullBodyIndex: THREE.BufferAttribute;
+  bodyWithoutRightHandIndex: THREE.BufferAttribute;
+}
+
+const outfitGeometryCache = new Map<CharacterArchetypeId, CachedOutfitGeometries>();
+const headGeometryCache = new Map<CharacterArchetypeId, CachedHeadGeometries>();
+let cachedStrippedHeadwearGeo: THREE.BufferGeometry | null = null;
+let cachedInvestigatorTrousersGeo: THREE.BufferGeometry | null = null;
+let cachedDetectiveHairGeo: THREE.BufferGeometry | null = null;
+let cachedFlatCapMainGeo: THREE.BufferGeometry | null = null;
+let cachedFlatCapBandGeo: THREE.BufferGeometry | null = null;
+let cachedPosedRightHandData: CachedPosedRightHandData | null = null;
+let cachedCaseScreenTex: THREE.CanvasTexture | null = null;
+
+function markSharedGeometry(geo?: THREE.BufferGeometry | null) {
+  if (geo) {
+    geo.userData.isSharedCached = true;
+  }
+}
+
+function mergeStaticGeometries(geometries: THREE.BufferGeometry[]): THREE.BufferGeometry {
+  const pos: number[] = [];
+  const norm: number[] = [];
+  const uv: number[] = [];
+  const indices: number[] = [];
+
+  for (const g of geometries) {
+    if (!g.attributes.normal) {
+      g.computeVertexNormals();
+    }
+    const pAttr = g.attributes.position as THREE.BufferAttribute;
+    const nAttr = g.attributes.normal as THREE.BufferAttribute | undefined;
+    const uvAttr = g.attributes.uv as THREE.BufferAttribute | undefined;
+    const idxAttr = g.index;
+    const baseOffset = pos.length / 3;
+
+    for (let i = 0; i < pAttr.count; i++) {
+      pos.push(pAttr.getX(i), pAttr.getY(i), pAttr.getZ(i));
+      norm.push(
+        nAttr ? nAttr.getX(i) : 0,
+        nAttr ? nAttr.getY(i) : 1,
+        nAttr ? nAttr.getZ(i) : 0
+      );
+      uv.push(uvAttr ? uvAttr.getX(i) : 0.5, uvAttr ? uvAttr.getY(i) : 0.5);
+    }
+
+    if (idxAttr) {
+      const idxArr = idxAttr.array;
+      for (let i = 0; i < idxArr.length; i++) {
+        indices.push(baseOffset + idxArr[i]);
+      }
+    } else {
+      for (let i = 0; i < pAttr.count; i++) {
+        indices.push(baseOffset + i);
+      }
+    }
+    g.dispose();
+  }
+
+  const merged = new THREE.BufferGeometry();
+  merged.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  merged.setAttribute('normal', new THREE.Float32BufferAttribute(norm, 3));
+  merged.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+  merged.setIndex(indices);
+  markSharedGeometry(merged);
+  return merged;
+}
+
+/**
+ * Disposes non-cached geometries, materials, and non-cached textures in a scene or group
+ * when leaving a level or unmounting a 3D preview stage.
+ */
+export function disposeSceneResources(root: THREE.Object3D) {
+  root.traverse((obj) => {
+    const mesh = obj as THREE.Mesh;
+    if (mesh.geometry && !mesh.geometry.userData?.isSharedCached) {
+      mesh.geometry.dispose();
+    }
+    if (mesh.material) {
+      const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+      for (const mat of materials) {
+        if (!mat) continue;
+        const stdMat = mat as THREE.MeshStandardMaterial;
+        const maps = [
+          stdMat.map,
+          stdMat.roughnessMap,
+          stdMat.metalnessMap,
+          stdMat.normalMap,
+          stdMat.emissiveMap,
+          stdMat.alphaMap,
+        ];
+        for (const tex of maps) {
+          if (tex && !tex.userData?.isSharedCached) {
+            tex.dispose();
+          }
+        }
+        mat.dispose();
+      }
+    }
+  });
+}
+
 // Pre-allocated math helpers to avoid per-frame GC allocations
 const _euler = new THREE.Euler();
 const _quat = new THREE.Quaternion();
@@ -462,6 +584,45 @@ function preloadHumanModel(): Promise<THREE.Group> {
     loader.load(
       MODEL_URL,
       (gltf) => {
+        gltf.scene.traverse((child) => {
+          const mesh = child as THREE.SkinnedMesh;
+          if (mesh.isMesh && mesh.geometry) {
+            mesh.geometry.userData.isSharedCached = true;
+            // Prune 60+ unused blendshape morph attributes down to only mouthOpen and mouthSmile
+            const dict = mesh.morphTargetDictionary;
+            if (dict && mesh.morphTargetInfluences) {
+              const keepNames = ['mouthOpen', 'mouthSmile'];
+              const newDict: Record<string, number> = {};
+              const newPosMorphs: THREE.BufferAttribute[] = [];
+              const newNormMorphs: THREE.BufferAttribute[] = [];
+              const origPosMorphs = mesh.geometry.morphAttributes.position;
+              const origNormMorphs = mesh.geometry.morphAttributes.normal;
+              for (const name of keepNames) {
+                const oldIdx = dict[name];
+                if (oldIdx !== undefined && origPosMorphs && origPosMorphs[oldIdx]) {
+                  const newIdx = newPosMorphs.length;
+                  newDict[name] = newIdx;
+                  newPosMorphs.push(origPosMorphs[oldIdx] as THREE.BufferAttribute);
+                  if (origNormMorphs && origNormMorphs[oldIdx]) {
+                    newNormMorphs.push(origNormMorphs[oldIdx] as THREE.BufferAttribute);
+                  }
+                }
+              }
+              mesh.morphTargetDictionary = newDict;
+              mesh.morphTargetInfluences = new Array(newPosMorphs.length).fill(0);
+              if (newPosMorphs.length > 0) {
+                mesh.geometry.morphAttributes.position = newPosMorphs;
+                if (newNormMorphs.length === newPosMorphs.length) {
+                  mesh.geometry.morphAttributes.normal = newNormMorphs;
+                } else {
+                  delete mesh.geometry.morphAttributes.normal;
+                }
+              } else {
+                mesh.geometry.morphAttributes = {};
+              }
+            }
+          }
+        });
         cachedGltfScene = gltf.scene;
         resolve(gltf.scene);
       },
@@ -477,7 +638,29 @@ function preloadHumanModel(): Promise<THREE.Group> {
 }
 
 if (typeof window !== 'undefined') {
-  preloadHumanModel().catch(() => {});
+  preloadHumanModel()
+    .then(() => {
+      const scheduleIdle =
+        (window as unknown as { requestIdleCallback?: (cb: () => void) => void })
+          .requestIdleCallback || ((cb: () => void) => setTimeout(cb, 80));
+      scheduleIdle(() => {
+        try {
+          if (!outfitGeometryCache.has('investigator')) {
+            const warmInv = createHumanCharacter({
+              id: 'warmup_inv',
+              name: 'Rowan Vance',
+              archetype: 'investigator',
+              style: 'investigator_coat',
+              isNpc: false,
+            });
+            disposeSceneResources(warmInv.group);
+          }
+        } catch {
+          // Ignore warmup errors
+        }
+      });
+    })
+    .catch(() => {});
 }
 
 // ---------------------------------------------------------------------------
@@ -490,6 +673,66 @@ if (typeof window !== 'undefined') {
  * topGeo (for y >= 1.03) or bottomGeo (for y < 1.03) so all tailored garments
  * deform 100% seamlessly with the character's humanoid skeleton.
  */
+interface SpatialSkinningBuckets {
+  minY: number;
+  invStepY: number;
+  bucketCount: number;
+  buckets: Int32Array[];
+  xs: Float32Array;
+  ys: Float32Array;
+  zs: Float32Array;
+}
+
+const spatialSkinningCache = new WeakMap<THREE.BufferAttribute, SpatialSkinningBuckets>();
+
+function getSpatialSkinningBuckets(posAttr: THREE.BufferAttribute): SpatialSkinningBuckets {
+  let cached = spatialSkinningCache.get(posAttr);
+  if (cached) return cached;
+
+  const count = posAttr.count;
+  const xs = new Float32Array(count);
+  const ys = new Float32Array(count);
+  const zs = new Float32Array(count);
+
+  let minY = Infinity;
+  let maxY = -Infinity;
+  for (let i = 0; i < count; i++) {
+    const x = posAttr.getX(i);
+    const y = posAttr.getY(i);
+    const z = posAttr.getZ(i);
+    xs[i] = x;
+    ys[i] = y;
+    zs[i] = z;
+    if (y < minY) minY = y;
+    if (y > maxY) maxY = y;
+  }
+
+  const bucketCount = 32;
+  const spanY = Math.max(0.01, maxY - minY);
+  const invStepY = bucketCount / spanY;
+  const tempBuckets: number[][] = Array.from({ length: bucketCount }, () => []);
+
+  for (let i = 0; i < count; i++) {
+    const bIdx = Math.min(
+      bucketCount - 1,
+      Math.max(0, Math.floor((ys[i] - minY) * invStepY))
+    );
+    tempBuckets[bIdx].push(i);
+  }
+
+  cached = {
+    minY,
+    invStepY,
+    bucketCount,
+    buckets: tempBuckets.map((arr) => new Int32Array(arr)),
+    xs,
+    ys,
+    zs,
+  };
+  spatialSkinningCache.set(posAttr, cached);
+  return cached;
+}
+
 function appendSkinnedPartGeometry(
   partGeo: THREE.BufferGeometry,
   targetPos: number[],
@@ -512,6 +755,9 @@ function appendSkinnedPartGeometry(
   const pIdx = partGeo.index;
   const baseVertOffset = targetPos.length / 3;
 
+  const topSpatial = getSpatialSkinningBuckets(topPos);
+  const botSpatial = botPos ? getSpatialSkinningBuckets(botPos) : null;
+
   for (let v = 0; v < pPos.count; v++) {
     const vx = pPos.getX(v);
     const vy = pPos.getY(v);
@@ -525,21 +771,47 @@ function appendSkinnedPartGeometry(
     );
     targetUv.push(pUv ? pUv.getX(v) : vx * 2.5 + 0.5, pUv ? pUv.getY(v) : vy * 1.5);
 
-    const useBottom = Boolean(botPos && botSkinIdx && botSkinWgt && vy < 1.025);
-    const refPos = useBottom ? botPos! : topPos;
+    const useBottom = Boolean(botSpatial && botSkinIdx && botSkinWgt && vy < 1.025);
+    const spatial = useBottom ? botSpatial! : topSpatial;
     const refSi = useBottom ? botSkinIdx! : topSkinIdx;
     const refSw = useBottom ? botSkinWgt! : topSkinWgt;
+    const { xs, ys, zs, buckets, bucketCount, minY, invStepY } = spatial;
 
-    let bestIdx = 0;
+    const centerB = Math.min(
+      bucketCount - 1,
+      Math.max(0, Math.floor((vy - minY) * invStepY))
+    );
+    const bStart = Math.max(0, centerB - 3);
+    const bEnd = Math.min(bucketCount - 1, centerB + 3);
+
+    let bestIdx = -1;
     let bestDistSq = Infinity;
-    for (let j = 0; j < refPos.count; j++) {
-      const dx = refPos.getX(j) - vx;
-      const dy = (refPos.getY(j) - vy) * 1.6;
-      const dz = refPos.getZ(j) - vz;
-      const dSq = dx * dx + dy * dy + dz * dz;
-      if (dSq < bestDistSq) {
-        bestDistSq = dSq;
-        bestIdx = j;
+    for (let b = bStart; b <= bEnd; b++) {
+      const bucket = buckets[b];
+      for (let k = 0; k < bucket.length; k++) {
+        const j = bucket[k];
+        const dx = xs[j] - vx;
+        const dy = (ys[j] - vy) * 1.6;
+        const dz = zs[j] - vz;
+        const dSq = dx * dx + dy * dy + dz * dz;
+        if (dSq < bestDistSq) {
+          bestDistSq = dSq;
+          bestIdx = j;
+        }
+      }
+    }
+
+    if (bestIdx === -1) {
+      bestIdx = 0;
+      for (let j = 0; j < xs.length; j++) {
+        const dx = xs[j] - vx;
+        const dy = (ys[j] - vy) * 1.6;
+        const dz = zs[j] - vz;
+        const dSq = dx * dx + dy * dy + dz * dz;
+        if (dSq < bestDistSq) {
+          bestDistSq = dSq;
+          bestIdx = j;
+        }
       }
     }
 
@@ -603,14 +875,11 @@ function decomposeAndTailorOutfitTop(
   sourceGeo: THREE.BufferGeometry,
   profile: CharacterArchetypeProfile,
   bottomGeo?: THREE.BufferGeometry
-): {
-  outerJacketGeo: THREE.BufferGeometry;
-  innerShirtGeo: THREE.BufferGeometry;
-  waistcoatGeo?: THREE.BufferGeometry;
-  tieGeo?: THREE.BufferGeometry;
-  buttonsGeo?: THREE.BufferGeometry;
-  buckleGeo?: THREE.BufferGeometry;
-} {
+): CachedOutfitGeometries {
+  const cached = outfitGeometryCache.get(profile.archetype);
+  if (cached) {
+    return cached;
+  }
   const pos = sourceGeo.attributes.position as THREE.BufferAttribute;
   const normAttr = sourceGeo.attributes.normal as THREE.BufferAttribute | undefined;
   const uvAttr = sourceGeo.attributes.uv as THREE.BufferAttribute | undefined;
@@ -618,10 +887,14 @@ function decomposeAndTailorOutfitTop(
   const skinWgtAttr = sourceGeo.attributes.skinWeight as THREE.BufferAttribute;
   const idxAttr = sourceGeo.index;
   if (!idxAttr) {
-    return {
+    const fallback = {
       outerJacketGeo: sourceGeo.clone(),
       innerShirtGeo: sourceGeo.clone(),
     };
+    markSharedGeometry(fallback.outerJacketGeo);
+    markSharedGeometry(fallback.innerShirtGeo);
+    outfitGeometryCache.set(profile.archetype, fallback);
+    return fallback;
   }
 
   const idx = idxAttr.array;
@@ -851,7 +1124,11 @@ function decomposeAndTailorOutfitTop(
   inPos.needsUpdate = true;
 
   if (!isInvestigator) {
-    return { outerJacketGeo, innerShirtGeo };
+    markSharedGeometry(outerJacketGeo);
+    markSharedGeometry(innerShirtGeo);
+    const result: CachedOutfitGeometries = { outerJacketGeo, innerShirtGeo };
+    outfitGeometryCache.set(profile.archetype, result);
+    return result;
   }
 
   // -------------------------------------------------------------------------
@@ -1028,6 +1305,21 @@ function decomposeAndTailorOutfitTop(
   const sUvArr: number[] = [];
   const sIdxArr: number[] = [];
 
+  // Pre-filter trouser vertices in the skirt Y range [0.41, 1.14] once so per-ring clearance is O(1)
+  const skirtBotVerts: { bx: number; by: number; bz: number }[] = [];
+  if (botPos) {
+    for (let b = 0; b < botPos.count; b++) {
+      const by = botPos.getY(b);
+      if (by >= 0.41 && by <= 1.14) {
+        skirtBotVerts.push({
+          bx: botPos.getX(b),
+          by,
+          bz: botPos.getZ(b),
+        });
+      }
+    }
+  }
+
   for (let r = 0; r < nRings; r++) {
     const tDown = r / (nRings - 1);
     const y = THREE.MathUtils.lerp(yTop, yBot, tDown);
@@ -1041,6 +1333,19 @@ function decomposeAndTailorOutfitTop(
     const rzFrontBase = 0.156 + 0.014 * tDown;
     const rzBackBase = 0.126 + 0.036 * tDown;
     const zCenter = 0.012 - 0.016 * tDown;
+
+    // Precompute polar (bTheta, rHoriz) only for trouser vertices within 4.2cm of this ring's Y
+    const ringTrouserSamples: { bTheta: number; rHoriz: number }[] = [];
+    for (let k = 0; k < skirtBotVerts.length; k++) {
+      const tv = skirtBotVerts[k];
+      if (Math.abs(tv.by - y) < 0.042) {
+        const dz = tv.bz - zCenter;
+        ringTrouserSamples.push({
+          bTheta: Math.atan2(tv.bx, dz),
+          rHoriz: Math.hypot(tv.bx, dz),
+        });
+      }
+    }
 
     for (let c = 0; c < nCols; c++) {
       const u = c / (nCols - 1);
@@ -1066,20 +1371,14 @@ function decomposeAndTailorOutfitTop(
       z += (cosT >= 0 ? 1 : -0.85) * legBulge;
 
       // Ensure 9mm radial clearance outside any underlying trouser vertex at this (y, theta)
-      if (botPos) {
+      if (ringTrouserSamples.length > 0) {
         let maxTrouserR = 0;
-        for (let b = 0; b < botPos.count; b++) {
-          const by = botPos.getY(b);
-          if (Math.abs(by - y) < 0.042) {
-            const bx = botPos.getX(b);
-            const bz = botPos.getZ(b) - zCenter;
-            const bTheta = Math.atan2(bx, bz);
-            let dTheta = Math.abs(bTheta - theta);
-            if (dTheta > Math.PI) dTheta = Math.PI * 2 - dTheta;
-            if (dTheta < 0.16) {
-              const rHoriz = Math.hypot(bx, bz);
-              if (rHoriz > maxTrouserR) maxTrouserR = rHoriz;
-            }
+        for (let b = 0; b < ringTrouserSamples.length; b++) {
+          const sample = ringTrouserSamples[b];
+          let dTheta = Math.abs(sample.bTheta - theta);
+          if (dTheta > Math.PI) dTheta = Math.PI * 2 - dTheta;
+          if (dTheta < 0.16 && sample.rHoriz > maxTrouserR) {
+            maxTrouserR = sample.rHoriz;
           }
         }
         const curR = Math.hypot(x, z - zCenter);
@@ -1454,7 +1753,7 @@ function decomposeAndTailorOutfitTop(
     bklIndices
   );
 
-  return {
+  const result: CachedOutfitGeometries = {
     outerJacketGeo: finalOuterCoatGeo,
     innerShirtGeo,
     waistcoatGeo,
@@ -1462,6 +1761,14 @@ function decomposeAndTailorOutfitTop(
     buttonsGeo,
     buckleGeo,
   };
+  markSharedGeometry(result.outerJacketGeo);
+  markSharedGeometry(result.innerShirtGeo);
+  markSharedGeometry(result.waistcoatGeo);
+  markSharedGeometry(result.tieGeo);
+  markSharedGeometry(result.buttonsGeo);
+  markSharedGeometry(result.buckleGeo);
+  outfitGeometryCache.set(profile.archetype, result);
+  return result;
 }
 
 /**
@@ -1471,9 +1778,16 @@ function decomposeAndTailorOutfitTop(
 function stripHatFromHeadwearGeometry(
   sourceGeo: THREE.BufferGeometry
 ): THREE.BufferGeometry {
+  if (cachedStrippedHeadwearGeo) {
+    return cachedStrippedHeadwearGeo;
+  }
   const pos = sourceGeo.attributes.position;
   const idxAttr = sourceGeo.index;
-  if (!idxAttr) return sourceGeo.clone();
+  if (!idxAttr) {
+    cachedStrippedHeadwearGeo = sourceGeo.clone();
+    markSharedGeometry(cachedStrippedHeadwearGeo);
+    return cachedStrippedHeadwearGeo;
+  }
 
   const idx = idxAttr.array;
   const nVerts = pos.count;
@@ -1532,7 +1846,8 @@ function stripHatFromHeadwearGeometry(
     hPos.setXYZ(v, x, y, z);
   }
   hPos.needsUpdate = true;
-
+  markSharedGeometry(cleanHairGeo);
+  cachedStrippedHeadwearGeo = cleanHairGeo;
   return cleanHairGeo;
 }
 
@@ -1658,8 +1973,9 @@ function buildAnatomicalScalpAndBeardGeometries(
     }
   }
 
-  // 1. Displace scalp geometry outward along normals with organic hair-strand wave relief
+  // 1. Displace scalp geometry outward along normals with organic hair-strand wave relief (no morph targets needed on cranium)
   const scalpGeo = sculptedHeadGeo.clone();
+  scalpGeo.morphAttributes = {};
   scalpGeo.setIndex(scalpIndices);
   const sPos = scalpGeo.attributes.position;
   for (let v = 0; v < sPos.count; v++) {
@@ -1760,112 +2076,14 @@ function attachHeadFeaturesAndHair(
 
   if (profile.hairstyle === 'side_part_detective') {
     // Investigator Rowan Vance: Neat, fuller dark-brown (#4a3629) side-parted layered cut
-    // featuring a softly rounded crown with natural 3D volume, gently tapered sides around ears,
-    // and textured front layers swept loosely to one side (forehead and eyes 100% clear and visible).
-
-    // Helper to add a smooth curved 3D hair strand tube with generous volume and strand texture
-    const addStrand = (pts: [number, number, number][], radius = 0.0064, tubeSegments = 24) => {
-      const vectors = pts.map((p) => new THREE.Vector3(p[0], p[1], p[2]));
-      const curve = new THREE.CatmullRomCurve3(vectors);
-      const geo = new THREE.TubeGeometry(curve, tubeSegments, radius, 8, false);
-      const mesh = new THREE.Mesh(geo, hairMat);
-      mesh.castShadow = true;
-      mesh.receiveShadow = true;
-      hairGroup.add(mesh);
-    };
-
-    // 1. Scalp Volume Foundation Strands (dense, overlapping volume strands covering top, temples, crown & nape)
-    const baseVolumeStrands: [number, number, number][][] = [
-      // Left side scalp volume locks
-      [[-0.024, 0.178, 0.076], [-0.054, 0.165, 0.056], [-0.080, 0.130, 0.035]],
-      [[-0.024, 0.178, 0.046], [-0.058, 0.166, 0.028], [-0.082, 0.126, 0.010]],
-      [[-0.024, 0.176, 0.015], [-0.060, 0.165, -0.002], [-0.084, 0.124, -0.018]],
-      [[-0.024, 0.175, -0.015], [-0.056, 0.162, -0.030], [-0.080, 0.122, -0.042]],
-
-      // Right side scalp volume locks
-      [[-0.024, 0.178, 0.076], [0.020, 0.180, 0.066], [0.070, 0.158, 0.042]],
-      [[-0.024, 0.178, 0.046], [0.024, 0.182, 0.036], [0.074, 0.160, 0.018]],
-      [[-0.024, 0.176, 0.015], [0.026, 0.181, 0.005], [0.076, 0.156, -0.012]],
-      [[-0.024, 0.175, -0.015], [0.024, 0.179, -0.025], [0.072, 0.152, -0.038]],
-
-      // Rear crown & nape volume locks
-      [[0.000, 0.180, -0.035], [0.000, 0.150, -0.062], [0.000, 0.092, -0.068]],
-      [[-0.030, 0.178, -0.032], [-0.035, 0.147, -0.058], [-0.033, 0.090, -0.064]],
-      [[0.030, 0.178, -0.032], [0.035, 0.147, -0.058], [0.033, 0.090, -0.064]],
-    ];
-    baseVolumeStrands.forEach((pts) => addStrand(pts, 0.0068));
-
-    // 2. Defined Side Part (originating cleanly at X = -0.024m) & Loosely Swept Textured Fringe
-    // Sweeps gently across upper forehead, keeping forehead, eyebrows (y = 0.109m), and eyes (y = 0.088m) 100% clear
-    const frontSweptStrands: [number, number, number][][] = [
-      // Left side part taper strands (sweeping leftward toward left temple)
-      [[-0.024, 0.182, 0.082], [-0.050, 0.162, 0.094], [-0.074, 0.130, 0.068]],
-      [[-0.028, 0.184, 0.084], [-0.054, 0.164, 0.096], [-0.077, 0.132, 0.064]],
-      [[-0.022, 0.180, 0.080], [-0.046, 0.160, 0.092], [-0.070, 0.128, 0.072]],
-      [[-0.031, 0.186, 0.085], [-0.058, 0.166, 0.097], [-0.080, 0.134, 0.060]],
-
-      // Main rightward loose front sweep (flowing softly across upper forehead)
-      [[-0.024, 0.182, 0.082], [0.010, 0.166, 0.098], [0.042, 0.146, 0.092]],
-      [[-0.020, 0.184, 0.084], [0.016, 0.168, 0.100], [0.046, 0.148, 0.090]],
-      [[-0.014, 0.186, 0.086], [0.022, 0.169, 0.101], [0.050, 0.149, 0.088]],
-      [[-0.008, 0.187, 0.087], [0.028, 0.170, 0.100], [0.054, 0.150, 0.085]],
-      [[-0.023, 0.181, 0.080], [0.006, 0.164, 0.096], [0.038, 0.144, 0.093]],
-      [[-0.017, 0.185, 0.085], [0.018, 0.167, 0.100], [0.048, 0.147, 0.089]],
-      [[-0.002, 0.188, 0.087], [0.032, 0.171, 0.099], [0.058, 0.149, 0.083]],
-    ];
-    frontSweptStrands.forEach((pts) => addStrand(pts, 0.0062));
-
-    // 3. Stylish Rounded Crown Volume (convex top dome peaking at Y = 0.210..0.218m following natural head silhouette)
-    const crownStrands: [number, number, number][][] = [
-      // Left crown layers
-      [[-0.024, 0.186, -0.015], [-0.050, 0.208, 0.010], [-0.076, 0.170, 0.040]],
-      [[-0.028, 0.188, 0.005], [-0.054, 0.210, 0.022], [-0.080, 0.166, 0.048]],
-      [[-0.022, 0.184, -0.030], [-0.046, 0.206, -0.005], [-0.072, 0.170, 0.028]],
-
-      // Right crown layers
-      [[-0.024, 0.186, -0.015], [0.012, 0.210, 0.008], [0.060, 0.186, 0.044]],
-      [[-0.020, 0.188, 0.000], [0.020, 0.212, 0.018], [0.066, 0.184, 0.048]],
-      [[-0.016, 0.189, 0.015], [0.026, 0.210, 0.028], [0.070, 0.180, 0.050]],
-      [[-0.012, 0.190, 0.030], [0.032, 0.208, 0.038], [0.074, 0.176, 0.052]],
-
-      // Top peak volume dome layers
-      [[-0.005, 0.192, -0.010], [0.000, 0.218, 0.012], [0.048, 0.194, 0.042]],
-      [[-0.015, 0.190, -0.020], [-0.010, 0.216, 0.000], [0.038, 0.192, 0.035]],
-
-      // Upper right side transition layers
-      [[0.005, 0.188, -0.020], [0.038, 0.208, 0.010], [0.076, 0.172, 0.040]],
-      [[0.014, 0.186, -0.008], [0.046, 0.206, 0.018], [0.080, 0.168, 0.046]],
-    ];
-    crownStrands.forEach((pts) => addStrand(pts, 0.0065));
-
-    // 4. Gently Tapered Side Layers (fitted neatly close to temples and upper ears)
-    const sideStrands: [number, number, number][][] = [
-      // Left side tapered layers
-      [[-0.048, 0.176, 0.038], [-0.078, 0.140, 0.028], [-0.084, 0.094, 0.020]],
-      [[-0.054, 0.172, 0.016], [-0.082, 0.136, 0.010], [-0.086, 0.091, 0.006]],
-      [[-0.060, 0.168, -0.010], [-0.084, 0.132, -0.014], [-0.088, 0.088, -0.016]],
-
-      // Right side tapered layers
-      [[0.048, 0.176, 0.038], [0.078, 0.140, 0.028], [0.084, 0.094, 0.020]],
-      [[0.054, 0.172, 0.016], [0.082, 0.136, 0.010], [0.086, 0.091, 0.006]],
-      [[0.060, 0.168, -0.010], [0.084, 0.132, -0.014], [0.088, 0.088, -0.016]],
-    ];
-    sideStrands.forEach((pts) => addStrand(pts, 0.0060));
-
-    // 5. Soft Nape & Rear Taper Strands
-    const rearStrands: [number, number, number][][] = [
-      [[0.0, 0.180, -0.038], [0.0, 0.140, -0.066], [0.0, 0.086, -0.070]],
-      [[-0.022, 0.178, -0.035], [-0.025, 0.138, -0.064], [-0.022, 0.086, -0.068]],
-      [[0.022, 0.178, -0.035], [0.025, 0.138, -0.064], [0.022, 0.086, -0.068]],
-    ];
-    rearStrands.forEach((pts) => addStrand(pts, 0.0060));
-
-    // Ensure all upper crown hair strands sit cleanly inside the flat cap crown while preserving
-    // the visible front side-parted forehead sweep, temple taper, and nape hair
-    hairGroup.traverse((child) => {
-      if ((child as THREE.Mesh).isMesh) {
-        const hGeo = (child as THREE.Mesh).geometry as THREE.BufferGeometry;
-        const hPos = hGeo.attributes.position as THREE.BufferAttribute;
+    // merged into a single cached BufferGeometry for 1-draw-call rendering.
+    if (!cachedDetectiveHairGeo) {
+      const strandGeos: THREE.BufferGeometry[] = [];
+      const addStrand = (pts: [number, number, number][], radius = 0.0064, tubeSegments = 18) => {
+        const vectors = pts.map((p) => new THREE.Vector3(p[0], p[1], p[2]));
+        const curve = new THREE.CatmullRomCurve3(vectors);
+        const geo = new THREE.TubeGeometry(curve, tubeSegments, radius, 6, false);
+        const hPos = geo.attributes.position as THREE.BufferAttribute;
         for (let v = 0; v < hPos.count; v++) {
           let hx = hPos.getX(v);
           let hy = hPos.getY(v);
@@ -1877,12 +2095,80 @@ function attachHeadFeaturesAndHair(
           }
           hPos.setXYZ(v, hx, hy, hz);
         }
-        hPos.needsUpdate = true;
-      }
-    });
+        strandGeos.push(geo);
+      };
+
+      const baseVolumeStrands: [number, number, number][][] = [
+        [[-0.024, 0.178, 0.076], [-0.054, 0.165, 0.056], [-0.080, 0.130, 0.035]],
+        [[-0.024, 0.178, 0.046], [-0.058, 0.166, 0.028], [-0.082, 0.126, 0.010]],
+        [[-0.024, 0.176, 0.015], [-0.060, 0.165, -0.002], [-0.084, 0.124, -0.018]],
+        [[-0.024, 0.175, -0.015], [-0.056, 0.162, -0.030], [-0.080, 0.122, -0.042]],
+        [[-0.024, 0.178, 0.076], [0.020, 0.180, 0.066], [0.070, 0.158, 0.042]],
+        [[-0.024, 0.178, 0.046], [0.024, 0.182, 0.036], [0.074, 0.160, 0.018]],
+        [[-0.024, 0.176, 0.015], [0.026, 0.181, 0.005], [0.076, 0.156, -0.012]],
+        [[-0.024, 0.175, -0.015], [0.024, 0.179, -0.025], [0.072, 0.152, -0.038]],
+        [[0.000, 0.180, -0.035], [0.000, 0.150, -0.062], [0.000, 0.092, -0.068]],
+        [[-0.030, 0.178, -0.032], [-0.035, 0.147, -0.058], [-0.033, 0.090, -0.064]],
+        [[0.030, 0.178, -0.032], [0.035, 0.147, -0.058], [0.033, 0.090, -0.064]],
+      ];
+      baseVolumeStrands.forEach((pts) => addStrand(pts, 0.0068));
+
+      const frontSweptStrands: [number, number, number][][] = [
+        [[-0.024, 0.182, 0.082], [-0.050, 0.162, 0.094], [-0.074, 0.130, 0.068]],
+        [[-0.028, 0.184, 0.084], [-0.054, 0.164, 0.096], [-0.077, 0.132, 0.064]],
+        [[-0.022, 0.180, 0.080], [-0.046, 0.160, 0.092], [-0.070, 0.128, 0.072]],
+        [[-0.031, 0.186, 0.085], [-0.058, 0.166, 0.097], [-0.080, 0.134, 0.060]],
+        [[-0.024, 0.182, 0.082], [0.010, 0.166, 0.098], [0.042, 0.146, 0.092]],
+        [[-0.020, 0.184, 0.084], [0.016, 0.168, 0.100], [0.046, 0.148, 0.090]],
+        [[-0.014, 0.186, 0.086], [0.022, 0.169, 0.101], [0.050, 0.149, 0.088]],
+        [[-0.008, 0.187, 0.087], [0.028, 0.170, 0.100], [0.054, 0.150, 0.085]],
+        [[-0.023, 0.181, 0.080], [0.006, 0.164, 0.096], [0.038, 0.144, 0.093]],
+        [[-0.017, 0.185, 0.085], [0.018, 0.167, 0.100], [0.048, 0.147, 0.089]],
+        [[-0.002, 0.188, 0.087], [0.032, 0.171, 0.099], [0.058, 0.149, 0.083]],
+      ];
+      frontSweptStrands.forEach((pts) => addStrand(pts, 0.0062));
+
+      const crownStrands: [number, number, number][][] = [
+        [[-0.024, 0.186, -0.015], [-0.050, 0.208, 0.010], [-0.076, 0.170, 0.040]],
+        [[-0.028, 0.188, 0.005], [-0.054, 0.210, 0.022], [-0.080, 0.166, 0.048]],
+        [[-0.022, 0.184, -0.030], [-0.046, 0.206, -0.005], [-0.072, 0.170, 0.028]],
+        [[-0.024, 0.186, -0.015], [0.012, 0.210, 0.008], [0.060, 0.186, 0.044]],
+        [[-0.020, 0.188, 0.000], [0.020, 0.212, 0.018], [0.066, 0.184, 0.048]],
+        [[-0.016, 0.189, 0.015], [0.026, 0.210, 0.028], [0.070, 0.180, 0.050]],
+        [[-0.012, 0.190, 0.030], [0.032, 0.208, 0.038], [0.074, 0.176, 0.052]],
+        [[-0.005, 0.192, -0.010], [0.000, 0.218, 0.012], [0.048, 0.194, 0.042]],
+        [[-0.015, 0.190, -0.020], [-0.010, 0.216, 0.000], [0.038, 0.192, 0.035]],
+        [[0.005, 0.188, -0.020], [0.038, 0.208, 0.010], [0.076, 0.172, 0.040]],
+        [[0.014, 0.186, -0.008], [0.046, 0.206, 0.018], [0.080, 0.168, 0.046]],
+      ];
+      crownStrands.forEach((pts) => addStrand(pts, 0.0065));
+
+      const sideStrands: [number, number, number][][] = [
+        [[-0.048, 0.176, 0.038], [-0.078, 0.140, 0.028], [-0.084, 0.094, 0.020]],
+        [[-0.054, 0.172, 0.016], [-0.082, 0.136, 0.010], [-0.086, 0.091, 0.006]],
+        [[-0.060, 0.168, -0.010], [-0.084, 0.132, -0.014], [-0.088, 0.088, -0.016]],
+        [[0.048, 0.176, 0.038], [0.078, 0.140, 0.028], [0.084, 0.094, 0.020]],
+        [[0.054, 0.172, 0.016], [0.082, 0.136, 0.010], [0.086, 0.091, 0.006]],
+        [[0.060, 0.168, -0.010], [0.084, 0.132, -0.014], [0.088, 0.088, -0.016]],
+      ];
+      sideStrands.forEach((pts) => addStrand(pts, 0.0060));
+
+      const rearStrands: [number, number, number][][] = [
+        [[0.0, 0.180, -0.038], [0.0, 0.140, -0.066], [0.0, 0.086, -0.070]],
+        [[-0.022, 0.178, -0.035], [-0.025, 0.138, -0.064], [-0.022, 0.086, -0.068]],
+        [[0.022, 0.178, -0.035], [0.025, 0.138, -0.064], [0.022, 0.086, -0.068]],
+      ];
+      rearStrands.forEach((pts) => addStrand(pts, 0.0060));
+
+      cachedDetectiveHairGeo = mergeStaticGeometries(strandGeos);
+    }
+
+    const mergedHairMesh = new THREE.Mesh(cachedDetectiveHairGeo, hairMat);
+    mergedHairMesh.castShadow = false;
+    mergedHairMesh.receiveShadow = true;
+    hairGroup.add(mergedHairMesh);
 
     // 6. Tailored Muted Gray-Brown Wool Flat Cap ('#6e6257') resting naturally over the crown
-    // while keeping his side-parted temple/nape hair, forehead, eyebrows, and face clearly visible
     const flatCapGroup = new THREE.Group();
     flatCapGroup.name = 'investigator_flat_cap';
 
@@ -1904,148 +2190,139 @@ function attachHeadFeaturesAndHair(
     });
     seamMat.userData.baseHex = '#453d36';
 
-    // Sculpted multi-ring flat cap crown (low-profile, forward-sloping wool silhouette)
-    const capRings = 20;
-    const capSegs = 36;
-    const capCrownGeo = new THREE.BufferGeometry();
-    const capPosArr: number[] = [];
-    const capUvArr: number[] = [];
-    const capIdxArr: number[] = [];
+    if (!cachedFlatCapMainGeo || !cachedFlatCapBandGeo) {
+      const capRings = 20;
+      const capSegs = 36;
+      const capCrownGeo = new THREE.BufferGeometry();
+      const capPosArr: number[] = [];
+      const capUvArr: number[] = [];
+      const capIdxArr: number[] = [];
 
-    for (let r = 0; r <= capRings; r++) {
-      const v = r / capRings; // 0 = bottom fitted headband rim, 1 = top center crown
-      const sinV = Math.sin((v * Math.PI) / 2);
-      const cosV = Math.cos((v * Math.PI) / 2);
+      for (let r = 0; r <= capRings; r++) {
+        const v = r / capRings;
+        const sinV = Math.sin((v * Math.PI) / 2);
+        const cosV = Math.cos((v * Math.PI) / 2);
 
-      for (let s = 0; s <= capSegs; s++) {
-        const u = s / capSegs;
-        const theta = u * Math.PI * 2; // 0 = front (+Z), PI/2 = left (+X), PI = back (-Z)
-        const sinT = Math.sin(theta);
-        const cosT = Math.cos(theta);
+        for (let s = 0; s <= capSegs; s++) {
+          const u = s / capSegs;
+          const theta = u * Math.PI * 2;
+          const sinT = Math.sin(theta);
+          const cosT = Math.cos(theta);
 
-        // Base elliptical head fit with classic flat-cap forward drape
-        const widthR = (0.097 + 0.010 * Math.sin(v * Math.PI)) * cosV;
-        const lengthFront = 0.118;
-        const lengthBack = 0.106;
-        const zRadius = (cosT >= 0 ? lengthFront : lengthBack) * cosV;
+          const widthR = (0.097 + 0.010 * Math.sin(v * Math.PI)) * cosV;
+          const lengthFront = 0.118;
+          const lengthBack = 0.106;
+          const zRadius = (cosT >= 0 ? lengthFront : lengthBack) * cosV;
 
-        const zCenterShift = 0.008 + 0.014 * sinV;
-        const x = sinT * widthR;
-        const z = zCenterShift + cosT * zRadius;
+          const zCenterShift = 0.008 + 0.014 * sinV;
+          const x = sinT * widthR;
+          const z = zCenterShift + cosT * zRadius;
 
-        // Rim sits comfortably above eyebrows (y = 0.152 front, 0.140 back);
-        // Top of flat cap slopes from y = 0.228 at rear-mid crown down to y = 0.188 toward front visor
-        const rimY = 0.146 + 0.006 * cosT;
-        const topProfileY = 0.218 - 0.015 * cosT + 0.006 * (1 - Math.abs(sinT));
-        const panelSeam = Math.cos(theta * 6.0) * 0.0014 * sinV;
-        const y = THREE.MathUtils.lerp(rimY, topProfileY, Math.pow(sinV, 0.75)) + panelSeam;
+          const rimY = 0.146 + 0.006 * cosT;
+          const topProfileY = 0.218 - 0.015 * cosT + 0.006 * (1 - Math.abs(sinT));
+          const panelSeam = Math.cos(theta * 6.0) * 0.0014 * sinV;
+          const y = THREE.MathUtils.lerp(rimY, topProfileY, Math.pow(sinV, 0.75)) + panelSeam;
 
-        capPosArr.push(x, y, z);
-        capUvArr.push(u * 2.0, v * 2.0);
+          capPosArr.push(x, y, z);
+          capUvArr.push(u * 2.0, v * 2.0);
+        }
       }
-    }
 
-    for (let r = 0; r < capRings; r++) {
-      const r0 = r * (capSegs + 1);
-      const r1 = (r + 1) * (capSegs + 1);
-      for (let s = 0; s < capSegs; s++) {
-        capIdxArr.push(r0 + s, r0 + s + 1, r1 + s);
-        capIdxArr.push(r0 + s + 1, r1 + s + 1, r1 + s);
+      for (let r = 0; r < capRings; r++) {
+        const r0 = r * (capSegs + 1);
+        const r1 = (r + 1) * (capSegs + 1);
+        for (let s = 0; s < capSegs; s++) {
+          capIdxArr.push(r0 + s, r0 + s + 1, r1 + s);
+          capIdxArr.push(r0 + s + 1, r1 + s + 1, r1 + s);
+        }
       }
-    }
-    capCrownGeo.setAttribute('position', new THREE.Float32BufferAttribute(capPosArr, 3));
-    capCrownGeo.setAttribute('uv', new THREE.Float32BufferAttribute(capUvArr, 2));
-    capCrownGeo.setIndex(capIdxArr);
-    capCrownGeo.computeVertexNormals();
+      capCrownGeo.setAttribute('position', new THREE.Float32BufferAttribute(capPosArr, 3));
+      capCrownGeo.setAttribute('uv', new THREE.Float32BufferAttribute(capUvArr, 2));
+      capCrownGeo.setIndex(capIdxArr);
+      capCrownGeo.computeVertexNormals();
 
-    const capCrownMesh = new THREE.Mesh(capCrownGeo, capMat);
-    capCrownMesh.castShadow = true;
-    capCrownMesh.receiveShadow = true;
-    flatCapGroup.add(capCrownMesh);
+      const visorRows = 8;
+      const visorCols = 24;
+      const visorGeo = new THREE.BufferGeometry();
+      const vPosArr: number[] = [];
+      const vUvArr: number[] = [];
+      const vIdxArr: number[] = [];
 
-    // Stiffened Curved Front Peak / Visor Brim (projects from z = 0.086 to z = 0.150 at y ~ 0.146)
-    const visorRows = 8;
-    const visorCols = 24;
-    const visorGeo = new THREE.BufferGeometry();
-    const vPosArr: number[] = [];
-    const vUvArr: number[] = [];
-    const vIdxArr: number[] = [];
+      for (let r = 0; r <= visorRows; r++) {
+        const tFwd = r / visorRows;
+        for (let c = 0; c <= visorCols; c++) {
+          const u = c / visorCols;
+          const sNorm = (u - 0.5) * 2;
+          const maxHalfW = THREE.MathUtils.lerp(0.086, 0.064, Math.pow(tFwd, 1.35));
+          const vx = sNorm * maxHalfW;
+          const archCurve = (1 - sNorm * sNorm) * 0.011;
+          const vz =
+            THREE.MathUtils.lerp(0.086, 0.150, tFwd) *
+            (1 - 0.16 * sNorm * sNorm);
+          const vy =
+            0.146 - tFwd * 0.011 + archCurve - Math.abs(sNorm) * 0.004;
 
-    for (let r = 0; r <= visorRows; r++) {
-      const tFwd = r / visorRows; // 0 = inner headband attachment, 1 = front visor lip
-      for (let c = 0; c <= visorCols; c++) {
-        const u = c / visorCols; // 0 = right (-X), 1 = left (+X)
-        const sNorm = (u - 0.5) * 2; // -1 .. +1
-        const maxHalfW = THREE.MathUtils.lerp(0.086, 0.064, Math.pow(tFwd, 1.35));
-        const vx = sNorm * maxHalfW;
-        const archCurve = (1 - sNorm * sNorm) * 0.011;
-        const vz =
-          THREE.MathUtils.lerp(0.086, 0.150, tFwd) *
-          (1 - 0.16 * sNorm * sNorm);
-        const vy =
-          0.146 - tFwd * 0.011 + archCurve - Math.abs(sNorm) * 0.004;
-
-        // Upper & lower visor surfaces (4.5mm stiffened brim thickness)
-        vPosArr.push(vx, vy + 0.0024, vz);
-        vUvArr.push(u, tFwd);
-        vPosArr.push(vx, vy - 0.0022, vz);
-        vUvArr.push(u, tFwd);
+          vPosArr.push(vx, vy + 0.0024, vz);
+          vUvArr.push(u, tFwd);
+          vPosArr.push(vx, vy - 0.0022, vz);
+          vUvArr.push(u, tFwd);
+        }
       }
-    }
-    const vStride = (visorCols + 1) * 2;
-    for (let r = 0; r < visorRows; r++) {
-      const r0 = r * vStride;
-      const r1 = (r + 1) * vStride;
+      const vStride = (visorCols + 1) * 2;
+      for (let r = 0; r < visorRows; r++) {
+        const r0 = r * vStride;
+        const r1 = (r + 1) * vStride;
+        for (let c = 0; c < visorCols; c++) {
+          const t00 = r0 + c * 2;
+          const t01 = r0 + (c + 1) * 2;
+          const t10 = r1 + c * 2;
+          const t11 = r1 + (c + 1) * 2;
+          vIdxArr.push(t00, t10, t01);
+          vIdxArr.push(t01, t10, t11);
+
+          const b00 = t00 + 1;
+          const b01 = t01 + 1;
+          const b10 = t10 + 1;
+          const b11 = t11 + 1;
+          vIdxArr.push(b00, b01, b10);
+          vIdxArr.push(b01, b11, b10);
+        }
+      }
+      const frontRow = visorRows * vStride;
       for (let c = 0; c < visorCols; c++) {
-        const t00 = r0 + c * 2;
-        const t01 = r0 + (c + 1) * 2;
-        const t10 = r1 + c * 2;
-        const t11 = r1 + (c + 1) * 2;
-        vIdxArr.push(t00, t10, t01);
-        vIdxArr.push(t01, t10, t11);
-
-        const b00 = t00 + 1;
-        const b01 = t01 + 1;
-        const b10 = t10 + 1;
-        const b11 = t11 + 1;
-        vIdxArr.push(b00, b01, b10);
-        vIdxArr.push(b01, b11, b10);
+        const t0 = frontRow + c * 2;
+        const b0 = t0 + 1;
+        const t1 = frontRow + (c + 1) * 2;
+        const b1 = t1 + 1;
+        vIdxArr.push(t0, b0, t1);
+        vIdxArr.push(b0, b1, t1);
       }
-    }
-    // Front rim cap of visor
-    const frontRow = visorRows * vStride;
-    for (let c = 0; c < visorCols; c++) {
-      const t0 = frontRow + c * 2;
-      const b0 = t0 + 1;
-      const t1 = frontRow + (c + 1) * 2;
-      const b1 = t1 + 1;
-      vIdxArr.push(t0, b0, t1);
-      vIdxArr.push(b0, b1, t1);
-    }
-    visorGeo.setAttribute('position', new THREE.Float32BufferAttribute(vPosArr, 3));
-    visorGeo.setAttribute('uv', new THREE.Float32BufferAttribute(vUvArr, 2));
-    visorGeo.setIndex(vIdxArr);
-    visorGeo.computeVertexNormals();
+      visorGeo.setAttribute('position', new THREE.Float32BufferAttribute(vPosArr, 3));
+      visorGeo.setAttribute('uv', new THREE.Float32BufferAttribute(vUvArr, 2));
+      visorGeo.setIndex(vIdxArr);
+      visorGeo.computeVertexNormals();
 
-    const visorMesh = new THREE.Mesh(visorGeo, capMat);
-    visorMesh.castShadow = true;
-    visorMesh.receiveShadow = true;
-    flatCapGroup.add(visorMesh);
+      cachedFlatCapMainGeo = mergeStaticGeometries([capCrownGeo, visorGeo]);
 
-    // Fitted Bottom Headband Trim
-    const bandPoints: THREE.Vector3[] = [];
-    for (let s = 0; s <= 36; s++) {
-      const th = (s / 36) * Math.PI * 2;
-      const bx = Math.sin(th) * 0.0955;
-      const bz = 0.008 + Math.cos(th) * (Math.cos(th) >= 0 ? 0.116 : 0.104);
-      const by = 0.144 + 0.006 * Math.cos(th);
-      bandPoints.push(new THREE.Vector3(bx, by, bz));
+      const bandPoints: THREE.Vector3[] = [];
+      for (let s = 0; s <= 36; s++) {
+        const th = (s / 36) * Math.PI * 2;
+        const bx = Math.sin(th) * 0.0955;
+        const bz = 0.008 + Math.cos(th) * (Math.cos(th) >= 0 ? 0.116 : 0.104);
+        const by = 0.144 + 0.006 * Math.cos(th);
+        bandPoints.push(new THREE.Vector3(bx, by, bz));
+      }
+      const bandCurve = new THREE.CatmullRomCurve3(bandPoints, true);
+      cachedFlatCapBandGeo = new THREE.TubeGeometry(bandCurve, 36, 0.0032, 6, true);
+      markSharedGeometry(cachedFlatCapBandGeo);
     }
-    const bandCurve = new THREE.CatmullRomCurve3(bandPoints, true);
-    const bandMesh = new THREE.Mesh(
-      new THREE.TubeGeometry(bandCurve, 36, 0.0032, 8, true),
-      seamMat
-    );
+
+    const capMainMesh = new THREE.Mesh(cachedFlatCapMainGeo, capMat);
+    capMainMesh.castShadow = true;
+    capMainMesh.receiveShadow = true;
+    flatCapGroup.add(capMainMesh);
+
+    const bandMesh = new THREE.Mesh(cachedFlatCapBandGeo, seamMat);
     flatCapGroup.add(bandMesh);
 
     headFeatureGroup.add(flatCapGroup);
@@ -2458,7 +2735,7 @@ function attachCharacterWardrobeDetails(
  */
 function createInvestigatorSmartphoneProp(): {
   phoneGroup: THREE.Group;
-  screenGlowLight: THREE.PointLight;
+  screenGlowLight: THREE.PointLight | null;
 } {
   const phoneW = 0.076;
   const phoneH = 0.156;
@@ -2632,11 +2909,13 @@ function createInvestigatorSmartphoneProp(): {
   deviceMeshGroup.add(lidar);
 
   // Lit AMOLED front screen (-Z face pressed against palm)
-  const screenTex =
-    ProceduralTextureGenerator.createCaseDeliveryMessageScreenTexture();
+  if (!cachedCaseScreenTex) {
+    cachedCaseScreenTex =
+      ProceduralTextureGenerator.createCaseDeliveryMessageScreenTexture();
+  }
   const screenGeo = new THREE.PlaneGeometry(phoneW - 0.006, phoneH - 0.008);
   const screenMat = new THREE.MeshBasicMaterial({
-    map: screenTex,
+    map: cachedCaseScreenTex,
     side: THREE.DoubleSide,
   });
   const frontScreen = new THREE.Mesh(screenGeo, screenMat);
@@ -2644,20 +2923,17 @@ function createInvestigatorSmartphoneProp(): {
   frontScreen.position.set(0, 0, -phoneD / 2 - 0.0006);
   deviceMeshGroup.add(frontScreen);
 
-  const screenGlowLight = new THREE.PointLight(0xfffbeb, 0.12, 0.45, 2.0);
-  screenGlowLight.position.set(0, -0.02, -0.04);
-  deviceMeshGroup.add(screenGlowLight);
-
-  // Disable frustum culling on all child meshes
+  // Disable frustum culling on all child meshes; only main chassis casts shadow
   phoneGroup.traverse((child) => {
     if ((child as THREE.Mesh).isMesh) {
-      (child as THREE.Mesh).frustumCulled = false;
-      (child as THREE.Mesh).castShadow = true;
-      (child as THREE.Mesh).receiveShadow = true;
+      const m = child as THREE.Mesh;
+      m.frustumCulled = false;
+      m.castShadow = m === chassis;
+      m.receiveShadow = true;
     }
   });
 
-  return { phoneGroup, screenGlowLight };
+  return { phoneGroup, screenGlowLight: null };
 }
 
 /**
@@ -2682,292 +2958,281 @@ function buildPrePosedRightHandAndFilterBody(
   fullBodyIndex: THREE.BufferAttribute;
   bodyWithoutRightHandIndex: THREE.BufferAttribute;
 } | null {
-  const sourceGeo = bodySkinnedMesh.geometry;
-  const posAttr = sourceGeo.attributes.position;
-  const uvAttr = sourceGeo.attributes.uv;
-  const skinIndexAttr = sourceGeo.attributes.skinIndex;
-  const skinWeightAttr = sourceGeo.attributes.skinWeight;
-  const idxAttr = sourceGeo.index;
-  if (!posAttr || !skinIndexAttr || !skinWeightAttr || !idxAttr) {
-    return null;
-  }
-
-  const idxArray = idxAttr.array;
-  const nVerts = posAttr.count;
-  const parent = Array.from({ length: nVerts }, (_, i) => i);
-  const find = (x: number): number => {
-    let cur = x;
-    while (parent[cur] !== cur) {
-      parent[cur] = parent[parent[cur]];
-      cur = parent[cur];
+  if (!cachedPosedRightHandData) {
+    const sourceGeo = bodySkinnedMesh.geometry;
+    const posAttr = sourceGeo.attributes.position;
+    const uvAttr = sourceGeo.attributes.uv;
+    const skinIndexAttr = sourceGeo.attributes.skinIndex;
+    const skinWeightAttr = sourceGeo.attributes.skinWeight;
+    const idxAttr = sourceGeo.index;
+    if (!posAttr || !skinIndexAttr || !skinWeightAttr || !idxAttr) {
+      return null;
     }
-    return cur;
-  };
 
-  for (let i = 0; i < idxArray.length; i += 3) {
-    parent[find(idxArray[i])] = find(idxArray[i + 1]);
-    parent[find(idxArray[i + 1])] = find(idxArray[i + 2]);
-  }
+    const idxArray = idxAttr.array;
+    const nVerts = posAttr.count;
 
-  const compMinX = new Map<number, number>();
-  const compMaxY = new Map<number, number>();
-  for (let v = 0; v < nVerts; v++) {
-    const r = find(v);
-    const x = posAttr.getX(v);
-    const y = posAttr.getY(v);
-    const prevMinX = compMinX.get(r);
-    if (prevMinX === undefined || x < prevMinX) {
-      compMinX.set(r, x);
-    }
-    const prevMaxY = compMaxY.get(r);
-    if (prevMaxY === undefined || y > prevMaxY) {
-      compMaxY.set(r, y);
-    }
-  }
+    // Save original bind quaternions of right-hand finger/thumb bones
+    const savedFingerQuats: Array<{ bone: THREE.Bone; quat: THREE.Quaternion }> = [];
+    const applyTempOffset = (boneName: string, rx: number, ry: number, rz: number) => {
+      const b = clonedRoot.getObjectByName(boneName) as THREE.Bone | null;
+      if (!b) return;
+      savedFingerQuats.push({ bone: b, quat: b.quaternion.clone() });
+      const q = new THREE.Quaternion().setFromEuler(new THREE.Euler(rx, ry, rz, 'XYZ'));
+      b.quaternion.multiply(q);
+    };
 
-  // Save original bind quaternions of right-hand finger/thumb bones
-  const savedFingerQuats: Array<{ bone: THREE.Bone; quat: THREE.Quaternion }> = [];
-  const applyTempOffset = (boneName: string, rx: number, ry: number, rz: number) => {
-    const b = clonedRoot.getObjectByName(boneName) as THREE.Bone | null;
-    if (!b) return;
-    savedFingerQuats.push({ bone: b, quat: b.quaternion.clone() });
-    const q = new THREE.Quaternion().setFromEuler(new THREE.Euler(rx, ry, rz, 'XYZ'));
-    b.quaternion.multiply(q);
-  };
+    applyTempOffset('RightHandIndex1', 1.15, -0.25, 0.16);
+    applyTempOffset('RightHandIndex2', 1.52, 0.0, 0.0);
+    applyTempOffset('RightHandIndex3', 0.48, 0.0, 0.0);
 
-  // Pose the 4 fingers so their MCP/PIP joints hug the outer vertical edge (X = -0.038)
-  // and their middle/distal phalanges curl onto X in [-0.038, -0.016] across the left bezel of the back panel.
-  applyTempOffset('RightHandIndex1', 1.15, -0.25, 0.16);
-  applyTempOffset('RightHandIndex2', 1.52, 0.0, 0.0);
-  applyTempOffset('RightHandIndex3', 0.48, 0.0, 0.0);
+    applyTempOffset('RightHandMiddle1', 1.18, -0.25, 0.04);
+    applyTempOffset('RightHandMiddle2', 1.55, 0.0, 0.0);
+    applyTempOffset('RightHandMiddle3', 0.48, 0.0, 0.0);
 
-  applyTempOffset('RightHandMiddle1', 1.18, -0.25, 0.04);
-  applyTempOffset('RightHandMiddle2', 1.55, 0.0, 0.0);
-  applyTempOffset('RightHandMiddle3', 0.48, 0.0, 0.0);
+    applyTempOffset('RightHandRing1', 1.08, -0.28, -0.08);
+    applyTempOffset('RightHandRing2', 1.62, 0.0, 0.0);
+    applyTempOffset('RightHandRing3', 0.52, 0.0, 0.0);
 
-  applyTempOffset('RightHandRing1', 1.08, -0.28, -0.08);
-  applyTempOffset('RightHandRing2', 1.62, 0.0, 0.0);
-  applyTempOffset('RightHandRing3', 0.52, 0.0, 0.0);
+    applyTempOffset('RightHandPinky1', 0.92, -0.35, -0.18);
+    applyTempOffset('RightHandPinky2', 1.68, 0.0, 0.0);
+    applyTempOffset('RightHandPinky3', 0.55, 0.0, 0.0);
 
-  applyTempOffset('RightHandPinky1', 0.92, -0.35, -0.18);
-  applyTempOffset('RightHandPinky2', 1.68, 0.0, 0.0);
-  applyTempOffset('RightHandPinky3', 0.55, 0.0, 0.0);
+    applyTempOffset('RightHandThumb1', 0.12, -0.58, -1.52);
+    applyTempOffset('RightHandThumb2', 0.92, 0.22, 0.52);
+    applyTempOffset('RightHandThumb3', 0.62, 0.12, 0.38);
 
-  // Opposing thumb wraps around the inner vertical edge (X = +0.038) opposing the fingers
-  applyTempOffset('RightHandThumb1', 0.12, -0.58, -1.52);
-  applyTempOffset('RightHandThumb2', 0.92, 0.22, 0.52);
-  applyTempOffset('RightHandThumb3', 0.62, 0.12, 0.38);
+    clonedRoot.updateMatrixWorld(true);
 
-  clonedRoot.updateMatrixWorld(true);
+    const skeleton = bodySkinnedMesh.skeleton;
+    const jointMatrices = skeleton.bones.map((bone, i) => {
+      const m = new THREE.Matrix4();
+      m.multiplyMatrices(bone.matrixWorld, skeleton.boneInverses[i]);
+      return m;
+    });
 
-  const skeleton = bodySkinnedMesh.skeleton;
-  const jointMatrices = skeleton.bones.map((bone, i) => {
-    const m = new THREE.Matrix4();
-    m.multiplyMatrices(bone.matrixWorld, skeleton.boneInverses[i]);
-    return m;
-  });
+    const rhInv = rightHandBone.matrixWorld.clone().invert();
+    const rotMat = new THREE.Matrix4().makeRotationFromEuler(
+      new THREE.Euler(0.06, 0.14, 1.58, 'XYZ')
+    );
+    const scaleMat = new THREE.Matrix4().makeScale(0.75, 0.96, 0.58);
+    const transMat = new THREE.Matrix4().makeTranslation(0.038, -0.016, -0.011);
+    const handToPhone = new THREE.Matrix4()
+      .multiplyMatrices(transMat, scaleMat)
+      .multiply(rotMat);
 
-  const rhInv = rightHandBone.matrixWorld.clone().invert();
-  const rotMat = new THREE.Matrix4().makeRotationFromEuler(
-    new THREE.Euler(0.06, 0.14, 1.58, 'XYZ')
-  );
-  const scaleMat = new THREE.Matrix4().makeScale(0.75, 0.96, 0.58);
-  // Position the finger/thumb grip around the lower-middle of the phone (-0.016 Y) so the top camera cluster (+Y) is 100% unobstructed
-  const transMat = new THREE.Matrix4().makeTranslation(0.038, -0.016, -0.011);
-  const handToPhone = new THREE.Matrix4()
-    .multiplyMatrices(transMat, scaleMat)
-    .multiply(rotMat);
+    savedFingerQuats.forEach(({ bone, quat }) => {
+      bone.quaternion.copy(quat);
+    });
+    clonedRoot.updateMatrixWorld(true);
 
-  // Restore original bind quaternions on the skeleton
-  savedFingerQuats.forEach(({ bone, quat }) => {
-    bone.quaternion.copy(quat);
-  });
-  clonedRoot.updateMatrixWorld(true);
+    const vertRemap = new Int32Array(nVerts).fill(-1);
+    const handPositions: number[] = [];
+    const handUVs: number[] = [];
+    let nextHandVertIdx = 0;
 
-  // Deform the right-hand vertices into Phone Space centered around the smartphone
-  const vertRemap = new Int32Array(nVerts).fill(-1);
-  const handPositions: number[] = [];
-  const handUVs: number[] = [];
-  let nextHandVertIdx = 0;
+    const pBind = new THREE.Vector3();
+    const pSkinned = new THREE.Vector3();
+    const pTemp = new THREE.Vector3();
 
-  const pBind = new THREE.Vector3();
-  const pSkinned = new THREE.Vector3();
-  const pTemp = new THREE.Vector3();
+    for (let v = 0; v < nVerts; v++) {
+      if (posAttr.getX(v) > -0.38) continue;
 
-  for (let v = 0; v < nVerts; v++) {
-    if (posAttr.getX(v) > -0.38) continue;
+      pBind.set(posAttr.getX(v), posAttr.getY(v), posAttr.getZ(v));
+      pSkinned.set(0, 0, 0);
 
-    pBind.set(posAttr.getX(v), posAttr.getY(v), posAttr.getZ(v));
-    pSkinned.set(0, 0, 0);
+      const j0 = skinIndexAttr.getX(v);
+      const j1 = skinIndexAttr.getY(v);
+      const j2 = skinIndexAttr.getZ(v);
+      const j3 = skinIndexAttr.getW(v);
+      const w0 = skinWeightAttr.getX(v);
+      const w1 = skinWeightAttr.getY(v);
+      const w2 = skinWeightAttr.getZ(v);
+      const w3 = skinWeightAttr.getW(v);
 
-    const j0 = skinIndexAttr.getX(v);
-    const j1 = skinIndexAttr.getY(v);
-    const j2 = skinIndexAttr.getZ(v);
-    const j3 = skinIndexAttr.getW(v);
-    const w0 = skinWeightAttr.getX(v);
-    const w1 = skinWeightAttr.getY(v);
-    const w2 = skinWeightAttr.getZ(v);
-    const w3 = skinWeightAttr.getW(v);
+      const js = [j0, j1, j2, j3];
+      const ws = [w0, w1, w2, w3];
 
-    const js = [j0, j1, j2, j3];
-    const ws = [w0, w1, w2, w3];
+      let wForearm = 0;
+      let wHand = 0;
+      let wThumb1 = 0;
+      let wThumbDistal = 0;
+      let wFinger1 = 0;
+      let wFinger2 = 0;
+      let wFinger3 = 0;
 
-    let wForearm = 0;
-    let wHand = 0;
-    let wThumb1 = 0;
-    let wThumbDistal = 0;
-    let wFinger1 = 0;
-    let wFinger2 = 0;
-    let wFinger3 = 0;
-
-    for (let k = 0; k < 4; k++) {
-      const w = ws[k];
-      if (w > 0) {
-        const j = js[k];
-        const bName = skeleton.bones[j]?.name || '';
-        if (bName === 'RightForeArm') wForearm += w;
-        if (bName === 'RightHand') wHand += w;
-        if (bName === 'RightHandThumb1') wThumb1 += w;
-        if (bName === 'RightHandThumb2' || bName === 'RightHandThumb3') {
-          wThumbDistal += w;
+      for (let k = 0; k < 4; k++) {
+        const w = ws[k];
+        if (w > 0) {
+          const j = js[k];
+          const bName = skeleton.bones[j]?.name || '';
+          if (bName === 'RightForeArm') wForearm += w;
+          if (bName === 'RightHand') wHand += w;
+          if (bName === 'RightHandThumb1') wThumb1 += w;
+          if (bName === 'RightHandThumb2' || bName === 'RightHandThumb3') {
+            wThumbDistal += w;
+          }
+          if (/(Index|Middle|Ring|Pinky)1/.test(bName)) wFinger1 += w;
+          if (/(Index|Middle|Ring|Pinky)2/.test(bName)) wFinger2 += w;
+          if (/(Index|Middle|Ring|Pinky)3/.test(bName)) wFinger3 += w;
+          pTemp.copy(pBind).applyMatrix4(jointMatrices[j]);
+          pSkinned.addScaledVector(pTemp, w);
         }
-        if (/(Index|Middle|Ring|Pinky)1/.test(bName)) wFinger1 += w;
-        if (/(Index|Middle|Ring|Pinky)2/.test(bName)) wFinger2 += w;
-        if (/(Index|Middle|Ring|Pinky)3/.test(bName)) wFinger3 += w;
-        pTemp.copy(pBind).applyMatrix4(jointMatrices[j]);
-        pSkinned.addScaledVector(pTemp, w);
       }
-    }
 
-    pSkinned.applyMatrix4(rhInv).applyMatrix4(handToPhone);
+      pSkinned.applyMatrix4(rhInv).applyMatrix4(handToPhone);
 
-    const isThumbDistal = wThumbDistal > 0.22;
-    const isThumbBase = !isThumbDistal && wThumb1 > 0.2;
-    const isDistalFinger = wFinger2 + wFinger3 > 0.2;
-    const isProxFinger = !isDistalFinger && wFinger1 > 0.22;
-    const isWrist = wForearm > 0.04 || (wHand > 0.5 && pBind.x > -0.442);
-    const isPalm = !isThumbDistal && !isDistalFinger && !isWrist;
+      const isThumbDistal = wThumbDistal > 0.22;
+      const isThumbBase = !isThumbDistal && wThumb1 > 0.2;
+      const isDistalFinger = wFinger2 + wFinger3 > 0.2;
+      const isProxFinger = !isDistalFinger && wFinger1 > 0.22;
+      const isWrist = wForearm > 0.04 || (wHand > 0.5 && pBind.x > -0.442);
+      const isPalm = !isThumbDistal && !isDistalFinger && !isWrist;
 
-    // 1. Keep the wrist tucked cleanly behind the palm without protruding past the edges
-    if (isWrist) {
-      const tW = Math.min(1, Math.max(0, (pBind.x - -0.448) / 0.038));
-      const wristX = THREE.MathUtils.clamp(
-        (pBind.z - -0.012) * 0.72,
-        -0.02,
-        0.02
-      );
-      const targetY = -0.042 - 0.008 * tW;
-      pSkinned.x = THREE.MathUtils.lerp(
-        pSkinned.x - 0.016,
-        wristX,
-        0.85 + 0.15 * tW
-      );
-      pSkinned.y = THREE.MathUtils.lerp(pSkinned.y, targetY, 0.82 + 0.18 * tW);
-      pSkinned.y = THREE.MathUtils.clamp(pSkinned.y, -0.068, 0.068);
-      pSkinned.z = Math.min(
-        Math.max(pSkinned.z, -0.013),
-        -0.005 - 0.003 * tW
-      );
-    }
-
-    // 2. Center the palm behind the screen (-Z = -0.0045) with zero gap and cup its outer rim around the phone's edges
-    if (isPalm) {
-      if (isThumbBase) {
-        pSkinned.y -= 0.016;
-        pSkinned.x = Math.min(0.041, Math.max(0.035, pSkinned.x));
-      }
-      pSkinned.y = THREE.MathUtils.clamp(pSkinned.y, -0.068, 0.068);
-      pSkinned.x = THREE.MathUtils.clamp(pSkinned.x, -0.041, 0.041);
-
-      const atOuterEdge = Math.abs(pSkinned.x) > 0.0375;
-      if (atOuterEdge && pSkinned.y < 0.016) {
-        pSkinned.z = Math.min(Math.max(pSkinned.z, -0.008), 0.0015);
-      } else {
-        pSkinned.z = Math.min(Math.max(pSkinned.z, -0.0125), -0.0046);
-      }
-    }
-
-    // 3. Wrap curled 4 fingers tightly around the lower-middle outer vertical edge (X = -0.038) onto X in [-0.038, -0.016]
-    // Clamped to Y <= +0.016 so the top rear camera cluster (Y in [+0.021, +0.074]) is 100% unobstructed
-    if (isDistalFinger || isProxFinger) {
-      pSkinned.y = THREE.MathUtils.clamp(pSkinned.y, -0.058, 0.016);
-      if (pSkinned.x < -0.0425) {
-        pSkinned.x = -0.0425 + (pSkinned.x + 0.0425) * 0.12;
-      }
-      if (isDistalFinger && pSkinned.z > -0.002) {
-        const tCurl = Math.min(
-          1,
-          Math.max(0, wFinger3 * 1.15 + wFinger2 * 0.35)
+      if (isWrist) {
+        const tW = Math.min(1, Math.max(0, (pBind.x - -0.448) / 0.038));
+        const wristX = THREE.MathUtils.clamp(
+          (pBind.z - -0.012) * 0.72,
+          -0.02,
+          0.02
         );
-        const baseEdgeX = -0.0405 + tCurl * 0.0235;
-        pSkinned.x = THREE.MathUtils.lerp(pSkinned.x, baseEdgeX, 0.65);
-        pSkinned.x = THREE.MathUtils.clamp(pSkinned.x, -0.042, -0.0155);
-        pSkinned.z = 0.0054 + Math.min(0.0055, Math.max(0, pSkinned.z) * 0.3);
-      } else if (pSkinned.x > -0.0375 && pSkinned.z < 0.002) {
-        pSkinned.z = Math.min(pSkinned.z, -0.0046);
+        const targetY = -0.042 - 0.008 * tW;
+        pSkinned.x = THREE.MathUtils.lerp(
+          pSkinned.x - 0.016,
+          wristX,
+          0.85 + 0.15 * tW
+        );
+        pSkinned.y = THREE.MathUtils.lerp(pSkinned.y, targetY, 0.82 + 0.18 * tW);
+        pSkinned.y = THREE.MathUtils.clamp(pSkinned.y, -0.068, 0.068);
+        pSkinned.z = Math.min(
+          Math.max(pSkinned.z, -0.013),
+          -0.005 - 0.003 * tW
+        );
+      }
+
+      if (isPalm) {
+        if (isThumbBase) {
+          pSkinned.y -= 0.016;
+          pSkinned.x = Math.min(0.041, Math.max(0.035, pSkinned.x));
+        }
+        pSkinned.y = THREE.MathUtils.clamp(pSkinned.y, -0.068, 0.068);
+        pSkinned.x = THREE.MathUtils.clamp(pSkinned.x, -0.041, 0.041);
+
+        const atOuterEdge = Math.abs(pSkinned.x) > 0.0375;
+        if (atOuterEdge && pSkinned.y < 0.016) {
+          pSkinned.z = Math.min(Math.max(pSkinned.z, -0.008), 0.0015);
+        } else {
+          pSkinned.z = Math.min(Math.max(pSkinned.z, -0.0125), -0.0046);
+        }
+      }
+
+      if (isDistalFinger || isProxFinger) {
+        pSkinned.y = THREE.MathUtils.clamp(pSkinned.y, -0.058, 0.016);
+        if (pSkinned.x < -0.0425) {
+          pSkinned.x = -0.0425 + (pSkinned.x + 0.0425) * 0.12;
+        }
+        if (isDistalFinger && pSkinned.z > -0.002) {
+          const tCurl = Math.min(
+            1,
+            Math.max(0, wFinger3 * 1.15 + wFinger2 * 0.35)
+          );
+          const baseEdgeX = -0.0405 + tCurl * 0.0235;
+          pSkinned.x = THREE.MathUtils.lerp(pSkinned.x, baseEdgeX, 0.65);
+          pSkinned.x = THREE.MathUtils.clamp(pSkinned.x, -0.042, -0.0155);
+          pSkinned.z = 0.0054 + Math.min(0.0055, Math.max(0, pSkinned.z) * 0.3);
+        } else if (pSkinned.x > -0.0375 && pSkinned.z < 0.002) {
+          pSkinned.z = Math.min(pSkinned.z, -0.0046);
+        }
+      }
+
+      if (isThumbDistal) {
+        pSkinned.y -= 0.018;
+        pSkinned.y = THREE.MathUtils.clamp(pSkinned.y, -0.032, 0.016);
+        if (pSkinned.x > 0.0425) {
+          pSkinned.x = 0.0425 + (pSkinned.x - 0.0425) * 0.12;
+        }
+        if (pSkinned.z > -0.001) {
+          const reach = Math.max(0, 0.04 - pSkinned.x);
+          pSkinned.x = THREE.MathUtils.clamp(0.04 - reach * 0.85, 0.02, 0.042);
+          pSkinned.z = 0.0054 + Math.min(0.0055, Math.max(0, pSkinned.z) * 0.28);
+        } else if (pSkinned.x < 0.0375) {
+          pSkinned.z = Math.min(pSkinned.z, -0.0046);
+        }
+      }
+
+      vertRemap[v] = nextHandVertIdx++;
+      handPositions.push(pSkinned.x, pSkinned.y, pSkinned.z);
+      if (uvAttr) {
+        handUVs.push(uvAttr.getX(v), uvAttr.getY(v));
+      } else {
+        handUVs.push(0, 0);
       }
     }
 
-    // 4. Wrap opposing thumb around the lower-middle inner vertical edge (X = +0.038) onto X in [+0.020, +0.042]
-    if (isThumbDistal) {
-      pSkinned.y -= 0.018;
-      pSkinned.y = THREE.MathUtils.clamp(pSkinned.y, -0.032, 0.016);
-      if (pSkinned.x > 0.0425) {
-        pSkinned.x = 0.0425 + (pSkinned.x - 0.0425) * 0.12;
+    const handIndices: number[] = [];
+    const bodyWithoutRightHand: number[] = [];
+    const fullBody: number[] = [];
+
+    for (let i = 0; i < idxArray.length; i += 3) {
+      const a = idxArray[i];
+      const b = idxArray[i + 1];
+      const c = idxArray[i + 2];
+      fullBody.push(a, b, c);
+
+      const ra = vertRemap[a];
+      const rb = vertRemap[b];
+      const rc = vertRemap[c];
+      if (ra !== -1 && rb !== -1 && rc !== -1) {
+        handIndices.push(ra, rb, rc);
       }
-      if (pSkinned.z > -0.001) {
-        const reach = Math.max(0, 0.04 - pSkinned.x);
-        pSkinned.x = THREE.MathUtils.clamp(0.04 - reach * 0.85, 0.02, 0.042);
-        pSkinned.z = 0.0054 + Math.min(0.0055, Math.max(0, pSkinned.z) * 0.28);
-      } else if (pSkinned.x < 0.0375) {
-        pSkinned.z = Math.min(pSkinned.z, -0.0046);
+
+      const isRightHandTri =
+        posAttr.getX(a) < -0.38 ||
+        posAttr.getX(b) < -0.38 ||
+        posAttr.getX(c) < -0.38;
+      if (!isRightHandTri) {
+        bodyWithoutRightHand.push(a, b, c);
       }
     }
 
-    vertRemap[v] = nextHandVertIdx++;
-    handPositions.push(pSkinned.x, pSkinned.y, pSkinned.z);
-    if (uvAttr) {
-      handUVs.push(uvAttr.getX(v), uvAttr.getY(v));
-    } else {
-      handUVs.push(0, 0);
-    }
+    const handGeo = new THREE.BufferGeometry();
+    handGeo.setAttribute(
+      'position',
+      new THREE.Float32BufferAttribute(handPositions, 3)
+    );
+    handGeo.setAttribute('uv', new THREE.Float32BufferAttribute(handUVs, 2));
+    handGeo.setIndex(handIndices);
+    handGeo.computeVertexNormals();
+    markSharedGeometry(handGeo);
+
+    const palmBackingGeo = new THREE.BoxGeometry(0.072, 0.142, 0.006);
+    const wristBridgeGeo = new THREE.CylinderGeometry(0.024, 0.026, 0.04, 16);
+    const thenarCradleGeo = new THREE.CylinderGeometry(0.0042, 0.0048, 0.048, 12);
+    markSharedGeometry(palmBackingGeo);
+    markSharedGeometry(wristBridgeGeo);
+    markSharedGeometry(thenarCradleGeo);
+
+    cachedPosedRightHandData = {
+      handGeo,
+      palmBackingGeo,
+      wristBridgeGeo,
+      thenarCradleGeo,
+      fullBodyIndex: new THREE.Uint16BufferAttribute(fullBody, 1),
+      bodyWithoutRightHandIndex: new THREE.Uint16BufferAttribute(
+        bodyWithoutRightHand,
+        1
+      ),
+    };
   }
 
-  const handIndices: number[] = [];
-  const bodyWithoutRightHand: number[] = [];
-  const fullBody: number[] = [];
-
-  for (let i = 0; i < idxArray.length; i += 3) {
-    const a = idxArray[i];
-    const b = idxArray[i + 1];
-    const c = idxArray[i + 2];
-    fullBody.push(a, b, c);
-
-    const ra = vertRemap[a];
-    const rb = vertRemap[b];
-    const rc = vertRemap[c];
-    if (ra !== -1 && rb !== -1 && rc !== -1) {
-      handIndices.push(ra, rb, rc);
-    }
-
-    // Exclude all right-hand triangles (bind X < -0.38) from Wolf3D_Body when holding phone
-    const isRightHandTri =
-      posAttr.getX(a) < -0.38 ||
-      posAttr.getX(b) < -0.38 ||
-      posAttr.getX(c) < -0.38;
-    if (!isRightHandTri) {
-      bodyWithoutRightHand.push(a, b, c);
-    }
-  }
-
-  const handGeo = new THREE.BufferGeometry();
-  handGeo.setAttribute(
-    'position',
-    new THREE.Float32BufferAttribute(handPositions, 3)
-  );
-  handGeo.setAttribute('uv', new THREE.Float32BufferAttribute(handUVs, 2));
-  handGeo.setIndex(handIndices);
-  handGeo.computeVertexNormals();
+  const {
+    handGeo,
+    palmBackingGeo,
+    wristBridgeGeo,
+    thenarCradleGeo,
+    fullBodyIndex,
+    bodyWithoutRightHandIndex,
+  } = cachedPosedRightHandData;
 
   const handMat = (bodySkinnedMesh.material as THREE.MeshStandardMaterial).clone();
   handMat.side = THREE.DoubleSide;
@@ -2981,48 +3246,30 @@ function buildPrePosedRightHandAndFilterBody(
   posedRightHandGroup.name = 'PrePosed_RightHand_Group';
   posedRightHandGroup.add(posedHandMesh);
 
-  // Sculpted anatomical palm backing & thenar support directly behind the phone screen (-Z)
-  // (using a flat untextured skin material cloned from handMat so UV coordinates never sample dark regions)
   const supportSkinMat = handMat.clone();
   supportSkinMat.map = null;
 
-  // 1) Central palm backing pressed flush against the phone screen (-Z = -0.0045) with zero gap
-  const palmBackingMesh = new THREE.Mesh(
-    new THREE.BoxGeometry(0.072, 0.142, 0.006),
-    supportSkinMat
-  );
+  const palmBackingMesh = new THREE.Mesh(palmBackingGeo, supportSkinMat);
   palmBackingMesh.position.set(0.0, -0.002, -0.0076);
 
-  // 2) Anatomical wrist bridge connecting the lowered sleeve cuff into the back of the palm
-  const wristCuffBridge = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.024, 0.026, 0.04, 24),
-    supportSkinMat
-  );
+  const wristCuffBridge = new THREE.Mesh(wristBridgeGeo, supportSkinMat);
   wristCuffBridge.scale.set(1.06, 1.0, 0.76);
   wristCuffBridge.rotation.x = 0.28;
   wristCuffBridge.position.set(0.003, 0.084, -0.016);
 
-  // 3) Fleshy right thenar palm pad cradling the inner vertical edge right below the thumb (X = +0.038)
-  const thenarCradle = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.0042, 0.0048, 0.048, 16),
-    supportSkinMat
-  );
+  const thenarCradle = new THREE.Mesh(thenarCradleGeo, supportSkinMat);
   thenarCradle.scale.set(1.0, 1.0, 1.35);
   thenarCradle.position.set(0.0375, -0.012, -0.0042);
 
   posedRightHandGroup.add(palmBackingMesh, wristCuffBridge, thenarCradle);
 
-  // Reference jacketMat and innerShirtMat so parameters remain used cleanly
   void jacketMat;
   void innerShirtMat;
 
   return {
     posedRightHandGroup,
-    fullBodyIndex: new THREE.Uint16BufferAttribute(fullBody, 1),
-    bodyWithoutRightHandIndex: new THREE.Uint16BufferAttribute(
-      bodyWithoutRightHand,
-      1
-    ),
+    fullBodyIndex,
+    bodyWithoutRightHandIndex,
   };
 }
 
@@ -3063,7 +3310,7 @@ export function createHumanCharacter(
   groundShadow.name = 'contactGroundShadow';
   rootGroup.add(groundShadow);
 
-  // 2. Grounded Environmental Character Lighting (ensures faces, hair, and cloth folds read clearly)
+  // 2. Grounded Environmental Target Ring for NPCs (no per-character PointLights to keep fragment shader fast)
   if (config.isNpc) {
     const ringGeo = new THREE.RingGeometry(0.35, 0.42, 32);
     ringGeo.rotateX(-Math.PI / 2);
@@ -3078,18 +3325,6 @@ export function createHumanCharacter(
     floorRing.position.y = 0.005;
     floorRing.name = 'targetHighlightRing';
     rootGroup.add(floorRing);
-
-    const npcKeyLight = new THREE.PointLight(0xfff3e0, 1.15, 4.2, 1.8);
-    npcKeyLight.position.set(0.28, 2.02, 0.78);
-    const npcRimLight = new THREE.PointLight(0x93c5fd, 0.55, 3.0, 1.9);
-    npcRimLight.position.set(-0.32, 1.85, -0.65);
-    rootGroup.add(npcKeyLight, npcRimLight);
-  } else {
-    const invKeyLight = new THREE.PointLight(0xfde68a, 0.9, 3.4, 1.9);
-    invKeyLight.position.set(-0.35, 1.95, 0.58);
-    const invRimLight = new THREE.PointLight(0x93c5fd, 0.68, 3.0, 1.9);
-    invRimLight.position.set(0.32, 1.85, -0.65);
-    rootGroup.add(invKeyLight, invRimLight);
   }
 
   // 3. Humanoid Skeleton & Mesh State
@@ -3198,7 +3433,13 @@ export function createHumanCharacter(
     cloned.traverse((child) => {
       if ((child as THREE.Mesh).isMesh) {
         const mesh = child as THREE.SkinnedMesh;
-        mesh.castShadow = true;
+        const isPrimaryShadowCaster =
+          mesh.name === 'Wolf3D_Body' ||
+          mesh.name === 'Wolf3D_Head' ||
+          mesh.name === 'Wolf3D_Outfit_Top' ||
+          mesh.name === 'Wolf3D_Outfit_Bottom' ||
+          mesh.name === 'Wolf3D_Outfit_Footwear';
+        mesh.castShadow = isPrimaryShadowCaster;
         mesh.receiveShadow = true;
         mesh.frustumCulled = false;
 
@@ -3231,28 +3472,32 @@ export function createHumanCharacter(
 
           if (profile.archetype === 'investigator') {
             // Sculpt subtle vertical pressed dress-trouser creases along the front & back of each leg
-            // and tuck the upper hip/thigh cleanly inside the long tailored trench coat skirt
-            const bGeo = mesh.geometry.clone();
-            const bPos = bGeo.attributes.position as THREE.BufferAttribute;
-            for (let v = 0; v < bPos.count; v++) {
-              let bx = bPos.getX(v);
-              const by = bPos.getY(v);
-              let bz = bPos.getZ(v);
-              if (by > 0.50 && by < 1.04) {
-                bx *= 0.94;
-                bz *= 0.94;
+            // and tuck the upper hip/thigh cleanly inside the long tailored trench coat skirt (cached)
+            if (!cachedInvestigatorTrousersGeo) {
+              const bGeo = mesh.geometry.clone();
+              const bPos = bGeo.attributes.position as THREE.BufferAttribute;
+              for (let v = 0; v < bPos.count; v++) {
+                let bx = bPos.getX(v);
+                const by = bPos.getY(v);
+                let bz = bPos.getZ(v);
+                if (by > 0.50 && by < 1.04) {
+                  bx *= 0.94;
+                  bz *= 0.94;
+                }
+                if (by > 0.12 && by < 0.88) {
+                  const legCenter = bx >= 0 ? 0.115 : -0.115;
+                  const crease =
+                    Math.exp(-Math.pow((bx - legCenter) / 0.016, 2)) * 0.0032;
+                  bz += bz >= 0 ? crease : -crease * 0.8;
+                }
+                bPos.setXYZ(v, bx, by, bz);
               }
-              if (by > 0.12 && by < 0.88) {
-                const legCenter = bx >= 0 ? 0.115 : -0.115;
-                const crease =
-                  Math.exp(-Math.pow((bx - legCenter) / 0.016, 2)) * 0.0032;
-                bz += bz >= 0 ? crease : -crease * 0.8;
-              }
-              bPos.setXYZ(v, bx, by, bz);
+              bPos.needsUpdate = true;
+              bGeo.computeVertexNormals();
+              markSharedGeometry(bGeo);
+              cachedInvestigatorTrousersGeo = bGeo;
             }
-            bPos.needsUpdate = true;
-            bGeo.computeVertexNormals();
-            mesh.geometry = bGeo;
+            mesh.geometry = cachedInvestigatorTrousersGeo;
           }
         } else if (
           mesh.name === 'Wolf3D_Outfit_Footwear' ||
@@ -3298,7 +3543,9 @@ export function createHumanCharacter(
           if (mesh.name === 'Wolf3D_Head') {
             headSkinnedMesh = mesh;
           } else if (mesh.name === 'Wolf3D_Body') {
-            mesh.geometry = mesh.geometry.clone();
+            if (!config.isNpc) {
+              mesh.geometry = mesh.geometry.clone();
+            }
             bodyMeshRef = mesh;
           }
         }
@@ -3381,7 +3628,7 @@ export function createHumanCharacter(
       ) => {
         const layerMesh = new THREE.SkinnedMesh(geo, mat);
         layerMesh.name = name;
-        layerMesh.castShadow = true;
+        layerMesh.castShadow = false;
         layerMesh.receiveShadow = true;
         layerMesh.frustumCulled = false;
         layerMesh.bind(tMesh.skeleton, tMesh.bindMatrix);
@@ -3440,23 +3687,31 @@ export function createHumanCharacter(
     }
 
     // 3) Sculpt character-specific facial bone proportions on Wolf3D_Head and extract
-    //    anatomical ScalpHairSkinnedMesh & FacialHairSkinnedMesh (short boxed beard)
+    //    anatomical ScalpHairSkinnedMesh & FacialHairSkinnedMesh (short boxed beard) (cached per archetype)
     if (headSkinnedMesh) {
       const hMesh = headSkinnedMesh as THREE.SkinnedMesh;
-      const sculptedHeadGeo = sculptCharacterFaceGeometry(
-        hMesh.geometry,
-        profile
-      );
+      let cachedHead = headGeometryCache.get(profile.archetype);
+      if (!cachedHead) {
+        const sculptedHeadGeo = sculptCharacterFaceGeometry(
+          hMesh.geometry,
+          profile
+        );
+        const { scalpGeo, beardGeo } = buildAnatomicalScalpAndBeardGeometries(
+          sculptedHeadGeo,
+          profile
+        );
+        markSharedGeometry(sculptedHeadGeo);
+        markSharedGeometry(scalpGeo);
+        markSharedGeometry(beardGeo);
+        cachedHead = { sculptedHeadGeo, scalpGeo, beardGeo };
+        headGeometryCache.set(profile.archetype, cachedHead);
+      }
+      const { sculptedHeadGeo, scalpGeo, beardGeo } = cachedHead;
       hMesh.geometry = sculptedHeadGeo;
-
-      const { scalpGeo, beardGeo } = buildAnatomicalScalpAndBeardGeometries(
-        sculptedHeadGeo,
-        profile
-      );
 
       const scalpMesh = new THREE.SkinnedMesh(scalpGeo, hairMat);
       scalpMesh.name = 'Anatomical_Scalp_Hair';
-      scalpMesh.castShadow = true;
+      scalpMesh.castShadow = false;
       scalpMesh.receiveShadow = true;
       scalpMesh.frustumCulled = false;
       scalpMesh.bind(hMesh.skeleton, hMesh.bindMatrix);
@@ -3470,7 +3725,7 @@ export function createHumanCharacter(
         beardMat.roughness = 0.88;
         const beardSkinnedMesh = new THREE.SkinnedMesh(beardGeo, beardMat);
         beardSkinnedMesh.name = 'Anatomical_Short_Boxed_Beard';
-        beardSkinnedMesh.castShadow = true;
+        beardSkinnedMesh.castShadow = false;
         beardSkinnedMesh.receiveShadow = true;
         beardSkinnedMesh.frustumCulled = false;
         beardSkinnedMesh.morphTargetDictionary = hMesh.morphTargetDictionary
@@ -3607,12 +3862,10 @@ export function createHumanCharacter(
       rightBrowMesh = rightBrow;
     }
 
-    // Attach combined pre-posed "holding smartphone" hand-and-phone model directly to RightHand bone socket
-    if (bones.rightHand) {
+    // Attach combined pre-posed "holding smartphone" hand-and-phone model directly to RightHand bone socket (Investigator only)
+    if (bones.rightHand && !config.isNpc) {
       const socket = new THREE.Group();
       socket.name = 'rightHandPhoneSocket';
-      // Positions the vertical smartphone & enclosing palm grip at world (-0.238, 0.876, 0.072)
-      // directly below the lowered right jacket sleeve cuff with zero clipping into wrist or clothing
       socket.position.set(0.02298, 0.10409, -0.01144);
       socket.quaternion.set(0.77553, 0.0435, 0.62865, -0.03824);
       socket.scale.set(1, 1, 1);
@@ -3643,10 +3896,8 @@ export function createHumanCharacter(
           phoneGroup.add(handResult.posedRightHandGroup);
           fullBodyIndexRef = handResult.fullBodyIndex;
           bodyWithoutRightHandIndexRef = handResult.bodyWithoutRightHandIndex;
-          if (!config.isNpc) {
-            bodyMeshRef.geometry.setIndex(handResult.bodyWithoutRightHandIndex);
-            isRightHandFiltered = true;
-          }
+          bodyMeshRef.geometry.setIndex(handResult.bodyWithoutRightHandIndex);
+          isRightHandFiltered = true;
         }
       }
 

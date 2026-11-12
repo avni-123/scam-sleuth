@@ -159,6 +159,7 @@ export interface GameSettings {
   highContrast: boolean;
   textSize?: 'normal' | 'large';
   reducedMotion?: boolean;
+  graphicsQuality?: 'auto' | 'high' | 'medium' | 'low';
 }
 
 export interface PlayerStats {
