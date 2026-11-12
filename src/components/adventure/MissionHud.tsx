@@ -37,6 +37,7 @@ interface MissionHudProps {
   onMobileMove: (vec: { x: number; y: number }) => void;
   isMobileJogging: boolean;
   onToggleMobileJog: () => void;
+  isPaused?: boolean;
 }
 
 export const MissionHud: React.FC<MissionHudProps> = ({
@@ -61,6 +62,7 @@ export const MissionHud: React.FC<MissionHudProps> = ({
   onMobileMove,
   isMobileJogging,
   onToggleMobileJog,
+  isPaused = false,
 }) => {
   const totalClues = level.objects.length;
   const foundCount = collectedClueIds.length;
@@ -71,6 +73,7 @@ export const MissionHud: React.FC<MissionHudProps> = ({
 
   useEffect(() => {
     const handleTogglePanelKey = (e: KeyboardEvent) => {
+      if (isPaused) return;
       // Ignore if typing in an input/textarea
       const tag = (e.target as HTMLElement)?.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
@@ -97,7 +100,7 @@ export const MissionHud: React.FC<MissionHudProps> = ({
 
     window.addEventListener('keydown', handleTogglePanelKey);
     return () => window.removeEventListener('keydown', handleTogglePanelKey);
-  }, [isHideChipHidden]);
+  }, [isHideChipHidden, isPaused]);
 
   const shortPhaseName =
     activeChapterNum === 1
@@ -131,13 +134,14 @@ export const MissionHud: React.FC<MissionHudProps> = ({
   }, []);
 
   useEffect(() => {
+    if (isPaused) return;
     setIsPlayerStuck(false);
     if (foundCount >= totalClues || activeChapterNum === 3) return;
     const stuckTimer = setTimeout(() => {
       setIsPlayerStuck(true);
     }, 10000);
     return () => clearTimeout(stuckTimer);
-  }, [foundCount, hasSpokenToNpc, level.id, activeChapterNum, totalClues]);
+  }, [foundCount, hasSpokenToNpc, level.id, activeChapterNum, totalClues, isPaused]);
 
   // Concise, dynamic current objective that updates as the player completes actions
   const npcFull = level.npcs[0]?.name || 'Witness';
@@ -369,7 +373,7 @@ export const MissionHud: React.FC<MissionHudProps> = ({
           </div>
         </div>
 
-        {/* RIGHT: Clean Investigator Toolbar (Replay Opening, Journal) */}
+        {/* RIGHT: Clean Investigator Toolbar (Replay Opening, Journal, Pause) */}
         <div className="flex flex-row items-center gap-2 self-end md:self-start pointer-events-auto">
           {onReplayOpeningStory && (
             <button
@@ -391,6 +395,15 @@ export const MissionHud: React.FC<MissionHudProps> = ({
           >
             <BookOpen className="w-3.5 h-3.5 text-[#39BDF7]" />
             <span>JOURNAL [{foundCount}/{totalClues}]</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={onOpenSettings}
+            className="pixel-btn px-3 py-1.5 rounded-none text-[#F2F5FA] border border-[#39BDF7]/45 hover:border-[#39BDF7] hover:text-[#39BDF7] transition-all flex items-center gap-1.5 cursor-pointer font-pixel text-[10px]"
+            title="Pause Game (Esc)"
+          >
+            <span>PAUSE [ESC]</span>
           </button>
         </div>
       </div>

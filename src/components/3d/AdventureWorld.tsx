@@ -51,6 +51,7 @@ interface AdventureWorldProps {
   mobileLookDelta?: { dx: number; dy: number };
   isMobileJogging?: boolean;
   isModalOpen?: boolean;
+  isPaused?: boolean;
   activeDialogueNpcId?: string | null;
   introCameraShot?: CutsceneCameraShot | null;
   isIntroNpcSpeaking?: boolean;
@@ -67,6 +68,7 @@ export const AdventureWorld: React.FC<AdventureWorldProps> = ({
   mobileLookDelta,
   isMobileJogging,
   isModalOpen = false,
+  isPaused = false,
   activeDialogueNpcId = null,
   introCameraShot = null,
   isIntroNpcSpeaking = false,
@@ -137,6 +139,7 @@ export const AdventureWorld: React.FC<AdventureWorldProps> = ({
   const lastPointerPos = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const mouseEdgeNormalized = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const isModalOpenRef = useRef<boolean>(isModalOpen);
+  const isPausedRef = useRef<boolean>(isPaused);
   const intentionalUnlockRef = useRef<boolean>(false);
   const onEscapePressRef = useRef<(() => void) | undefined>(onEscapePress);
   const playerPos = useRef<THREE.Vector3>(new THREE.Vector3(...level.playerSpawn));
@@ -147,6 +150,20 @@ export const AdventureWorld: React.FC<AdventureWorldProps> = ({
   useEffect(() => {
     onEscapePressRef.current = onEscapePress;
   }, [onEscapePress]);
+
+  useEffect(() => {
+    isPausedRef.current = isPaused;
+    if (isPaused) {
+      keysPressed.current = {};
+      isPointerDown.current = false;
+      hasMouseOrigin.current = false;
+      mouseEdgeNormalized.current = { x: 0, y: 0 };
+      if (document.pointerLockElement) {
+        intentionalUnlockRef.current = true;
+        document.exitPointerLock?.();
+      }
+    }
+  }, [isPaused]);
 
   // Reset player spawn position and camera facing on level start/change
   useEffect(() => {
@@ -169,6 +186,7 @@ export const AdventureWorld: React.FC<AdventureWorldProps> = ({
 
   // Trigger brief camera focus on target, then open dialogue/inspection card
   const triggerFocusedInteraction = (target: NearbyTarget) => {
+    if (isPausedRef.current) return;
     if (target.type === 'object' && document.pointerLockElement) {
       intentionalUnlockRef.current = true;
       document.exitPointerLock?.();
@@ -209,6 +227,7 @@ export const AdventureWorld: React.FC<AdventureWorldProps> = ({
 
   // Helper to request pointer lock safely and resume automatic mouse-look + keyboard focus without needing a click
   const requestGameplayLookLock = () => {
+    if (isPausedRef.current || isModalOpenRef.current) return;
     hasMouseOrigin.current = false;
     mouseEdgeNormalized.current = { x: 0, y: 0 };
     try {
@@ -222,7 +241,7 @@ export const AdventureWorld: React.FC<AdventureWorldProps> = ({
     }
 
     const lockTarget = containerRef.current || document.body;
-    if (lockTarget && lockTarget.requestPointerLock && !document.pointerLockElement && !isModalOpenRef.current) {
+    if (lockTarget && lockTarget.requestPointerLock && !document.pointerLockElement && !isModalOpenRef.current && !isPausedRef.current) {
       try {
         const lockPromise = lockTarget.requestPointerLock() as unknown as Promise<void> | undefined;
         if (lockPromise && typeof lockPromise.catch === 'function') {
@@ -239,7 +258,7 @@ export const AdventureWorld: React.FC<AdventureWorldProps> = ({
   // Sync modal state: release pointer lock when modal opens, and immediately hide cursor + resume look when modal closes
   useEffect(() => {
     isModalOpenRef.current = isModalOpen;
-    if (isModalOpen) {
+    if (isModalOpen || isPaused) {
       hasMouseOrigin.current = false;
       mouseEdgeNormalized.current = { x: 0, y: 0 };
       if (document.pointerLockElement) {
@@ -249,11 +268,11 @@ export const AdventureWorld: React.FC<AdventureWorldProps> = ({
     } else {
       requestGameplayLookLock();
     }
-  }, [isModalOpen]);
+  }, [isModalOpen, isPaused]);
 
   // Also immediately focus & activate look when introCameraShot ends (story line finishes)
   useEffect(() => {
-    if (!introCameraShot && !isModalOpenRef.current) {
+    if (!introCameraShot && !isModalOpenRef.current && !isPausedRef.current) {
       requestGameplayLookLock();
     }
   }, [introCameraShot]);
@@ -261,6 +280,7 @@ export const AdventureWorld: React.FC<AdventureWorldProps> = ({
   // Listen for synchronous resume-look event fired inside modal/cutscene close handlers
   useEffect(() => {
     const handleResumeLook = () => {
+      if (isPausedRef.current) return;
       isModalOpenRef.current = false;
       requestGameplayLookLock();
     };
@@ -268,7 +288,7 @@ export const AdventureWorld: React.FC<AdventureWorldProps> = ({
     return () => window.removeEventListener('sleuth-resume-look', handleResumeLook);
   }, []);
 
-  // Detect browser Esc from Pointer Lock so pressing Esc ALWAYS opens Settings immediately
+  // Detect browser Esc from Pointer Lock so pressing Esc ALWAYS opens Pause Menu immediately
   useEffect(() => {
     const handlePointerLockChange = () => {
       if (!document.pointerLockElement) {
@@ -276,7 +296,7 @@ export const AdventureWorld: React.FC<AdventureWorldProps> = ({
           intentionalUnlockRef.current = false;
           return;
         }
-        if (!isModalOpenRef.current) {
+        if (!isModalOpenRef.current && !isPausedRef.current) {
           onEscapePressRef.current?.();
         }
       }
@@ -292,7 +312,7 @@ export const AdventureWorld: React.FC<AdventureWorldProps> = ({
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.target as HTMLElement)?.tagName === 'INPUT') return;
-      if (isModalOpenRef.current) return;
+      if (isModalOpenRef.current || isPausedRef.current) return;
       keysPressed.current[e.code] = true;
       keysPressed.current[e.key.toLowerCase()] = true;
 
@@ -329,14 +349,14 @@ export const AdventureWorld: React.FC<AdventureWorldProps> = ({
 
   // Mobile look delta processing
   useEffect(() => {
-    if (!mobileLookDelta) return;
+    if (!mobileLookDelta || isPaused) return;
     const sens = 0.004 * settings.mouseSensitivity;
     cameraAngles.current.yaw -= mobileLookDelta.dx * sens;
     cameraAngles.current.pitch = Math.max(
       -0.75,
       Math.min(0.75, cameraAngles.current.pitch - mobileLookDelta.dy * sens)
     );
-  }, [mobileLookDelta, settings.mouseSensitivity]);
+  }, [mobileLookDelta, settings.mouseSensitivity, isPaused]);
 
   // Main Three.js Scene Setup & Loop
   useEffect(() => {
@@ -579,7 +599,7 @@ export const AdventureWorld: React.FC<AdventureWorldProps> = ({
     }
 
     const handlePointerDown = (e: MouseEvent | TouchEvent) => {
-      if (isModalOpenRef.current) {
+      if (isModalOpenRef.current || isPausedRef.current) {
         if (document.pointerLockElement) {
           intentionalUnlockRef.current = true;
           document.exitPointerLock?.();
@@ -605,7 +625,7 @@ export const AdventureWorld: React.FC<AdventureWorldProps> = ({
     };
 
     const handlePointerMove = (e: MouseEvent | TouchEvent) => {
-      if (isModalOpenRef.current || introCameraShotRef.current) {
+      if (isModalOpenRef.current || isPausedRef.current || introCameraShotRef.current) {
         hasMouseOrigin.current = false;
         mouseEdgeNormalized.current = { x: 0, y: 0 };
         return;
@@ -695,8 +715,23 @@ export const AdventureWorld: React.FC<AdventureWorldProps> = ({
 
     const animate = (currentTime: number) => {
       animationFrameId = requestAnimationFrame(animate);
-      const delta = Math.min((currentTime - lastTime) / 1000, 0.1);
+      const rawDeltaMs = currentTime - lastTime;
+      const delta = Math.min(rawDeltaMs / 1000, 0.1);
       lastTime = currentTime;
+
+      // Full pause freeze: suspend all player movement, camera input, NPC behavior,
+      // character skeletal animations, and world interactions until Resume is selected
+      if (isPausedRef.current) {
+        if (focusAnimRef.current && rawDeltaMs > 0) {
+          focusAnimRef.current.startTime += rawDeltaMs;
+        }
+        if (lastFootstepTime.current > 0 && rawDeltaMs > 0) {
+          lastFootstepTime.current += rawDeltaMs;
+        }
+        renderer.render(scene, camera);
+        return;
+      }
+
       animTime.current += delta;
 
       const curSettings = settingsRef.current;

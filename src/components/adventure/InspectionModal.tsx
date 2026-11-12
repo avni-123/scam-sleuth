@@ -47,19 +47,10 @@ export const InspectionModal: React.FC<InspectionModalProps> = ({
       }
     }, 40);
 
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.code === 'Escape' || e.key === 'Escape') {
-        e.preventDefault();
-        onDismiss();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-
     return () => {
       clearTimeout(timer);
-      window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [data.itemType, onDismiss]);
+  }, [data.itemType]);
 
   const getIcon = () => {
     switch (data.itemType) {

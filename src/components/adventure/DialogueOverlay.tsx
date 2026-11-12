@@ -13,6 +13,8 @@ interface DialogueOverlayProps {
   showDecisionAction?: boolean;
   settings?: GameSettings;
   onUpdateSettings?: (settings: Partial<GameSettings>) => void;
+  isPaused?: boolean;
+  onPause?: () => void;
 }
 
 export const DialogueOverlay: React.FC<DialogueOverlayProps> = ({
@@ -21,6 +23,8 @@ export const DialogueOverlay: React.FC<DialogueOverlayProps> = ({
   onTriggerDecision,
   showDecisionAction = false,
   settings,
+  isPaused = false,
+  onPause,
 }) => {
   const [currentNodeId, setCurrentNodeId] = useState<string>(npc.dialogue[0]?.id || '');
   const currentNode =
@@ -33,22 +37,35 @@ export const DialogueOverlay: React.FC<DialogueOverlayProps> = ({
   );
 
   const [lineIndex, setLineIndex] = useState<number>(0);
+  const [lineElapsedMs, setLineElapsedMs] = useState<number>(0);
   const [isLineVisible, setIsLineVisible] = useState<boolean>(true);
 
   const activeLineText = shortLines[lineIndex] || shortLines[0] || '';
+  const wordCount = useMemo(
+    () => (activeLineText ? activeLineText.split(/\s+/).length : 1),
+    [activeLineText]
+  );
+  const lineDurationMs = useMemo(
+    () => Math.max(2200, Math.min(4200, wordCount * 290 + 950)),
+    [wordCount]
+  );
 
-  // Reset short-line index and play voice audio whenever the dialogue node changes
+  // Reset short-line index and play voice audio ONLY when the dialogue node changes
+  // (Pausing/resuming does not re-run this effect, preserving voice playback position)
   useEffect(() => {
     if (!currentNode) return;
     setLineIndex(0);
+    setLineElapsedMs(0);
     setIsLineVisible(true);
     soundEngine.stopDialogueAudio();
-    soundEngine.speakDialogueAudio(currentNode.speaker, currentNode.text);
+    if (settings?.voiceAudioEnabled !== false) {
+      soundEngine.speakDialogueAudio(currentNode.speaker, currentNode.text);
+    }
 
     return () => {
       soundEngine.stopDialogueAudio();
     };
-  }, [currentNodeId, currentNode]);
+  }, [currentNodeId, currentNode, settings?.voiceAudioEnabled]);
 
   const advanceNodeOrClose = useCallback(() => {
     soundEngine.stopDialogueAudio();
@@ -61,50 +78,60 @@ export const DialogueOverlay: React.FC<DialogueOverlayProps> = ({
   }, [currentNode, onClose]);
 
   const handleAdvance = useCallback(() => {
+    if (isPaused) return;
     if (lineIndex < shortLines.length - 1) {
       if (settings?.reducedMotion) {
         setLineIndex((idx) => idx + 1);
+        setLineElapsedMs(0);
+        setIsLineVisible(true);
       } else {
         setIsLineVisible(false);
         setTimeout(() => {
           setLineIndex((idx) => idx + 1);
+          setLineElapsedMs(0);
           setIsLineVisible(true);
         }, 160);
       }
     } else {
       advanceNodeOrClose();
     }
-  }, [lineIndex, shortLines.length, settings?.reducedMotion, advanceNodeOrClose]);
+  }, [isPaused, lineIndex, shortLines.length, settings?.reducedMotion, advanceNodeOrClose]);
 
-  // Automatically time short subtitle lines to the character's speech
+  // Increment elapsed subtitle time only while not paused so pausing preserves exact subtitle progress
   useEffect(() => {
-    if (!activeLineText) return;
-    const wordCount = activeLineText.split(/\s+/).length;
-    const lineDurationMs = Math.max(2200, Math.min(4200, wordCount * 290 + 950));
+    if (!activeLineText || isPaused) return;
+    const stepMs = 60;
+    const interval = setInterval(() => {
+      setLineElapsedMs((prev) => prev + stepMs);
+    }, stepMs);
+    return () => clearInterval(interval);
+  }, [activeLineText, isPaused]);
 
-    const fadeOutTimer = setTimeout(() => {
-      if (!settings?.reducedMotion) {
-        setIsLineVisible(false);
-      }
-    }, Math.max(400, lineDurationMs - 240));
+  // Evaluate subtitle visibility and line progression from accumulated elapsed time
+  useEffect(() => {
+    if (!activeLineText || isPaused) return;
+    const fadeStartMs = Math.max(400, lineDurationMs - 240);
 
-    const nextTimer = setTimeout(() => {
+    if (lineElapsedMs >= lineDurationMs) {
       if (lineIndex < shortLines.length - 1) {
         setLineIndex((idx) => idx + 1);
+        setLineElapsedMs(0);
         setIsLineVisible(true);
       } else if (settings?.subtitleAutoAdvance !== false) {
         advanceNodeOrClose();
       } else {
         setIsLineVisible(true);
       }
-    }, lineDurationMs);
-
-    return () => {
-      clearTimeout(fadeOutTimer);
-      clearTimeout(nextTimer);
-    };
+    } else if (lineElapsedMs >= fadeStartMs && !settings?.reducedMotion) {
+      setIsLineVisible(false);
+    } else {
+      setIsLineVisible(true);
+    }
   }, [
+    lineElapsedMs,
+    lineDurationMs,
     activeLineText,
+    isPaused,
     lineIndex,
     shortLines.length,
     settings?.reducedMotion,
@@ -112,9 +139,10 @@ export const DialogueOverlay: React.FC<DialogueOverlayProps> = ({
     advanceNodeOrClose,
   ]);
 
-  // Keyboard navigation
+  // Keyboard navigation (disabled while paused; Esc is handled by global pause system)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (isPaused) return;
       if ((e.target as HTMLElement)?.tagName === 'INPUT') return;
 
       if (
@@ -128,19 +156,15 @@ export const DialogueOverlay: React.FC<DialogueOverlayProps> = ({
         handleAdvance();
       } else if (e.code === 'KeyM' || e.key === 'm' || e.key === 'M') {
         e.preventDefault();
-        if (currentNode) {
+        if (currentNode && settings?.voiceAudioEnabled !== false) {
           soundEngine.stopDialogueAudio();
           soundEngine.speakDialogueAudio(currentNode.speaker, currentNode.text);
         }
-      } else if (e.code === 'Escape') {
-        e.preventDefault();
-        soundEngine.stopDialogueAudio();
-        onClose();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleAdvance, currentNode, onClose]);
+  }, [isPaused, handleAdvance, currentNode, settings?.voiceAudioEnabled]);
 
   if (!currentNode) return null;
 
@@ -174,30 +198,45 @@ export const DialogueOverlay: React.FC<DialogueOverlayProps> = ({
         {showDecisionAction && onTriggerDecision && (
           <button
             type="button"
+            disabled={isPaused}
             onClick={onTriggerDecision}
-            className="text-[#F05A9D] hover:text-pink-200 underline underline-offset-4 font-semibold cursor-pointer"
+            className="text-[#F05A9D] hover:text-pink-200 underline underline-offset-4 font-semibold cursor-pointer disabled:opacity-50"
           >
             Make Case Decision
           </button>
         )}
         <button
           type="button"
+          disabled={isPaused}
           onClick={handleAdvance}
-          className="text-[#39BDF7] hover:text-white font-semibold transition-colors cursor-pointer"
+          className="text-[#39BDF7] hover:text-white font-semibold transition-colors cursor-pointer disabled:opacity-50"
         >
           Space · Next
         </button>
         <span className="text-slate-600">·</span>
         <button
           type="button"
+          disabled={isPaused}
           onClick={() => {
             soundEngine.stopDialogueAudio();
             onClose();
           }}
-          className="text-[#F2F5FA]/80 hover:text-white transition-colors cursor-pointer"
+          className="text-[#F2F5FA]/80 hover:text-white transition-colors cursor-pointer disabled:opacity-50"
         >
-          Esc · Close
+          End Talk
         </button>
+        {onPause && (
+          <>
+            <span className="text-slate-600">·</span>
+            <button
+              type="button"
+              onClick={onPause}
+              className="text-[#F05A9D] hover:text-white transition-colors cursor-pointer"
+            >
+              Esc · Pause
+            </button>
+          </>
+        )}
       </div>
     </div>
   );

@@ -133,6 +133,39 @@ export default function App() {
   const [mobileMoveVector, setMobileMoveVector] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [isMobileJogging, setIsMobileJogging] = useState<boolean>(false);
 
+  const isGamePaused = currentView === 'gameplay' && settingsOpen;
+
+  // Pause gameplay immediately: freeze 3D world, dialogue, subtitles, trigger low-pass ambient filter, and suspend audio
+  const pauseGame = () => {
+    if (document.pointerLockElement) {
+      document.exitPointerLock?.();
+    }
+    lastEscAutoOpenRef.current = performance.now();
+    soundEngine.setAmbientLowpassEffect(true);
+    soundEngine.pauseGameplayAudio();
+    soundEngine.playInteract();
+    setSettingsOpen(true);
+  };
+
+  // Resume gameplay ONLY when the player explicitly selects Resume, sweeping the ambient low-pass filter back open
+  const resumeGame = () => {
+    setSettingsOpen(false);
+    soundEngine.resumeGameplayAudio();
+    soundEngine.setAmbientLowpassEffect(false);
+    if (
+      currentView === 'gameplay' &&
+      !inspectingObject &&
+      !decisionActive &&
+      !activeConsequence &&
+      !debriefActive &&
+      !journalOpen &&
+      !chapterQuestionOpen &&
+      !artDossierOpen
+    ) {
+      window.dispatchEvent(new CustomEvent('sleuth-resume-look'));
+    }
+  };
+
   // Sync settings and progress
   useEffect(() => {
     try {
@@ -142,6 +175,10 @@ export default function App() {
     }
     soundEngine.setVolume(settings.soundVolume);
   }, [settings]);
+
+  useEffect(() => {
+    soundEngine.setAmbientVolume(settings.ambientVolume ?? 0.65);
+  }, [settings.ambientVolume]);
 
   // Continuous Atmospheric Soundscape: Room Tone, Fluorescent Hum, Distant City Rumble
   useEffect(() => {
@@ -154,7 +191,7 @@ export default function App() {
     return () => {
       soundEngine.stopAtmosphericAmbience();
     };
-  }, [currentView, activeLevel.setting, settings.ambientAudioEnabled, settings.ambientVolume]);
+  }, [currentView, activeLevel.setting, settings.ambientAudioEnabled]);
 
   useEffect(() => {
     try {
@@ -171,7 +208,7 @@ export default function App() {
     }
   }, [completedLevels, earnedBadges, cluesByLevel]);
 
-  // Global Keyboard Shortcuts (Esc = Immediate Settings Popup, Q = Chapter Question, J = Journal, V = Camera)
+  // Global Keyboard Shortcuts (Esc = Pause Menu in gameplay; never auto-resumes on second Esc)
   useEffect(() => {
     const handleGlobalKeys = (e: KeyboardEvent) => {
       if ((e.target as HTMLElement)?.tagName === 'INPUT') return;
@@ -179,20 +216,26 @@ export default function App() {
       if (e.code === 'Escape' || e.key === 'Escape') {
         e.preventDefault();
         e.stopPropagation();
-        if (document.pointerLockElement) {
-          document.exitPointerLock?.();
-        }
-        // Guard against duplicate toggle if pointerlockchange just opened settings milliseconds ago
-        if (performance.now() - lastEscAutoOpenRef.current < 250) {
-          setSettingsOpen(true);
+
+        if (currentView === 'gameplay') {
+          // Do not automatically resume when Esc is pressed again — player must select Resume
+          if (settingsOpen) {
+            return;
+          }
+          pauseGame();
           return;
         }
-        soundEngine.playInteract();
-        setSettingsOpen((prev) => !prev);
+
+        // On title screen only, allow Esc to close the Settings modal
+        if (settingsOpen) {
+          soundEngine.playInteract();
+          setSettingsOpen(false);
+        }
         return;
       }
 
-      if (introCutsceneActive) return;
+      // Block all gameplay hotkeys while paused
+      if (settingsOpen || introCutsceneActive) return;
 
       if (e.code === 'KeyQ' || e.key === 'q') {
         if (!inspectingObject && !activeDialogueNpc && !decisionActive && !activeConsequence && !settingsOpen) {
@@ -266,7 +309,7 @@ export default function App() {
 
   // Handle In-World Proximity Interaction (NPC or Object)
   const handleWorldInteract = (target: NearbyTarget) => {
-    if (introCutsceneActive) return;
+    if (introCutsceneActive || isGamePaused) return;
     soundEngine.playInteract();
 
     if (target.type === 'npc') {
@@ -289,6 +332,7 @@ export default function App() {
 
   // Launch a level (optionally starting at Chapter 1, 2, or 3)
   const startLevel = (levelId: LevelId, initialChapter: 1 | 2 | 3 = 1, resetClues = false) => {
+    soundEngine.resumeGameplayAudio();
     soundEngine.playGtaMissionStart();
     setCurrentLevelId(levelId);
     setActiveChapterNum(initialChapter);
@@ -358,11 +402,15 @@ export default function App() {
       const nextLevel = ADVENTURE_LEVELS[currentIndex + 1];
       startLevel(nextLevel.id, 1);
     } else {
+      soundEngine.resumeGameplayAudio();
+      soundEngine.stopDialogueAudio();
       setCurrentView('title');
     }
   };
 
   const handleReturnToTitle = () => {
+    soundEngine.resumeGameplayAudio();
+    soundEngine.stopDialogueAudio();
     setIntroCutsceneActive(false);
     setCurrentView('title');
   };
@@ -461,13 +509,12 @@ export default function App() {
             onInteract={handleWorldInteract}
             onNearbyChange={setActiveNearby}
             onEscapePress={() => {
-              lastEscAutoOpenRef.current = performance.now();
-              soundEngine.playInteract();
-              setSettingsOpen(true);
+              pauseGame();
             }}
             mobileMoveVector={mobileMoveVector}
             isMobileJogging={isMobileJogging}
             isModalOpen={isCursorModalOpen}
+            isPaused={isGamePaused}
             activeDialogueNpcId={activeDialogueNpc?.id || null}
             introCameraShot={introCutsceneActive ? introCameraShot : null}
             isIntroNpcSpeaking={introCutsceneActive && isIntroNpcSpeaking}
@@ -479,6 +526,7 @@ export default function App() {
               level={activeLevel}
               cutscene={activeCutscene}
               settings={settings}
+              isGamePaused={isGamePaused}
               onUpdateSettings={(newSet) => setSettings((prev) => ({ ...prev, ...newSet }))}
               onBeatChange={(shot, speaking) => {
                 setIntroCameraShot(shot);
@@ -505,6 +553,7 @@ export default function App() {
               settings={settings}
               collectedClueIds={collectedClueIds}
               activeNearby={activeNearby}
+              isPaused={isGamePaused}
               openingContextSummary={openingContextSummary}
               onDismissOpeningSummary={() => setOpeningContextSummary(null)}
               onReplayOpeningStory={() => {
@@ -529,7 +578,7 @@ export default function App() {
                   setActiveDialogueNpc(targetNpc);
                 }
               }}
-              onOpenSettings={() => setSettingsOpen(true)}
+              onOpenSettings={() => pauseGame()}
               onToggleCamera={() =>
                 setSettings((prev) => ({ ...prev, isFirstPerson: !prev.isFirstPerson }))
               }
@@ -559,6 +608,8 @@ export default function App() {
               npc={activeDialogueNpc}
               showDecisionAction={activeChapterNum === 3}
               settings={settings}
+              isPaused={isGamePaused}
+              onPause={() => pauseGame()}
               onUpdateSettings={(newSet) => setSettings((prev) => ({ ...prev, ...newSet }))}
               onClose={() => {
                 setActiveDialogueNpc(null);
@@ -676,15 +727,16 @@ export default function App() {
         </div>
       )}
 
-      {/* Global Settings Modal */}
+      {/* Global Pause & Settings Modal */}
       {settingsOpen && (
         <SettingsModal
           settings={settings}
           onUpdateSettings={(newSet) => setSettings((prev) => ({ ...prev, ...newSet }))}
           onClose={() => {
-            setSettingsOpen(false);
             if (currentView === 'gameplay') {
-              window.dispatchEvent(new CustomEvent('sleuth-resume-look'));
+              resumeGame();
+            } else {
+              setSettingsOpen(false);
             }
           }}
           currentLevel={currentView === 'gameplay' ? activeLevel : undefined}
@@ -702,11 +754,11 @@ export default function App() {
           }}
           onResetProgress={() => {
             setSettingsOpen(false);
+            soundEngine.resumeGameplayAudio();
             handleRestartFromLevel1(currentView === 'gameplay');
           }}
           onUnlockAllLevels={() => {
             handleUnlockAllLevels();
-            setSettingsOpen(false);
           }}
         />
       )}

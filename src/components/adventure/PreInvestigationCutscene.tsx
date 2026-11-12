@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   FastForward,
   Play,
@@ -34,6 +34,7 @@ interface PreInvestigationCutsceneProps {
   onBeatChange: (shot: CutsceneCameraShot, isSpeaking: boolean) => void;
   onComplete: () => void;
   onSkip: () => void;
+  isGamePaused?: boolean;
 }
 
 export const PreInvestigationCutscene: React.FC<PreInvestigationCutsceneProps> = ({
@@ -43,11 +44,19 @@ export const PreInvestigationCutscene: React.FC<PreInvestigationCutsceneProps> =
   onBeatChange,
   onComplete,
   onSkip,
+  isGamePaused = false,
 }) => {
   const [beatIndex, setBeatIndex] = useState<number>(0);
   const [isPaused, setIsPaused] = useState<boolean>(false);
   const [beatElapsedMs, setBeatElapsedMs] = useState<number>(0);
   const [isLineVisible, setIsLineVisible] = useState<boolean>(true);
+  const onBeatChangeRef = useRef(onBeatChange);
+
+  useEffect(() => {
+    onBeatChangeRef.current = onBeatChange;
+  }, [onBeatChange]);
+
+  const effectivePaused = isPaused || Boolean(isGamePaused);
 
   const beats = cutscene.beats;
   const currentBeat: IntroCutsceneBeat = beats[beatIndex] || beats[0];
@@ -82,17 +91,20 @@ export const PreInvestigationCutscene: React.FC<PreInvestigationCutsceneProps> =
   }, [beatElapsedMs, currentBeatDurationMs, shortLines.length, settings.reducedMotion]);
 
   // Notify parent 3D scene of current camera shot and speaking state, and trigger voice audio
+  // (Uses onBeatChangeRef so pausing/resuming in App.tsx never re-runs this effect)
   useEffect(() => {
     const isCharacterSpeaking = Boolean(currentBeat.isNpcSpeaking);
-    onBeatChange(currentBeat.cameraShot, isCharacterSpeaking);
+    onBeatChangeRef.current(currentBeat.cameraShot, isCharacterSpeaking);
     soundEngine.stopDialogueAudio();
     soundEngine.playDialogueBlip();
-    soundEngine.speakDialogueAudio(currentBeat.speaker, currentBeat.subtitleText);
+    if (settings.voiceAudioEnabled !== false) {
+      soundEngine.speakDialogueAudio(currentBeat.speaker, currentBeat.subtitleText);
+    }
 
     return () => {
       soundEngine.stopDialogueAudio();
     };
-  }, [beatIndex, currentBeat, onBeatChange]);
+  }, [beatIndex, currentBeat, settings.voiceAudioEnabled]);
 
   // Reset to Beat 0 when level changes
   useEffect(() => {
@@ -103,7 +115,7 @@ export const PreInvestigationCutscene: React.FC<PreInvestigationCutsceneProps> =
 
   // Smooth timer for auto-advancing through the 4 story beats (~27s total)
   useEffect(() => {
-    if (isPaused) return;
+    if (effectivePaused) return;
     const stepMs = 80;
     const interval = setInterval(() => {
       setBeatElapsedMs((prev) => {
@@ -124,9 +136,10 @@ export const PreInvestigationCutscene: React.FC<PreInvestigationCutsceneProps> =
     }, stepMs);
 
     return () => clearInterval(interval);
-  }, [beatIndex, beats.length, currentBeatDurationMs, isPaused, onComplete]);
+  }, [beatIndex, beats.length, currentBeatDurationMs, effectivePaused, onComplete]);
 
   const handleNextBeat = useCallback(() => {
+    if (effectivePaused) return;
     soundEngine.stopDialogueAudio();
     soundEngine.playInteract();
     if (beatIndex < beats.length - 1) {
@@ -135,20 +148,22 @@ export const PreInvestigationCutscene: React.FC<PreInvestigationCutsceneProps> =
     } else {
       onComplete();
     }
-  }, [beatIndex, beats.length, onComplete]);
+  }, [effectivePaused, beatIndex, beats.length, onComplete]);
 
   const handlePrevBeat = useCallback(() => {
+    if (effectivePaused) return;
     soundEngine.stopDialogueAudio();
     soundEngine.playInteract();
     if (beatIndex > 0) {
       setBeatIndex((idx) => idx - 1);
       setBeatElapsedMs(0);
     }
-  }, [beatIndex]);
+  }, [effectivePaused, beatIndex]);
 
   // Keyboard shortcuts during cutscene (Space = Skip, Right/Enter = Next Beat, Left = Prev Beat)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (effectivePaused) return;
       if ((e.target as HTMLElement)?.tagName === 'INPUT') return;
       if (e.code === 'Space') {
         e.preventDefault();
@@ -165,7 +180,7 @@ export const PreInvestigationCutscene: React.FC<PreInvestigationCutsceneProps> =
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleNextBeat, handlePrevBeat, onSkip]);
+  }, [effectivePaused, handleNextBeat, handlePrevBeat, onSkip]);
 
   const activeSizeMode =
     settings.subtitleSize || (settings.textSize === 'large' ? 'large' : 'normal');
@@ -322,15 +337,24 @@ export const PreInvestigationCutscene: React.FC<PreInvestigationCutsceneProps> =
 
           <button
             type="button"
+            disabled={Boolean(isGamePaused)}
             onClick={() => {
               soundEngine.playInteract();
-              setIsPaused((prev) => !prev);
+              setIsPaused((prev) => {
+                const next = !prev;
+                if (next) {
+                  soundEngine.pauseGameplayAudio();
+                } else if (!isGamePaused) {
+                  soundEngine.resumeGameplayAudio();
+                }
+                return next;
+              });
             }}
-            className="hover:text-white flex items-center gap-1 cursor-pointer"
-            title={isPaused ? 'Resume Story' : 'Pause Story'}
+            className="hover:text-white flex items-center gap-1 cursor-pointer disabled:opacity-50"
+            title={effectivePaused ? 'Resume Story' : 'Pause Story'}
           >
-            {isPaused ? <Play className="w-3.5 h-3.5" /> : <Pause className="w-3.5 h-3.5" />}
-            <span>{isPaused ? 'Resume' : 'Pause'}</span>
+            {effectivePaused ? <Play className="w-3.5 h-3.5" /> : <Pause className="w-3.5 h-3.5" />}
+            <span>{effectivePaused ? 'Resume' : 'Pause'}</span>
           </button>
 
           <button
