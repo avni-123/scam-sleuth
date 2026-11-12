@@ -3,7 +3,6 @@ import { GameSettings } from '../../types/adventure';
 
 /**
  * Splits a multi-sentence dialogue string into short, readable single-breath lines
- * (like the reference video: "Oh no!", "I'll be late for work!", "I should be on my car by now.")
  * so subtitles never form a wall of text over the 3D scene.
  */
 export function splitIntoShortSubtitleLines(rawText: string): string[] {
@@ -19,7 +18,7 @@ export function splitIntoShortSubtitleLines(rawText: string): string[] {
   const shortLines: string[] = [];
 
   for (const part of sentenceParts) {
-    if (part.length <= 78) {
+    if (part.length <= 72) {
       shortLines.push(part);
     } else {
       // Further split long sentences at natural comma / conjunction pauses
@@ -28,7 +27,7 @@ export function splitIntoShortSubtitleLines(rawText: string): string[] {
       for (const clause of clauses) {
         if (!buffer) {
           buffer = clause;
-        } else if ((buffer + ' ' + clause).length <= 78) {
+        } else if ((buffer + ' ' + clause).length <= 72) {
           buffer += ' ' + clause;
         } else {
           shortLines.push(buffer);
@@ -51,11 +50,9 @@ interface SceneSubtitleLineProps {
 }
 
 /**
- * Box-free, direct-over-scene subtitle renderer matching the reference video.
+ * Direct-over-scene subtitle renderer using the unified interface font family.
  * - Centered near the bottom safe area of the screen
- * - White text with a subtle multi-layered dark outline/shadow for contrast against both light and dark 3D backgrounds
- * - No panel, speech bubble, card, banner, or translucent rectangle
- * - Gentle fade in/out transition
+ * - Balanced line height and letter spacing for comfortable reading
  */
 export const SceneSubtitleLine: React.FC<SceneSubtitleLineProps> = ({
   speaker,
@@ -73,22 +70,21 @@ export const SceneSubtitleLine: React.FC<SceneSubtitleLineProps> = ({
 
   const textSizeClass =
     sizeMode === 'extra-large'
-      ? 'text-xl sm:text-2xl'
+      ? 'text-base sm:text-lg'
       : sizeMode === 'large'
-      ? 'text-lg sm:text-xl'
-      : 'text-base sm:text-lg';
+      ? 'text-sm sm:text-base'
+      : 'text-xs sm:text-sm';
 
   const speakerSizeClass =
     sizeMode === 'extra-large'
-      ? 'text-sm sm:text-base'
-      : sizeMode === 'large'
       ? 'text-xs sm:text-sm'
-      : 'text-xs';
+      : sizeMode === 'large'
+      ? 'text-[11px] sm:text-xs'
+      : 'text-[10px] sm:text-xs';
 
-  // Crisp dark outline + subtle midnight shadow so neutral white words read effortlessly on both bright walls and dark scenes
   const contrastShadowClass = settings?.highContrast
-    ? '[text-shadow:-1.5px_-1.5px_0_#020617,1.5px_-1.5px_0_#020617,-1.5px_1.5px_0_#020617,1.5px_1.5px_0_#020617,0_2px_10px_rgba(2,6,23,0.98)] font-semibold'
-    : '[text-shadow:-1px_-1px_0_rgba(2,6,23,0.98),1px_-1px_0_rgba(2,6,23,0.98),-1px_1px_0_rgba(2,6,23,0.98),1px_1px_0_rgba(2,6,23,0.98),0_2px_12px_rgba(2,6,23,0.95)] font-medium';
+    ? '[text-shadow:-1.5px_-1.5px_0_#020617,1.5px_-1.5px_0_#020617,-1.5px_1.5px_0_#020617,1.5px_1.5px_0_#020617,0_2px_10px_rgba(2,6,23,0.98)] font-bold'
+    : '[text-shadow:-1px_-1px_0_rgba(2,6,23,0.98),1px_-1px_0_rgba(2,6,23,0.98),-1px_1px_0_rgba(2,6,23,0.98),1px_1px_0_rgba(2,6,23,0.98),0_2px_12px_rgba(2,6,23,0.95)] font-normal';
 
   const speakerShadowClass =
     '[text-shadow:-1px_-1px_0_rgba(2,6,23,0.98),1px_1px_0_rgba(2,6,23,0.98),0_1px_6px_rgba(2,6,23,0.95)]';
@@ -108,18 +104,18 @@ export const SceneSubtitleLine: React.FC<SceneSubtitleLineProps> = ({
       }`}
       aria-live="polite"
     >
-      <div className="max-w-2xl w-full text-center space-y-1 px-4 py-2 rounded-2xl bg-[#04091A]/75 backdrop-blur-sm border border-sky-500/20 shadow-[0_8px_28px_rgba(2,6,23,0.8)]">
+      <div className="max-w-3xl w-full text-center space-y-1.5 px-4 py-2.5 rounded-2xl bg-[#04091A]/80 backdrop-blur-sm border border-sky-500/25 shadow-[0_8px_28px_rgba(2,6,23,0.85)]">
         {showSpeakerName && speaker && (
           <div
-            className={`font-mono ${speakerSizeClass} ${
+            className={`font-pixel ${speakerSizeClass} ${
               isInvestigatorSpeaker ? 'text-[#38BDF8]' : 'text-pink-300'
-            } tracking-wider font-semibold ${speakerShadowClass}`}
+            } tracking-[0.12em] uppercase font-bold ${speakerShadowClass}`}
           >
             {speaker}
           </div>
         )}
         <p
-          className={`font-sans text-[#F8FAFC] ${textSizeClass} leading-snug tracking-normal ${contrastShadowClass}`}
+          className={`font-pixel text-[#F8FAFC] ${textSizeClass} leading-relaxed tracking-[0.03em] ${contrastShadowClass}`}
         >
           {text}
         </p>

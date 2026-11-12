@@ -404,9 +404,9 @@ export class ProceduralTextureGenerator {
 
     // Status bar
     ctx.fillStyle = '#F8FAFC';
-    ctx.font = 'bold 20px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+    ctx.font = 'bold 20px "Silkscreen", "Courier New", Courier, monospace';
     ctx.fillText('20:42', 36, 38);
-    ctx.font = 'bold 16px sans-serif';
+    ctx.font = 'bold 16px "Silkscreen", "Courier New", Courier, monospace';
     ctx.fillText('5G   94%', 392, 38);
 
     // Messaging App Header
@@ -424,31 +424,31 @@ export class ProceduralTextureGenerator {
     ctx.arc(64, 118, 28, 0, Math.PI * 2);
     ctx.fill();
     ctx.fillStyle = '#39BDF7';
-    ctx.font = 'bold 22px sans-serif';
+    ctx.font = 'bold 22px "Silkscreen", "Courier New", Courier, monospace';
     ctx.textAlign = 'center';
     ctx.fillText('SMS', 64, 126);
     ctx.textAlign = 'left';
 
     // Sender Number (Fictional)
     ctx.fillStyle = '#FFFFFF';
-    ctx.font = 'bold 21px monospace';
+    ctx.font = 'bold 21px "Silkscreen", "Courier New", Courier, monospace';
     ctx.fillText((msgSender || '+1 (555) 019-3382').slice(0, 24), 106, 108);
 
     ctx.fillStyle = '#39BDF7';
-    ctx.font = 'bold 15px sans-serif';
+    ctx.font = 'bold 15px "Silkscreen", "Courier New", Courier, monospace';
     ctx.fillText('Unverified Number · Not in Contacts', 106, 136);
 
     if (highlightClues) {
       ctx.fillStyle = 'rgba(240, 90, 157, 0.22)';
       ctx.fillRect(102, 86, 370, 62);
       ctx.fillStyle = '#F2F5FA';
-      ctx.font = 'bold 13px monospace';
+      ctx.font = 'bold 13px "Silkscreen", "Courier New", Courier, monospace';
       ctx.fillText('🔍 CLUE 1: Random mobile number', 106, 166);
     }
 
     // Timestamp divider
     ctx.fillStyle = '#94A3B8';
-    ctx.font = 'bold 16px sans-serif';
+    ctx.font = 'bold 16px "Silkscreen", "Courier New", Courier, monospace';
     ctx.textAlign = 'center';
     ctx.fillText('Text Message · Today 8:42 PM', 256, 212);
     ctx.textAlign = 'left';
@@ -464,12 +464,12 @@ export class ProceduralTextureGenerator {
 
     // Header inside SMS bubble
     ctx.fillStyle = '#F2F5FA';
-    ctx.font = 'bold 22px sans-serif';
+    ctx.font = 'bold 22px "Silkscreen", "Courier New", Courier, monospace';
     ctx.fillText('CITY-POST DELIVERY NOTICE', 44, 280);
 
     // Wrap message body clearly with high contrast and large readable font
     ctx.fillStyle = '#FFFFFF';
-    ctx.font = '600 22px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+    ctx.font = '600 22px "Silkscreen", "Courier New", Courier, monospace';
     const cleanText =
       msgBody ||
       'CITY-POST ALERT: Parcel #CP-8831 is ON HOLD due to an incomplete street label ($2.85 redelivery fee). Pay within 2 hours at parcel-relabel-hold.invalid/pay or item returns to sender.';
@@ -500,21 +500,21 @@ export class ProceduralTextureGenerator {
     ctx.stroke();
 
     ctx.fillStyle = '#94A3B8';
-    ctx.font = 'bold 14px monospace';
+    ctx.font = 'bold 14px "Silkscreen", "Courier New", Courier, monospace';
     ctx.fillText('FICTIONAL LINK PREVIEW (DO NOT OPEN):', 60, linkBoxY + 30);
 
     ctx.fillStyle = '#38BDF8';
-    ctx.font = 'bold 19px monospace';
+    ctx.font = 'bold 19px "Silkscreen", "Courier New", Courier, monospace';
     ctx.fillText('parcel-relabel-hold.invalid/pay', 60, linkBoxY + 62);
 
     if (highlightClues) {
       ctx.fillStyle = '#FDE68A';
-      ctx.font = 'bold 15px monospace';
+      ctx.font = 'bold 15px "Silkscreen", "Courier New", Courier, monospace';
       ctx.fillText('🔍 CLUE 2: 2-hr panic timer & $2.85 fee', 44, linkBoxY + 125);
       ctx.fillText('🔍 CLUE 3: Look-alike .invalid web address', 44, linkBoxY + 152);
     } else {
       ctx.fillStyle = '#FBBF24';
-      ctx.font = 'bold 16px sans-serif';
+      ctx.font = 'bold 16px "Silkscreen", "Courier New", Courier, monospace';
       ctx.fillText('Press E to inspect message clues closely', 44, linkBoxY + 135);
     }
 
@@ -528,11 +528,11 @@ export class ProceduralTextureGenerator {
     ctx.stroke();
 
     ctx.fillStyle = '#38BDF8';
-    ctx.font = 'bold 16px monospace';
+    ctx.font = 'bold 16px "Silkscreen", "Courier New", Courier, monospace';
     ctx.fillText('EVIDENCE ITEM · CASE 01', 44, 822);
 
     ctx.fillStyle = '#E2E8F0';
-    ctx.font = '18px sans-serif';
+    ctx.font = '18px "Silkscreen", "Courier New", Courier, monospace';
     ctx.fillText('Check sender details, urgent countdown,', 44, 856);
     ctx.fillText('and payment link before taking action.', 44, 884);
 
@@ -578,7 +578,7 @@ export class ProceduralTextureGenerator {
     ctx.roundRect(100, 8, 280, 36, 10);
     ctx.fill();
     ctx.fillStyle = '#38bdf8';
-    ctx.font = 'bold 14px sans-serif';
+    ctx.font = 'bold 14px "Silkscreen", "Courier New", Courier, monospace';
     ctx.fillText(title.slice(0, 26), 120, 31);
 
     // URL Address Bar with Security Warning
@@ -588,7 +588,7 @@ export class ProceduralTextureGenerator {
     ctx.fill();
 
     ctx.fillStyle = '#ef4444';
-    ctx.font = 'bold 14px monospace';
+    ctx.font = 'bold 14px "Silkscreen", "Courier New", Courier, monospace';
     ctx.fillText('⚠ NOT SECURE | ' + url, 120, 76);
 
     // Webpage Content White Canvas
@@ -599,13 +599,13 @@ export class ProceduralTextureGenerator {
     ctx.fillStyle = '#dc2626';
     ctx.fillRect(20, 100, 984, 80);
     ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 28px sans-serif';
+    ctx.font = 'bold 28px "Silkscreen", "Courier New", Courier, monospace';
     ctx.fillText('CRITICAL ACCOUNT VERIFICATION ALERT', 60, 150);
 
     ctx.fillStyle = '#1e293b';
-    ctx.font = '20px sans-serif';
+    ctx.font = '20px "Silkscreen", "Courier New", Courier, monospace';
     ctx.fillText('Immediate action required: Credentials expire in 15 minutes.', 60, 230);
-    ctx.font = '16px sans-serif';
+    ctx.font = '16px "Silkscreen", "Courier New", Courier, monospace';
     ctx.fillStyle = '#475569';
     ctx.fillText('Please verify your user identification and password below to prevent deactivation.', 60, 265);
 
@@ -615,7 +615,7 @@ export class ProceduralTextureGenerator {
     ctx.lineWidth = 2;
     ctx.strokeRect(60, 310, 480, 52);
     ctx.fillStyle = '#94a3b8';
-    ctx.font = '18px sans-serif';
+    ctx.font = '18px "Silkscreen", "Courier New", Courier, monospace';
     ctx.fillText('Username / Account Email', 80, 343);
 
     ctx.strokeRect(60, 380, 480, 52);
@@ -627,7 +627,7 @@ export class ProceduralTextureGenerator {
     ctx.roundRect(60, 460, 220, 54, 12);
     ctx.fill();
     ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 18px sans-serif';
+    ctx.font = 'bold 18px "Silkscreen", "Courier New", Courier, monospace';
     ctx.fillText('VERIFY ACCOUNT NOW', 76, 494);
 
     const texture = new THREE.CanvasTexture(canvas);
@@ -663,13 +663,13 @@ export class ProceduralTextureGenerator {
     ctx.fillRect(60, 60, 392, 240);
 
     ctx.fillStyle = '#0f172a';
-    ctx.font = 'bold 26px sans-serif';
+    ctx.font = 'bold 26px "Silkscreen", "Courier New", Courier, monospace';
     ctx.fillText('EXPRESS COURIER SERVICE', 80, 105);
 
-    ctx.font = '16px monospace';
+    ctx.font = '16px "Silkscreen", "Courier New", Courier, monospace';
     ctx.fillText('TRACKING: #PKG-9941-ALERT', 80, 140);
     ctx.fillStyle = '#dc2626';
-    ctx.font = 'bold 18px sans-serif';
+    ctx.font = 'bold 18px "Silkscreen", "Courier New", Courier, monospace';
     ctx.fillText('HOLD AT DEPOT: UNPAID FEE ($2.85)', 80, 175);
 
     // Scannable Barcode Lines
@@ -946,7 +946,7 @@ export class ProceduralTextureGenerator {
 
     // 3. Status Bar
     ctx.fillStyle = '#FFFFFF';
-    ctx.font = 'bold 18px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+    ctx.font = 'bold 18px "Silkscreen", "Courier New", Courier, monospace';
     ctx.textAlign = 'left';
     ctx.fillText('20:42', 36, 36);
 
@@ -958,7 +958,7 @@ export class ProceduralTextureGenerator {
     ctx.fillRect(410, 23, 3, 14);
 
     // 5G Label
-    ctx.font = 'bold 13px sans-serif';
+    ctx.font = 'bold 13px "Silkscreen", "Courier New", Courier, monospace';
     ctx.fillText('5G', 422, 35);
 
     // Battery Indicator
@@ -972,11 +972,11 @@ export class ProceduralTextureGenerator {
     // 4. Large Digital Clock & Date Lockscreen/Home Widget
     ctx.textAlign = 'center';
     ctx.fillStyle = '#94A3B8';
-    ctx.font = 'bold 15px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+    ctx.font = 'bold 15px "Silkscreen", "Courier New", Courier, monospace';
     ctx.fillText('THURSDAY, NOVEMBER 5', 256, 94);
 
     ctx.fillStyle = '#F8FAFC';
-    ctx.font = '300 86px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+    ctx.font = '300 86px "Silkscreen", "Courier New", Courier, monospace';
     ctx.fillText('20:42', 256, 178);
 
     // Weather Pill
@@ -988,7 +988,7 @@ export class ProceduralTextureGenerator {
     ctx.stroke();
 
     ctx.fillStyle = '#E2E8F0';
-    ctx.font = 'bold 14px sans-serif';
+    ctx.font = 'bold 14px "Silkscreen", "Courier New", Courier, monospace';
     ctx.fillText('🌧 12°C · Rain · Metro Dist.', 256, 220);
 
     // 5. Sleek Notification / Case Status Widget Card
@@ -1004,24 +1004,24 @@ export class ProceduralTextureGenerator {
     drawRoundBox(40, 268, 26, 26, 7);
     ctx.fill();
     ctx.fillStyle = '#FFFFFF';
-    ctx.font = 'bold 13px monospace';
+    ctx.font = 'bold 13px "Silkscreen", "Courier New", Courier, monospace';
     ctx.fillText('S', 53, 286);
 
     ctx.textAlign = 'left';
     ctx.fillStyle = '#38BDF8';
-    ctx.font = 'bold 12px monospace';
+    ctx.font = 'bold 12px "Silkscreen", "Courier New", Courier, monospace';
     ctx.fillText('SCAM SLEUTH OS · ACTIVE CASE', 76, 286);
 
     ctx.fillStyle = '#64748B';
-    ctx.font = '11px sans-serif';
+    ctx.font = '11px "Silkscreen", "Courier New", Courier, monospace';
     ctx.fillText('NOW', 440, 286);
 
     ctx.fillStyle = '#F8FAFC';
-    ctx.font = 'bold 15px sans-serif';
+    ctx.font = 'bold 15px "Silkscreen", "Courier New", Courier, monospace';
     ctx.fillText('Operation Glasshouse · Evidence Standby', 40, 316);
 
     ctx.fillStyle = '#94A3B8';
-    ctx.font = '12px sans-serif';
+    ctx.font = '12px "Silkscreen", "Courier New", Courier, monospace';
     ctx.fillText('Digital clues synchronized · Ready for inspection', 40, 332);
 
     // 6. Home Screen App Grid (3 rows x 4 columns)
@@ -1338,7 +1338,7 @@ export class ProceduralTextureGenerator {
         ctx.lineWidth = 2;
         ctx.stroke();
         ctx.fillStyle = '#FFFFFF';
-        ctx.font = 'bold 12px sans-serif';
+        ctx.font = 'bold 12px "Silkscreen", "Courier New", Courier, monospace';
         ctx.textAlign = 'center';
         ctx.fillText(String(app.badge), x + iconSize - 4, y + 8);
       }
@@ -1346,7 +1346,7 @@ export class ProceduralTextureGenerator {
       // App Label
       ctx.textAlign = 'center';
       ctx.fillStyle = '#F8FAFC';
-      ctx.font = '500 13px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+      ctx.font = '500 13px "Silkscreen", "Courier New", Courier, monospace';
       ctx.fillText(app.name, cx, y + iconSize + 19);
     });
 
@@ -1410,7 +1410,7 @@ export class ProceduralTextureGenerator {
         ctx.lineWidth = 2;
         ctx.stroke();
         ctx.fillStyle = '#FFFFFF';
-        ctx.font = 'bold 12px sans-serif';
+        ctx.font = 'bold 12px "Silkscreen", "Courier New", Courier, monospace';
         ctx.textAlign = 'center';
         ctx.fillText(String(app.badge), x + iconSize - 4, y + 8);
       }
@@ -1461,12 +1461,12 @@ export class ProceduralTextureGenerator {
 
     // 2. Top Status Bar (Time, 5G, Battery)
     ctx.fillStyle = '#f8fafc';
-    ctx.font = 'bold 24px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+    ctx.font = 'bold 24px "Silkscreen", "Courier New", Courier, monospace';
     ctx.textAlign = 'left';
     ctx.fillText('20:42', 36, 48);
 
     ctx.textAlign = 'right';
-    ctx.font = 'bold 20px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+    ctx.font = 'bold 20px "Silkscreen", "Courier New", Courier, monospace';
     ctx.fillStyle = '#38bdf8';
     ctx.fillText('5G', w - 92, 46);
     ctx.strokeStyle = '#f8fafc';
@@ -1492,17 +1492,17 @@ export class ProceduralTextureGenerator {
     ctx.arc(64, 122, 30, 0, Math.PI * 2);
     ctx.fill();
     ctx.fillStyle = '#081426';
-    ctx.font = '900 26px sans-serif';
+    ctx.font = '900 26px "Silkscreen", "Courier New", Courier, monospace';
     ctx.textAlign = 'center';
     ctx.fillText('!', 64, 132);
 
     ctx.textAlign = 'left';
     ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 26px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+    ctx.font = 'bold 26px "Silkscreen", "Courier New", Courier, monospace';
     ctx.fillText(msgSender, 112, 115);
 
     ctx.fillStyle = '#39BDF7';
-    ctx.font = 'bold 18px monospace';
+    ctx.font = 'bold 18px "Silkscreen", "Courier New", Courier, monospace';
     ctx.fillText('UNVERIFIED CARRIER · SMS', 112, 146);
 
     // 4. High-Contrast Suspicious Delivery Alert Banner
@@ -1514,7 +1514,7 @@ export class ProceduralTextureGenerator {
     ctx.stroke();
 
     ctx.fillStyle = '#F2F5FA';
-    ctx.font = 'bold 21px monospace';
+    ctx.font = 'bold 21px "Silkscreen", "Courier New", Courier, monospace';
     ctx.textAlign = 'center';
     ctx.fillText('⚠ CASE EVIDENCE: DELIVERY FEE SCAM', w / 2, 242);
 
@@ -1531,13 +1531,13 @@ export class ProceduralTextureGenerator {
     drawRoundRect(48, 322, 230, 38, 10);
     ctx.fill();
     ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 19px monospace';
+    ctx.font = 'bold 19px "Silkscreen", "Courier New", Courier, monospace';
     ctx.textAlign = 'left';
     ctx.fillText('CITYPOST PARCEL ALERT', 62, 347);
 
     // Wrapped Message Text
     ctx.fillStyle = '#f8fafc';
-    ctx.font = 'bold 31px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+    ctx.font = 'bold 28px "Silkscreen", "Courier New", Courier, monospace';
     const lines = [
       'CityPost: $2.85 customs',
       'fee required to release',
@@ -1556,15 +1556,15 @@ export class ProceduralTextureGenerator {
     ctx.stroke();
 
     ctx.fillStyle = '#fca5a5';
-    ctx.font = 'bold 17px monospace';
+    ctx.font = 'bold 17px "Silkscreen", "Courier New", Courier, monospace';
     ctx.fillText('SUSPICIOUS TRACKING LINK:', 64, 564);
     ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 24px monospace';
+    ctx.font = 'bold 24px "Silkscreen", "Courier New", Courier, monospace';
     ctx.fillText('citypost-track-id.net/pay', 64, 596);
 
     // Urgency footer inside bubble
     ctx.fillStyle = '#94a3b8';
-    ctx.font = '600 20px sans-serif';
+    ctx.font = '600 20px "Silkscreen", "Courier New", Courier, monospace';
     ctx.fillText('Reply Y or tap link within 2 hrs', 48, 654);
 
     // 6. Forensic Clue Analysis Card Below Message
@@ -1576,11 +1576,11 @@ export class ProceduralTextureGenerator {
     ctx.stroke();
 
     ctx.fillStyle = '#38bdf8';
-    ctx.font = 'bold 20px monospace';
+    ctx.font = 'bold 20px "Silkscreen", "Courier New", Courier, monospace';
     ctx.fillText('SLEUTH FORENSIC NOTES:', 48, 758);
 
     ctx.fillStyle = '#e2e8f0';
-    ctx.font = 'bold 22px sans-serif';
+    ctx.font = 'bold 22px "Silkscreen", "Courier New", Courier, monospace';
     ctx.fillText('• Lookalike domain (.net)', 48, 800);
     ctx.fillText('• Unsolicited $2.85 fee trap', 48, 836);
     ctx.fillText('• Artificial 2-hour urgency', 48, 872);
