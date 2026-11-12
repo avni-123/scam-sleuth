@@ -119,52 +119,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           </div>
         </div>
 
-        {/* Prominent Pause Menu Primary Action Bar (Resume + Settings) when paused in gameplay */}
-        {isPauseMenu && (
-          <div className="p-4 pixel-slot border-2 border-[#39BDF7]/60 bg-[#071224] space-y-3 rounded-none">
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
-              <button
-                type="button"
-                autoFocus
-                onClick={handleSelectResume}
-                className="pixel-btn-action flex-1 px-5 py-3 text-[#081426] font-pixel text-xs sm:text-sm tracking-wider cursor-pointer rounded-none flex items-center justify-center gap-2 shadow-[0_0_24px_rgba(57,189,247,0.5)]"
-              >
-                <Play className="w-4 h-4 fill-current" />
-                <span>RESUME</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={handleOpenSettingsSection}
-                className={`pixel-btn px-4 py-3 font-pixel text-xs tracking-wider cursor-pointer rounded-none flex items-center justify-center gap-2 border ${
-                  activeTab === 'settings'
-                    ? 'border-[#F05A9D] text-[#F05A9D] bg-[#F05A9D]/15'
-                    : 'border-[#39BDF7]/50 text-[#39BDF7] hover:border-[#39BDF7]'
-                }`}
-              >
-                <SettingsIcon className="w-4 h-4" />
-                <span>SETTINGS</span>
-              </button>
-
-              {onReturnToMenu && (
-                <button
-                  type="button"
-                  onClick={onReturnToMenu}
-                  className="pixel-btn px-4 py-3 text-xs text-[#F05A9D] border border-[#F05A9D]/50 hover:border-[#F05A9D] hover:bg-[#F05A9D]/15 flex items-center justify-center gap-1.5 cursor-pointer rounded-none uppercase font-pixel"
-                  title="Return to Title Screen"
-                >
-                  <Home className="w-3.5 h-3.5" />
-                  <span>TITLE</span>
-                </button>
-              )}
-            </div>
-            <p className="text-[11px] text-slate-300 font-pixel leading-relaxed">
-              All movement, character animations, dialogue subtitles, and audio are suspended. Select{' '}
-              <span className="text-[#39BDF7]">RESUME</span> to continue from the exact moment you paused.
-            </p>
-          </div>
-        )}
-
         {/* Current Case Story & Chapter Slots */}
         {currentLevel && (
           <div className="p-4 pixel-slot border-2 border-[#F05A9D]/40 space-y-2.5 rounded-none relative">
@@ -597,14 +551,32 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             )}
           </div>
 
-          <button
-            type="button"
-            onClick={handleSelectResume}
-            className="pixel-btn-action px-6 py-2.5 text-[#081426] font-pixel text-xs tracking-wider cursor-pointer rounded-none flex items-center gap-2 shadow-[0_0_20px_rgba(57,189,247,0.45)]"
-          >
-            {isPauseMenu && <Play className="w-3.5 h-3.5 fill-current" />}
-            <span>{isPauseMenu ? 'RESUME' : 'DONE'}</span>
-          </button>
+          <div className="flex items-center gap-2.5 ml-auto">
+            {isPauseMenu && (
+              <button
+                type="button"
+                onClick={handleOpenSettingsSection}
+                className={`pixel-btn px-4 py-2.5 font-pixel text-xs tracking-wider cursor-pointer rounded-none flex items-center gap-2 border ${
+                  activeTab === 'settings'
+                    ? 'border-[#F05A9D] text-[#F05A9D] bg-[#F05A9D]/15'
+                    : 'border-[#39BDF7]/50 text-[#39BDF7] hover:border-[#39BDF7]'
+                }`}
+              >
+                <SettingsIcon className="w-3.5 h-3.5" />
+                <span>SETTINGS</span>
+              </button>
+            )}
+
+            <button
+              type="button"
+              autoFocus
+              onClick={handleSelectResume}
+              className="pixel-btn-action px-6 py-2.5 text-[#081426] font-pixel text-xs tracking-wider cursor-pointer rounded-none flex items-center gap-2 shadow-[0_0_20px_rgba(57,189,247,0.45)]"
+            >
+              {isPauseMenu && <Play className="w-3.5 h-3.5 fill-current" />}
+              <span>{isPauseMenu ? 'RESUME' : 'DONE'}</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>
